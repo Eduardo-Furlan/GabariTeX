@@ -4,7 +4,7 @@
 
 Aplicação web estática (SPA) moderna em React, TypeScript e Tailwind CSS, projetada para a elaboração, randomização de versões, diagramação em papel A4 e correção automática por leitura óptica (OMR) em tempo real via câmera de smartphone ou webcam.
 
-Focada primordialmente em avaliações de **Matemática e Ciências Exatas** através de renderização nativa de equações em LaTeX (KaTeX) e exportação de código-fonte pronto para compilação em **LuaLaTeX**, sendo plenamente extensível para qualquer disciplina acadêmica.
+Focada primordialmente em avaliações de **Matemática e Ciências Exatas** através de renderização nativa de equações em LaTeX (KaTeX) e diagramação direta para impressão em A4 e PDF, sendo plenamente extensível para qualquer disciplina acadêmica.
 
 ---
 
@@ -45,7 +45,6 @@ Avaliações impressas em cursos universitários enfrentam desafios recorrentes:
 
 ### 5. Diagramação Profissional e Exportação
 - **Impressão A4 Rigorosa**: Diagramação direta em 1 ou 2 colunas pelo navegador (`@media print`), gerando PDFs limpos, sem bordas falsas, sem fundos azulados e sem páginas extras em branco.
-- **Exportação LuaLaTeX (`.tex`)**: Gera código TeX moderno utilizando `fontspec` e `amsmath`, sem pacotes obsoletos (`inputenc`, `fontenc`) e com math mode estrito para siglas teóricas (ZF, ZFC, etc.).
 - **Persistência em JSON**: Salve e recupere o banco de questões e configurações da prova em arquivos `.json` offline.
 
 ---

@@ -57,41 +57,41 @@ export const QuestionList: React.FC<QuestionListProps> = ({ questions, onChange 
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4 px-1 flex-wrap gap-2">
-        <div className="flex items-center gap-4 text-sm text-slate-600">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 px-1 gap-3">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs sm:text-sm text-slate-600">
           <span className="flex items-center gap-1.5 font-medium">
-            <Layers className="w-4 h-4 text-indigo-600" />
-            Total: <strong>{questions.length}</strong> questões
+            <Layers className="w-4 h-4 text-indigo-600 shrink-0" />
+            Total: <strong>{questions.length}</strong>
           </span>
-          <span className="text-slate-400">|</span>
+          <span className="text-slate-300 hidden sm:inline">•</span>
           <span>
             Objetivas: <strong>{objectiveCount}</strong>
           </span>
-          <span className="text-slate-400">|</span>
+          <span className="text-slate-300 hidden sm:inline">•</span>
           <span>
             Dissertativas: <strong>{subjectiveCount}</strong>
           </span>
-          <span className="text-slate-400">|</span>
-          <span className="flex items-center gap-1 font-semibold text-emerald-700">
-            <Calculator className="w-4 h-4" />
-            Pontuação Total: {totalPoints.toFixed(1)} pts
+          <span className="text-slate-300 hidden sm:inline">•</span>
+          <span className="flex items-center gap-1 font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+            <Calculator className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+            Pontuação: {totalPoints.toFixed(1)} pts
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
             onClick={() => handleAddQuestion('objective')}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-medium shadow-sm transition"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-sm transition"
           >
-            <Plus className="w-4 h-4" /> Nova Questão Objetiva
+            <Plus className="w-3.5 h-3.5" /> Nova Objetiva
           </button>
           <button
             type="button"
             onClick={() => handleAddQuestion('subjective')}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition"
           >
-            <Plus className="w-4 h-4" /> Nova Questão Dissertativa
+            <Plus className="w-3.5 h-3.5" /> Nova Dissertativa
           </button>
         </div>
       </div>
@@ -108,18 +108,18 @@ export const QuestionList: React.FC<QuestionListProps> = ({ questions, onChange 
         ))}
       </div>
 
-      <div className="mt-6 flex justify-center gap-3">
+      <div className="mt-6 flex flex-col sm:flex-row justify-center gap-3">
         <button
           type="button"
           onClick={() => handleAddQuestion('objective')}
-          className="flex items-center gap-2 px-5 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-sm font-semibold transition"
+          className="flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs sm:text-sm font-semibold transition"
         >
-          <Plus className="w-4 h-4" /> Adicionar Mais Uma Questão Objetiva
+          <Plus className="w-4 h-4" /> Adicionar Questão Objetiva
         </button>
         <button
           type="button"
           onClick={() => handleAddQuestion('subjective')}
-          className="flex items-center gap-2 px-5 py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-sm font-semibold transition"
+          className="flex items-center justify-center gap-2 px-5 py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold transition"
         >
           <Plus className="w-4 h-4" /> Adicionar Questão Dissertativa
         </button>

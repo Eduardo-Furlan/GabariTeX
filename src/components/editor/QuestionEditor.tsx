@@ -92,36 +92,36 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-4 transition hover:border-slate-300">
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 mb-4 transition hover:border-slate-300">
       <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100 flex-wrap gap-2">
-        <div className="flex items-center gap-3">
-          <span className="flex items-center justify-center w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 font-bold text-sm">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          <span className="flex items-center justify-center w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 font-bold text-sm shrink-0">
             {index + 1}
           </span>
-          <span className="font-semibold text-slate-800">Questão {index + 1}</span>
+          <span className="font-semibold text-slate-800 text-sm sm:text-base">Questão {index + 1}</span>
 
           <div className="flex items-center bg-slate-100 rounded-lg p-0.5 text-xs font-medium">
             <button
               type="button"
               onClick={() => handleTypeChange('objective')}
-              className={`px-3 py-1 rounded-md transition ${
+              className={`px-2.5 sm:px-3 py-1 rounded-md transition ${
                 question.type === 'objective'
                   ? 'bg-white text-indigo-700 shadow-sm font-semibold'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              Objetiva (Gabarito)
+              Objetiva
             </button>
             <button
               type="button"
               onClick={() => handleTypeChange('subjective')}
-              className={`px-3 py-1 rounded-md transition ${
+              className={`px-2.5 sm:px-3 py-1 rounded-md transition ${
                 question.type === 'subjective'
                   ? 'bg-white text-indigo-700 shadow-sm font-semibold'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              Dissertativa (Aberta)
+              Dissertativa
             </button>
           </div>
         </div>
@@ -152,12 +152,12 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
       </div>
 
       <div>
-        <div className="flex items-center justify-between mb-1.5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 mb-1.5">
           <label className="block text-xs font-semibold text-slate-600 uppercase">
-            Enunciado da Questão (suporta texto e LaTeX: $x^2$, \lim, \int, \frac&#123;a&#125;&#123;b&#125;)
+            Enunciado da Questão
           </label>
-          <div className="flex items-center gap-1 text-[11px] text-slate-500">
-            <span className="text-slate-400">Atalhos:</span>
+          <div className="flex flex-wrap items-center gap-1 text-[11px] text-slate-500">
+            <span className="text-slate-400 text-[10px]">Atalhos LaTeX:</span>
             {[
               { label: 'x²', val: '$x^2$' },
               { label: 'a/b', val: '$\\frac{a}{b}$' },
@@ -249,7 +249,7 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
                   {opt.label})
                 </span>
 
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <input
                     type="text"
                     className="w-full px-2.5 py-1 text-sm border border-slate-300 rounded bg-white font-mono focus:ring-1 focus:ring-indigo-500 focus:outline-none"

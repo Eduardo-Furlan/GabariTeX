@@ -5,8 +5,8 @@
 /* Em tela: simula folhas A4 reais de forma responsiva sem estourar a largura */
 @media screen {
   .a4-sheet {
-    width: 100%;
-    max-width: 210mm;
+    width: 210mm;
+    min-width: 210mm;
     min-height: 297mm;
     padding: 16mm;
     margin: 0 auto 24px auto;
@@ -15,11 +15,12 @@
     border: 1px solid #e2e8f0;
     box-sizing: border-box;
     position: relative;
+    flex-shrink: 0;
   }
 
   .a4-page-separator {
-    width: 100%;
-    max-width: 210mm;
+    width: 210mm;
+    min-width: 210mm;
     margin: 20px auto;
     display: flex;
     align-items: center;
@@ -30,6 +31,7 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
+    flex-shrink: 0;
   }
 
   .a4-page-separator::before,
@@ -104,6 +106,7 @@
     background-color: #ffffff !important;
     color: #000000 !important;
     width: 100% !important;
+    min-width: 0 !important;
     max-width: 100% !important;
     min-height: 0 !important;
     height: auto !important;

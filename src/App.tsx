@@ -9,7 +9,6 @@ import {
   saveGradebookToStorage,
   exportExamToJson,
 } from './utils/storage';
-import { generateLuaLatexExam, generateLuaLatexAnswerKey } from './utils/luaLatexGenerator';
 import { Navbar, ActiveTab } from './components/Navbar';
 import { ExamHeaderEditor } from './components/editor/ExamHeaderEditor';
 import { QuestionList } from './components/editor/QuestionList';
@@ -109,25 +108,6 @@ export const App: React.FC = () => {
     }
   };
 
-  const handleExportLuaLatex = () => {
-    const currentVersion = versions.find((v) => v.versionLetter === selectedVersionLetter) || versions[0];
-    if (!currentVersion) return;
-
-    const examTex = generateLuaLatexExam(currentVersion, exam.header);
-    const keyTex = generateLuaLatexAnswerKey(currentVersion, exam.header);
-    const combined = `${examTex}\n\n% ==========================================\n% Gabarito Oficial (Compilação Separada)\n% ==========================================\n\n${keyTex}`;
-
-    const blob = new Blob([combined], { type: 'text/x-tex;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    const safeTitle = (exam.header.examTitle || 'prova').toLowerCase().replace(/[^a-z0-9]/gi, '_');
-    link.download = `${safeTitle}_versao_${currentVersion.versionLetter}_lualatex.tex`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  };
-
   const handleImportJson = (file: File) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -158,13 +138,12 @@ export const App: React.FC = () => {
   const currentVersion = versions.find((v) => v.versionLetter === selectedVersionLetter) || versions[0];
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-100/70 print:bg-white print:min-h-0">
+    <div className="min-h-screen flex flex-col bg-slate-100/70 overflow-x-hidden print:bg-white print:min-h-0 print:overflow-visible">
       <Navbar
         activeTab={activeTab}
         onTabChange={setActiveTab}
         onExportJson={() => exportExamToJson(exam)}
         onImportJson={handleImportJson}
-        onExportLuaLatex={handleExportLuaLatex}
         onLoadSample={handleLoadSample}
         onClearExam={handleClearExam}
         hasQuestions={exam.questions.length > 0}
@@ -297,18 +276,23 @@ export const App: React.FC = () => {
                   )}
                 </div>
 
-                {/* Pré-visualização da Folha de Respostas A4 (Sem scrollwheel horizontal) */}
+                {/* Pré-visualização da Folha de Respostas A4 */}
                 {showAnswerSheetPreview && (
-                  <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                    <div className="flex items-center justify-between mb-4 border-b pb-3">
+                  <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200">
+                    <div className="flex items-center justify-between mb-4 border-b pb-3 flex-wrap gap-2">
                       <span className="text-xs font-bold uppercase text-slate-700 flex items-center gap-1.5">
                         <Eye className="w-4 h-4 text-indigo-600" />
                         Pré-visualização da Folha de Respostas A4 (Versão {currentVersion.versionLetter})
                       </span>
                     </div>
 
-                    <div className="w-full flex justify-center py-2">
-                      <div className="w-full max-w-2xl">
+                    {/* Aviso para telas pequenas */}
+                    <div className="block lg:hidden mb-4 p-3 bg-indigo-50/70 border border-indigo-200 rounded-xl text-xs text-indigo-900 leading-relaxed">
+                      💡 <strong>Visualização A4 no Celular:</strong> A folha abaixo é exibida na proporção oficial de impressão A4. Deslize horizontalmente para inspecionar todas as seções (QR Code, cabeçalho e bolinhas).
+                    </div>
+
+                    <div className="w-full overflow-x-auto pb-4">
+                      <div className="min-w-fit mx-auto flex justify-center">
                         <AnswerSheetView version={currentVersion} header={exam.header} />
                       </div>
                     </div>
@@ -322,7 +306,7 @@ export const App: React.FC = () => {
         {/* ABA 3: IMPRIMIR / SALVAR PDF */}
         {activeTab === 'print' && (
           <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex items-center justify-between flex-wrap gap-4 no-print">
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4 no-print">
               <div>
                 <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
                   <Printer className="w-5 h-5 text-indigo-600" />
@@ -333,88 +317,96 @@ export const App: React.FC = () => {
                 </p>
               </div>
 
-              <div className="flex items-center gap-3 flex-wrap">
-                <div className="flex bg-slate-100 rounded-lg p-1 text-xs font-semibold">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-wrap">
+                <div className="flex flex-wrap sm:flex-nowrap bg-slate-100 rounded-lg p-1 text-xs font-semibold gap-1 overflow-x-auto">
                   <button
                     type="button"
                     onClick={() => setPrintMode('complete')}
-                    className={`px-3 py-1.5 rounded-md transition ${
+                    className={`flex-1 sm:flex-none px-3 py-1.5 rounded-md transition text-center whitespace-nowrap ${
                       printMode === 'complete' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
-                    Prova Completa (Cartão + Caderno)
+                    Prova Completa
                   </button>
                   <button
                     type="button"
                     onClick={() => setPrintMode('exam_only')}
-                    className={`px-3 py-1.5 rounded-md transition ${
+                    className={`flex-1 sm:flex-none px-3 py-1.5 rounded-md transition text-center whitespace-nowrap ${
                       printMode === 'exam_only' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
-                    Apenas Caderno de Questões
+                    Apenas Caderno
                   </button>
                   <button
                     type="button"
                     onClick={() => setPrintMode('answersheet_only')}
-                    className={`px-3 py-1.5 rounded-md transition ${
+                    className={`flex-1 sm:flex-none px-3 py-1.5 rounded-md transition text-center whitespace-nowrap ${
                       printMode === 'answersheet_only' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
-                    Apenas Cartão-Resposta
+                    Apenas Cartão
                   </button>
                   <button
                     type="button"
                     onClick={() => setPrintMode('all_versions')}
-                    className={`px-3 py-1.5 rounded-md transition ${
+                    className={`flex-1 sm:flex-none px-3 py-1.5 rounded-md transition text-center whitespace-nowrap ${
                       printMode === 'all_versions' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
-                    Todas as Versões ({versions.length})
+                    Todas ({versions.length})
                   </button>
                 </div>
 
-                {printMode !== 'all_versions' && (
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs text-slate-600 font-medium">Versão:</span>
-                    <select
-                      className="px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs font-bold bg-white"
-                      value={selectedVersionLetter}
-                      onChange={(e) => setSelectedVersionLetter(e.target.value)}
-                    >
-                      {versions.map((v) => (
-                        <option key={v.versionLetter} value={v.versionLetter}>
-                          Versão {v.versionLetter}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
+                <div className="flex items-center gap-2 justify-between sm:justify-start">
+                  {printMode !== 'all_versions' && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs text-slate-600 font-medium">Versão:</span>
+                      <select
+                        className="px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs font-bold bg-white"
+                        value={selectedVersionLetter}
+                        onChange={(e) => setSelectedVersionLetter(e.target.value)}
+                      >
+                        {versions.map((v) => (
+                          <option key={v.versionLetter} value={v.versionLetter}>
+                            Versão {v.versionLetter}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
 
-                <button
-                  type="button"
-                  onClick={() => window.print()}
-                  className="flex items-center gap-2 px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md transition"
-                >
-                  <Printer className="w-4 h-4" /> Imprimir / Salvar PDF
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md transition"
+                  >
+                    <Printer className="w-4 h-4" /> Imprimir / Salvar PDF
+                  </button>
+                </div>
               </div>
             </div>
 
+            {/* Aviso no celular para Tab 3 */}
+            <div className="block lg:hidden p-3 bg-indigo-50/70 border border-indigo-200 rounded-xl text-xs text-indigo-900 leading-relaxed no-print">
+              💡 <strong>Visualização A4 no Celular:</strong> As páginas abaixo estão no tamanho real de impressão A4. Deslize horizontalmente para inspecionar. Para imprimir ou salvar em PDF no celular, use o botão <strong>Imprimir / Salvar PDF</strong> acima.
+            </div>
+
             {/* Visualização de Páginas A4 com Quebras Visíveis */}
-            <div className="print-area-wrapper w-full flex flex-col items-center py-4 print:p-0 print:m-0 print:bg-white print:overflow-visible">
-              {printMode === 'complete' && currentVersion && (
-                <div className="w-full flex flex-col items-center">
-                  <AnswerSheetView version={currentVersion} header={exam.header} />
-                  <div className="a4-page-separator">
-                    Quebra de Página A4 — Início do Caderno de Questões
+            <div className="print-area-wrapper w-full overflow-x-auto py-4 print:p-0 print:m-0 print:bg-white print:overflow-visible">
+              <div className="min-w-fit mx-auto flex flex-col items-center">
+                {printMode === 'complete' && currentVersion && (
+                  <div className="w-full flex flex-col items-center">
+                    <AnswerSheetView version={currentVersion} header={exam.header} />
+                    <div className="a4-page-separator">
+                      Quebra de Página A4 — Início do Caderno de Questões
+                    </div>
+                    <ExamPrintView
+                      version={currentVersion}
+                      header={exam.header}
+                      twoColumns={exam.twoColumns}
+                    />
                   </div>
-                  <ExamPrintView
-                    version={currentVersion}
-                    header={exam.header}
-                    twoColumns={exam.twoColumns}
-                  />
-                </div>
-              )}
+                )}
 
               {printMode === 'exam_only' && currentVersion && (
                 <div className="w-full flex flex-col items-center">
@@ -454,6 +446,7 @@ export const App: React.FC = () => {
                   ))}
                 </div>
               )}
+              </div>
             </div>
           </div>
         )}
@@ -478,7 +471,7 @@ export const App: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 bg-amber-50/60 border border-amber-200 rounded-xl p-2.5">
+                <div className="flex items-center gap-2 bg-amber-50/60 border border-amber-200 rounded-xl p-2.5 w-full sm:w-auto">
                   <KeyRound className="w-4 h-4 text-amber-700 shrink-0" />
                   <div>
                     <label className="block text-[10px] font-bold text-amber-900 uppercase">
