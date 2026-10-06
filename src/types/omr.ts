@@ -30,4 +30,6 @@ export interface DecryptedQrPayload {
   version: string;
   key: Record<number, string>;
   points?: Record<number, number>;
+  totalQuestions?: number;
+  subjectiveQuestions?: number[];
 }

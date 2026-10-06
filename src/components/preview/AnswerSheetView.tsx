@@ -26,14 +26,14 @@ export const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({ version, heade
     }
   }, [version.encryptedQrPayload]);
 
-  const objectiveQuestions = version.questions.filter((q) => q.type === 'objective');
-  const totalObj = objectiveQuestions.length;
+  const allQuestions = version.questions;
+  const totalQuestions = allQuestions.length;
   const optionsList: ('A' | 'B' | 'C' | 'D' | 'E')[] = ['A', 'B', 'C', 'D', 'E'];
 
   // Organiza em 1 ou 2 colunas dependendo da quantidade de questões
-  const questionsPerCol = totalObj <= 12 ? totalObj : Math.ceil(totalObj / 2);
-  const column1 = objectiveQuestions.slice(0, questionsPerCol);
-  const column2 = objectiveQuestions.slice(questionsPerCol);
+  const questionsPerCol = totalQuestions <= 12 ? totalQuestions : Math.ceil(totalQuestions / 2);
+  const column1 = allQuestions.slice(0, questionsPerCol);
+  const column2 = allQuestions.slice(questionsPerCol);
 
   return (
     <div className="a4-sheet text-black font-sans flex flex-col justify-between relative">
@@ -129,9 +129,9 @@ export const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({ version, heade
 
         {/* Grade de Bolinhas (OMR Grid) */}
         <div className="my-5 border-2 border-black p-5 bg-white flex-1 flex flex-col justify-center">
-          {totalObj === 0 ? (
+          {totalQuestions === 0 ? (
             <div className="text-center py-8 text-slate-400 font-serif italic text-sm">
-              Esta avaliação não possui questões objetivas no momento.
+              Esta avaliação não possui questões no momento.
             </div>
           ) : (
             <div className={`grid ${column2.length > 0 ? 'grid-cols-2 gap-4 sm:gap-8' : 'grid-cols-1 max-w-md mx-auto w-full'}`}>
@@ -152,16 +152,22 @@ export const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({ version, heade
                     <span className="w-12 font-bold font-mono text-sm">
                       {String(idx + 1).padStart(2, '0')}.
                     </span>
-                    <div className="flex-1 flex justify-around">
-                      {optionsList.map((opt) => (
-                        <div
-                          key={opt}
-                          className="w-7 h-7 rounded-full border-2 border-black flex items-center justify-center font-bold text-xs select-none bg-white"
-                        >
-                          {opt}
-                        </div>
-                      ))}
-                    </div>
+                    {q.type === 'objective' ? (
+                      <div className="flex-1 flex justify-around">
+                        {optionsList.map((opt) => (
+                          <div
+                            key={opt}
+                            className="w-7 h-7 rounded-full border-2 border-black flex items-center justify-center font-bold text-xs select-none bg-white"
+                          >
+                            {opt}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex-1 flex items-center justify-center h-7 text-xs font-semibold text-slate-500 italic">
+                        Questão dissertativa
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -186,16 +192,22 @@ export const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({ version, heade
                         <span className="w-12 font-bold font-mono text-sm">
                           {String(qNum).padStart(2, '0')}.
                         </span>
-                        <div className="flex-1 flex justify-around">
-                          {optionsList.map((opt) => (
-                            <div
-                              key={opt}
-                              className="w-7 h-7 rounded-full border-2 border-black flex items-center justify-center font-bold text-xs select-none bg-white"
-                            >
-                              {opt}
-                            </div>
-                          ))}
-                        </div>
+                        {q.type === 'objective' ? (
+                          <div className="flex-1 flex justify-around">
+                            {optionsList.map((opt) => (
+                              <div
+                                key={opt}
+                                className="w-7 h-7 rounded-full border-2 border-black flex items-center justify-center font-bold text-xs select-none bg-white"
+                              >
+                                {opt}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="flex-1 flex items-center justify-center h-7 text-xs font-semibold text-slate-500 italic">
+                            Questão dissertativa
+                          </div>
+                        )}
                       </div>
                     );
                   })}

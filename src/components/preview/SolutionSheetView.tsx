@@ -21,10 +21,6 @@ export const SolutionSheetView: React.FC<SolutionSheetViewProps> = ({ versions, 
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {versions.map((v) => {
-          const entries = Object.entries(v.objectiveAnswerKey).sort(
-            ([a], [b]) => Number(a) - Number(b)
-          );
-
           return (
             <div key={v.versionLetter} className="border-2 border-slate-800 rounded-lg p-3 bg-slate-50/50">
               <div className="text-center pb-2 mb-2 border-b-2 border-slate-800">
@@ -40,16 +36,26 @@ export const SolutionSheetView: React.FC<SolutionSheetViewProps> = ({ versions, 
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
-                  {entries.map(([qNum, opt]) => (
-                    <tr key={qNum} className="hover:bg-slate-100">
-                      <td className="py-1 font-bold text-slate-700">Q{qNum}</td>
-                      <td className="py-1 text-right">
-                        <span className="inline-block w-6 h-6 rounded-full bg-emerald-600 text-white font-bold text-center leading-6">
-                          {opt}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
+                  {v.questions.map((q, idx) => {
+                    const qNum = idx + 1;
+                    const opt = v.objectiveAnswerKey[qNum];
+                    return (
+                      <tr key={q.id} className="hover:bg-slate-100">
+                        <td className="py-1 font-bold text-slate-700">Q{qNum}</td>
+                        <td className="py-1 text-right">
+                          {q.type === 'objective' ? (
+                            <span className="inline-block w-6 h-6 rounded-full bg-emerald-600 text-white font-bold text-center leading-6">
+                              {opt || '-'}
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-slate-500 italic font-sans font-medium">
+                              Questão dissertativa
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

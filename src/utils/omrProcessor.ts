@@ -4,6 +4,7 @@ export interface GridConfig {
   totalQuestions: number;
   optionsPerQuestion: number;
   columnsCount: number;
+  subjectiveQuestions?: number[];
 }
 
 /**
@@ -11,7 +12,8 @@ export interface GridConfig {
  */
 export function getStandardBubbleCoordinates(config: GridConfig): BubbleCoordinates[] {
   const bubbles: BubbleCoordinates[] = [];
-  const { totalQuestions, optionsPerQuestion, columnsCount } = config;
+  const { totalQuestions, optionsPerQuestion, columnsCount, subjectiveQuestions = [] } = config;
+  const subjectiveSet = new Set(subjectiveQuestions);
   const questionsPerColumn = Math.ceil(totalQuestions / columnsCount);
   const optionLabels: ('A' | 'B' | 'C' | 'D' | 'E')[] = ['A', 'B', 'C', 'D', 'E'];
 
@@ -29,6 +31,10 @@ export function getStandardBubbleCoordinates(config: GridConfig): BubbleCoordina
   for (let q = 1; q <= totalQuestions; q++) {
     const colIndex = Math.floor((q - 1) / questionsPerColumn);
     const rowIndex = (q - 1) % questionsPerColumn;
+
+    if (subjectiveSet.has(q)) {
+      continue;
+    }
 
     const colStartX = gridLeft + colIndex * columnWidth;
     const rowCenterY = gridTop + (rowIndex + 0.5) * rowHeight;

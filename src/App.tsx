@@ -253,25 +253,33 @@ export const App: React.FC = () => {
                     </div>
                   </div>
 
-                  {Object.keys(currentVersion.objectiveAnswerKey).length === 0 ? (
+                  {currentVersion.questions.length === 0 ? (
                     <p className="text-xs text-slate-400 italic text-center py-6">
-                      Nenhuma questão objetiva cadastrada para esta versão.
+                      Nenhuma questão cadastrada para esta versão.
                     </p>
                   ) : (
                     <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
-                      {Object.entries(currentVersion.objectiveAnswerKey)
-                        .sort(([a], [b]) => Number(a) - Number(b))
-                        .map(([qNum, opt]) => (
+                      {currentVersion.questions.map((q, idx) => {
+                        const qNum = idx + 1;
+                        const opt = currentVersion.objectiveAnswerKey[qNum];
+                        return (
                           <div
-                            key={qNum}
+                            key={q.id}
                             className="p-3 rounded-xl border border-slate-200 bg-slate-50/70 flex items-center justify-between font-mono"
                           >
                             <span className="text-xs font-bold text-slate-700">Q{qNum}</span>
-                            <span className="w-7 h-7 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center shadow-sm">
-                              {opt}
-                            </span>
+                            {q.type === 'objective' ? (
+                              <span className="w-7 h-7 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center shadow-sm">
+                                {opt || '-'}
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-slate-500 italic font-sans font-medium">
+                                Dissertativa
+                              </span>
+                            )}
                           </div>
-                        ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>

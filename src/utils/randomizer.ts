@@ -42,9 +42,9 @@ export async function generateExamVersions(exam: Exam): Promise<ExamVersion[]> {
 
     const answerKey: Record<number, string> = {};
     const pointsMap: Record<number, number> = {};
-    let objectiveIndex = 1;
 
-    processedQuestions = processedQuestions.map((q) => {
+    processedQuestions = processedQuestions.map((q, idx) => {
+      const qNum = idx + 1;
       if (q.type === 'objective' && q.options && q.options.length > 0) {
         let options = [...q.options];
         if (exam.shuffleOptions) {
@@ -52,22 +52,27 @@ export async function generateExamVersions(exam: Exam): Promise<ExamVersion[]> {
         }
 
         // Reatribui os labels 'A', 'B', 'C', ...
-        options = options.map((opt, idx) => ({
+        options = options.map((opt, optIdx) => ({
           ...opt,
-          label: OPTION_LABELS[idx] || ('A' as const),
+          label: OPTION_LABELS[optIdx] || ('A' as const),
         }));
 
         const correctOpt = options.find((opt) => opt.isCorrect);
         if (correctOpt) {
-          answerKey[objectiveIndex] = correctOpt.label;
-          pointsMap[objectiveIndex] = q.points;
+          answerKey[qNum] = correctOpt.label;
+          pointsMap[qNum] = q.points;
         }
 
-        objectiveIndex++;
         return { ...q, options };
       }
       return q;
     });
+
+    const totalQuestions = processedQuestions.length;
+    const subjectiveQuestions = processedQuestions
+      .map((q, idx) => ({ qNum: idx + 1, type: q.type }))
+      .filter((item) => item.type === 'subjective')
+      .map((item) => item.qNum);
 
     const qrPayload = await encryptAnswerKey(
       {
@@ -75,6 +80,8 @@ export async function generateExamVersions(exam: Exam): Promise<ExamVersion[]> {
         version: versionLetter,
         key: answerKey,
         points: pointsMap,
+        totalQuestions,
+        subjectiveQuestions,
       },
       exam.password || 'senha123'
     );

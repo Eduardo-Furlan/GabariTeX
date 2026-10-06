@@ -53,17 +53,22 @@ export function exportExamToJson(exam: Exam): void {
 export function exportGradebookToCsv(records: GradingRecord[]): void {
   if (records.length === 0) return;
 
-  const maxQuestions = Math.max(...records.map((r) => r.answers.length), 0);
-  const qHeaders = Array.from({ length: maxQuestions }, (_, i) => `Q${i + 1}`).join(';');
+  const allQuestionNumbers = Array.from(
+    new Set(records.flatMap((r) => r.answers.map((a) => a.questionNumber)))
+  ).sort((a, b) => a - b);
+
+  const qHeaders = allQuestionNumbers.map((qNum) => `Q${qNum}`).join(';');
 
   const header = `Aluno;Matrícula;Versão;Nota;Nota Máxima;Porcentagem (%);${qHeaders};Data\n`;
 
   const rows = records.map((r) => {
-    const qAnswers = Array.from({ length: maxQuestions }, (_, i) => {
-      const a = r.answers[i];
-      if (!a) return '-';
-      return `${a.markedOption || 'BRANCO'}(${a.isCorrect ? 'C' : 'E'})`;
-    }).join(';');
+    const qAnswers = allQuestionNumbers
+      .map((qNum) => {
+        const a = r.answers.find((ans) => ans.questionNumber === qNum);
+        if (!a) return '-';
+        return `${a.markedOption || 'BRANCO'}(${a.isCorrect ? 'C' : 'E'})`;
+      })
+      .join(';');
 
     const dateStr = new Date(r.timestamp).toLocaleString('pt-BR');
     return `"${r.studentName}";"${r.studentId}";"${r.versionLetter}";${r.totalScore.toFixed(2)};${r.maxScore.toFixed(2)};${r.percentage.toFixed(1)}%;${qAnswers};"${dateStr}"`;

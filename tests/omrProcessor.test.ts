@@ -42,4 +42,23 @@ describe('Processador OMR', () => {
     // Questão 11 deve estar na segunda coluna (X maior que questão 1)
     expect(q11Bubble!.centerXPercent).toBeGreaterThan(q1Bubble!.centerXPercent);
   });
+
+  it('deve desconsiderar questões dissertativas mantendo a grade das demais alinhada', () => {
+    const bubbles = getStandardBubbleCoordinates({
+      totalQuestions: 5,
+      optionsPerQuestion: 5,
+      columnsCount: 1,
+      subjectiveQuestions: [2],
+    });
+
+    expect(bubbles.length).toBe(20); // 4 questões objetivas * 5 opções
+    expect(bubbles.some((b) => b.questionNumber === 2)).toBe(false);
+
+    const q1A = bubbles.find((b) => b.questionNumber === 1 && b.optionLabel === 'A');
+    const q3A = bubbles.find((b) => b.questionNumber === 3 && b.optionLabel === 'A');
+    expect(q1A).toBeDefined();
+    expect(q3A).toBeDefined();
+    // A questão 3 deve estar abaixo da linha 2 (pulando a linha da dissertativa)
+    expect(q3A!.centerYPercent).toBeGreaterThan(q1A!.centerYPercent);
+  });
 });

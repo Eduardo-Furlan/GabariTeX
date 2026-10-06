@@ -82,11 +82,17 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({
             }
 
             // 3. Obtém coordenadas padrão das bolinhas
-            const objectiveCount = Object.keys(payload.key).length;
+            const totalQuestions =
+              payload.totalQuestions ??
+              Math.max(...Object.keys(payload.key).map(Number), 0);
+            const subjectiveQuestions = payload.subjectiveQuestions ?? [];
+            const columnsCount = totalQuestions <= 12 ? 1 : 2;
+
             const bubbles = getStandardBubbleCoordinates({
-              totalQuestions: objectiveCount,
+              totalQuestions,
               optionsPerQuestion: 5,
-              columnsCount: objectiveCount <= 10 ? 1 : 2,
+              columnsCount,
+              subjectiveQuestions,
             });
 
             // 4. Executa amostragem OMR
@@ -97,7 +103,11 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({
             let maxPoints = 0;
             const answers: GradedAnswer[] = [];
 
-            for (let i = 1; i <= objectiveCount; i++) {
+            const objectiveQuestionNumbers = Object.keys(payload.key)
+              .map(Number)
+              .sort((a, b) => a - b);
+
+            for (const i of objectiveQuestionNumbers) {
               const correctOpt = payload.key[i] || 'A';
               const qPoint = payload.points?.[i] ?? 1.0;
               maxPoints += qPoint;

@@ -18,19 +18,59 @@ describe('Randomizador de Provas e Gabaritos', () => {
 
     for (const version of versions) {
       // Verifica cada questão objetiva
-      let objIndex = 1;
-      for (const q of version.questions) {
+      version.questions.forEach((q, idx) => {
+        const qNum = idx + 1;
         if (q.type === 'objective' && q.options) {
-          const correctKeyLetter = version.objectiveAnswerKey[objIndex];
+          const correctKeyLetter = version.objectiveAnswerKey[qNum];
           const markedOption = q.options.find((opt) => opt.label === correctKeyLetter);
 
           expect(markedOption).toBeDefined();
           expect(markedOption?.isCorrect).toBe(true);
-
-          objIndex++;
+        } else if (q.type === 'subjective') {
+          expect(version.objectiveAnswerKey[qNum]).toBeUndefined();
         }
-      }
+      });
     }
+  });
+
+  it('deve manter numeração correta quando há questão dissertativa intercalada', async () => {
+    const mixedExam = {
+      ...initialSampleExam,
+      shuffleQuestions: false,
+      questions: [
+        {
+          id: 'q1',
+          type: 'objective' as const,
+          prompt: 'Q1 Obj',
+          points: 1,
+          options: [
+            { id: 'opt1', label: 'A' as const, text: 'Opt A', isCorrect: true },
+            { id: 'opt2', label: 'B' as const, text: 'Opt B', isCorrect: false },
+          ],
+        },
+        {
+          id: 'q2',
+          type: 'subjective' as const,
+          prompt: 'Q2 Dissertativa',
+          points: 2,
+        },
+        {
+          id: 'q3',
+          type: 'objective' as const,
+          prompt: 'Q3 Obj',
+          points: 1,
+          options: [
+            { id: 'opt3', label: 'A' as const, text: 'Opt A', isCorrect: false },
+            { id: 'opt4', label: 'B' as const, text: 'Opt B', isCorrect: true },
+          ],
+        },
+      ],
+    };
+
+    const [v] = await generateExamVersions(mixedExam);
+    expect(v.objectiveAnswerKey[1]).toBeDefined();
+    expect(v.objectiveAnswerKey[2]).toBeUndefined();
+    expect(v.objectiveAnswerKey[3]).toBeDefined();
   });
 
   it('questões dissertativas não devem constar no gabarito objetivo de bolinhas', async () => {
