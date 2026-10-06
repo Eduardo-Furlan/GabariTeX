@@ -14,10 +14,10 @@ export const ExamPrintView: React.FC<ExamPrintViewProps> = ({
   twoColumns = false,
 }) => {
   return (
-    <div className="a4-sheet text-black font-serif leading-normal flex flex-col justify-between">
+    <div className="a4-sheet exam-sheet-container text-black font-serif leading-normal flex flex-col justify-between">
       <div>
         {/* Cabeçalho Oficial do Caderno de Questões */}
-        <div className="border-b-2 border-black pb-3 mb-5 font-sans">
+        <div className="border-b-2 border-black pb-2.5 mb-3.5 font-sans">
           <div className="flex justify-between items-start">
             <div className="flex-1 pr-4">
               <h1 className="text-base font-extrabold uppercase tracking-wider text-black">
@@ -67,7 +67,7 @@ export const ExamPrintView: React.FC<ExamPrintViewProps> = ({
         ) : (
           <div className={twoColumns ? 'two-column-layout' : 'space-y-6'}>
             {version.questions.map((q, idx) => (
-              <div key={q.id} className="avoid-break mb-6 text-sm">
+              <div key={q.id} className="avoid-break mb-4 text-sm">
                 <div className="font-sans font-bold text-slate-900 mb-1 flex items-baseline gap-1.5">
                   <span className="text-sm">Questão {idx + 1}.</span>
                   <span className="text-xs font-normal text-slate-600">({q.points.toFixed(1)} pt)</span>
@@ -108,11 +108,11 @@ export const ExamPrintView: React.FC<ExamPrintViewProps> = ({
                 {q.type === 'subjective' && (
                   <div className="mt-3 pl-1 font-sans">
                     <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
-                      Espaço para Resposta / Demonstração:
+                      Espaço para Resposta:
                     </span>
-                    <div className="space-y-3.5 border-t border-slate-300 pt-1">
+                    <div className="space-y-2.5 border-t border-slate-300 pt-1">
                       {Array.from({ length: q.linesForAnswer || 8 }).map((_, lineIdx) => (
-                        <div key={lineIdx} className="border-b border-slate-300 h-3" />
+                        <div key={lineIdx} className="border-b border-slate-300 h-2.5" />
                       ))}
                     </div>
                   </div>
@@ -124,7 +124,7 @@ export const ExamPrintView: React.FC<ExamPrintViewProps> = ({
       </div>
 
       {/* Rodapé do Caderno */}
-      <div className="pt-3 border-t border-slate-300 flex items-center justify-between text-[10px] text-slate-500 font-sans mt-6">
+      <div className="pt-2 border-t border-slate-300 flex items-center justify-between text-[10px] text-slate-500 font-sans mt-3 avoid-break">
         <span>{header.institution || 'Avaliação Acadêmica'} — {header.course}</span>
         <span>Caderno de Questões | Versão {version.versionLetter}</span>
       </div>
