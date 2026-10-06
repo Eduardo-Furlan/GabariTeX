@@ -27,14 +27,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
     setErrorMessage(null);
 
     try {
-      // Cria instância oculta do leitor para ler imagem
-      const qrScanner = new Html5Qrcode('hidden-qr-reader');
-      const decodedText = await qrScanner.scanFile(file, false);
-
-      // Descriptografa com a senha do professor
-      const payload = await decryptAnswerKey(decodedText, teacherPassword);
-
-      // Carrega imagem em um canvas para leitura das bolinhas
+      // Carrega imagem em um canvas para leitura das bolinhas e análise
       const img = new Image();
       const imgUrl = URL.createObjectURL(file);
       await new Promise<void>((resolve, reject) => {
@@ -52,6 +45,103 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
       }
       URL.revokeObjectURL(imgUrl);
 
+      // Leitor de QR Code com estratégias de fallback para alta resolução e documentos A4
+      const qrScanner = new Html5Qrcode('hidden-qr-reader');
+      let decodedText: string | null = null;
+
+      // Tentativa 1: Escaneamento direto do arquivo original
+      try {
+        decodedText = await qrScanner.scanFile(file, false);
+      } catch {
+        // Falha normal em digitalizações de página inteira (>300 DPI)
+      }
+
+      // Função auxiliar para escanear recortes via Blob -> File
+      const scanCanvas = async (subCanvas: HTMLCanvasElement): Promise<string> => {
+        const blob = await new Promise<Blob | null>((resolve) =>
+          subCanvas.toBlob(resolve, 'image/png')
+        );
+        if (!blob) throw new Error('Falha ao gerar blob do canvas');
+        const cropFile = new File([blob], 'qr-crop.png', { type: 'image/png' });
+        return await qrScanner.scanFile(cropFile, false);
+      };
+
+      // Tentativa 2: Recorte do quadrante superior direito (onde o QR Code fica na folha A4)
+      if (!decodedText) {
+        try {
+          const cropX = Math.floor(canvas.width * 0.45);
+          const cropY = 0;
+          const cropW = canvas.width - cropX;
+          const cropH = Math.floor(canvas.height * 0.35);
+
+          const scale = Math.min(1, 1000 / Math.max(cropW, cropH));
+          const targetW = Math.max(250, Math.floor(cropW * scale));
+          const targetH = Math.max(250, Math.floor(cropH * scale));
+
+          const cropCanvas = document.createElement('canvas');
+          cropCanvas.width = targetW;
+          cropCanvas.height = targetH;
+          const cropCtx = cropCanvas.getContext('2d');
+          if (cropCtx) {
+            cropCtx.imageSmoothingEnabled = false;
+            cropCtx.drawImage(canvas, cropX, cropY, cropW, cropH, 0, 0, targetW, targetH);
+            decodedText = await scanCanvas(cropCanvas);
+          }
+        } catch {
+          // Continua para próxima tentativa
+        }
+      }
+
+      // Tentativa 3: Faixa superior inteira normalizada
+      if (!decodedText) {
+        try {
+          const topH = Math.floor(canvas.height * 0.4);
+          const scale = Math.min(1, 1200 / canvas.width);
+          const targetW = Math.floor(canvas.width * scale);
+          const targetH = Math.floor(topH * scale);
+
+          const topCanvas = document.createElement('canvas');
+          topCanvas.width = targetW;
+          topCanvas.height = targetH;
+          const topCtx = topCanvas.getContext('2d');
+          if (topCtx) {
+            topCtx.imageSmoothingEnabled = false;
+            topCtx.drawImage(canvas, 0, 0, canvas.width, topH, 0, 0, targetW, targetH);
+            decodedText = await scanCanvas(topCanvas);
+          }
+        } catch {
+          // Continua para próxima tentativa
+        }
+      }
+
+      // Tentativa 4: Imagem inteira redimensionada para resolução ideal para o ZXing (~1600px)
+      if (!decodedText) {
+        try {
+          const maxDim = 1600;
+          const scale = Math.min(1, maxDim / Math.max(canvas.width, canvas.height));
+          const targetW = Math.floor(canvas.width * scale);
+          const targetH = Math.floor(canvas.height * scale);
+
+          const downCanvas = document.createElement('canvas');
+          downCanvas.width = targetW;
+          downCanvas.height = targetH;
+          const downCtx = downCanvas.getContext('2d');
+          if (downCtx) {
+            downCtx.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, targetW, targetH);
+            decodedText = await scanCanvas(downCanvas);
+          }
+        } catch {
+          // Falha em todas as tentativas
+        }
+      }
+
+      if (!decodedText) {
+        throw new Error('Não foi possível detectar o QR Code na folha de respostas.');
+      }
+
+      // Descriptografa com a senha do professor
+      const payload = await decryptAnswerKey(decodedText, teacherPassword);
+
       // Analisa bolinhas
       const totalQuestions =
         payload.totalQuestions ??
@@ -59,14 +149,15 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
       const subjectiveQuestions = payload.subjectiveQuestions ?? [];
       const columnsCount = totalQuestions <= 12 ? 1 : 2;
 
-      const bubbles = getStandardBubbleCoordinates({
+      const gridConfig = {
         totalQuestions,
         optionsPerQuestion: 5,
         columnsCount,
         subjectiveQuestions,
-      });
+      };
 
-      const omrDetections = analyzeCanvasOmr(canvas, bubbles);
+      const bubbles = getStandardBubbleCoordinates(gridConfig);
+      const omrDetections = analyzeCanvasOmr(canvas, bubbles, undefined, gridConfig);
 
       // Calcula notas
       let totalPoints = 0;

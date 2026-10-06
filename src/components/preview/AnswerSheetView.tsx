@@ -13,9 +13,9 @@ export const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({ version, heade
   useEffect(() => {
     if (version.encryptedQrPayload) {
       QRCode.toDataURL(version.encryptedQrPayload, {
-        width: 150,
-        margin: 1,
-        errorCorrectionLevel: 'M',
+        width: 500,
+        margin: 3,
+        errorCorrectionLevel: 'L',
         color: {
           dark: '#000000',
           light: '#ffffff',
@@ -36,7 +36,7 @@ export const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({ version, heade
   const column2 = allQuestions.slice(questionsPerCol);
 
   return (
-    <div className="a4-sheet text-black font-sans flex flex-col justify-between relative">
+    <div className="a4-sheet answer-sheet-print text-black font-sans flex flex-col justify-between relative">
       {/* 4 Marcadores Fiduciais nos Cantos da Folha A4 */}
       <div className="absolute top-2.5 left-2.5 w-7 h-7 bg-black flex items-center justify-center">
         <div className="w-2.5 h-2.5 bg-white" />
@@ -90,7 +90,7 @@ export const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({ version, heade
                 <img
                   src={qrDataUrl}
                   alt={`QR Code Versão ${version.versionLetter}`}
-                  className="w-24 h-24 border border-black"
+                  className="w-24 h-24 bg-white"
                 />
               )}
               <span className="text-[8px] font-mono text-slate-500 uppercase mt-0.5">

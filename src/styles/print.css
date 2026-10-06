@@ -126,6 +126,26 @@
     page-break-after: auto !important;
   }
 
+  /* Garante que os containers pais não usem flex no print, evitando bugs de paginação */
+  .print-area-wrapper,
+  .print-area-wrapper > div,
+  .print-area-wrapper > div > div {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .answer-sheet-print {
+    height: 260mm !important;
+    max-height: 260mm !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    box-sizing: border-box !important;
+  }
+
   .page-break-after {
     break-after: page !important;
     page-break-after: always !important;

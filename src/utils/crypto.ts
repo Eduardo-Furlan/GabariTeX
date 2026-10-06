@@ -61,7 +61,15 @@ export async function encryptAnswerKey(
   password: string
 ): Promise<string> {
   const enc = new TextEncoder();
-  const plaintext = enc.encode(JSON.stringify(payload));
+  const compact = {
+    e: payload.examId,
+    v: payload.version,
+    k: payload.key,
+    p: payload.points,
+    t: payload.totalQuestions,
+    s: payload.subjectiveQuestions,
+  };
+  const plaintext = enc.encode(JSON.stringify(compact));
 
   const cryptoObj = getCrypto();
   const salt = cryptoObj.getRandomValues(new Uint8Array(16));
@@ -119,7 +127,20 @@ export async function decryptAnswerKey(
 
     const dec = new TextDecoder();
     const jsonStr = dec.decode(decryptedBuffer);
-    return JSON.parse(jsonStr) as DecryptedQrPayload;
+    const parsed = JSON.parse(jsonStr) as Record<string, unknown>;
+
+    if (parsed && ('k' in parsed || 'v' in parsed)) {
+      return {
+        examId: (parsed.e as string) || (parsed.examId as string) || '',
+        version: (parsed.v as string) || (parsed.version as string) || '',
+        key: ((parsed.k || parsed.key) as Record<number, string>) || {},
+        points: (parsed.p || parsed.points) as Record<number, number> | undefined,
+        totalQuestions: (parsed.t || parsed.totalQuestions) as number | undefined,
+        subjectiveQuestions: (parsed.s || parsed.subjectiveQuestions) as number[] | undefined,
+      };
+    }
+
+    return parsed as unknown as DecryptedQrPayload;
   } catch {
     throw new Error('Senha incorreta ou gabarito inválido.');
   }
