@@ -33,6 +33,7 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({
   const [isCapturing, setIsCapturing] = useState<boolean>(false);
   const qrReaderRef = useRef<Html5Qrcode | null>(null);
   const isProcessingRef = useRef<boolean>(false);
+  const isStartingRef = useRef<boolean>(false);
   const activePayloadRef = useRef<DecryptedQrPayload | null>(activePayload);
 
   useEffect(() => {
@@ -61,10 +62,35 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({
     }
   };
 
+  const cleanupScanner = async () => {
+    if (qrReaderRef.current) {
+      const instance = qrReaderRef.current;
+      qrReaderRef.current = null;
+      try {
+        if (instance.isScanning) {
+          await instance.stop();
+        }
+      } catch {
+        // Ignora erro se não estava em execução
+      }
+      try {
+        instance.clear();
+      } catch {
+        // Ignora erro de limpeza do DOM
+      }
+    }
+  };
+
   const startScanner = async () => {
+    if (isStartingRef.current || isScanning) {
+      return;
+    }
+    isStartingRef.current = true;
+
     if (!teacherPassword || !teacherPassword.trim()) {
       onRequestPasswordChange();
       setErrorMessage('Por favor, informe a senha da prova antes de iniciar a câmera.');
+      isStartingRef.current = false;
       return;
     }
     setErrorMessage(null);
@@ -79,6 +105,7 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({
       setErrorMessage(
         'Acesso bloqueado por falta de HTTPS: Navegadores móveis (Chrome/Safari) impedem o acesso à câmera via conexões HTTP na rede local (ex: http://192.168.x.x). Para usar no celular, acesse via HTTPS ou utilize a opção "Upload de Foto" ao lado (que usa a câmera nativa do celular).'
       );
+      isStartingRef.current = false;
       return;
     }
 
@@ -86,30 +113,13 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({
       setErrorMessage(
         'A API de câmera (mediaDevices.getUserMedia) não está disponível neste navegador. Verifique se o site possui conexão HTTPS e permissões liberadas.'
       );
+      isStartingRef.current = false;
       return;
     }
 
     setStatusText('Acessando câmera...');
 
-    // Limpa instância anterior do scanner se houver
-    if (qrReaderRef.current) {
-      try {
-        await qrReaderRef.current.stop();
-      } catch {
-        // Ignora se já estiver parado
-      }
-      try {
-        qrReaderRef.current.clear();
-      } catch {
-        // Ignora erro de limpeza
-      }
-      qrReaderRef.current = null;
-    }
-
     try {
-      const html5QrCode = new Html5Qrcode('camera-scanner-view');
-      qrReaderRef.current = html5QrCode;
-
       const qrConfig = {
         fps: 15,
         qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
@@ -144,42 +154,32 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({
         }
       };
 
-      let started = false;
-      let lastError: unknown = null;
+      // Inicia uma nova instância limpa de Html5Qrcode garantindo que estados anteriores sejam descartados
+      const tryStartCamera = async (cameraConfig: string | { facingMode: string }) => {
+        await cleanupScanner();
+        const instance = new Html5Qrcode('camera-scanner-view');
+        qrReaderRef.current = instance;
 
-      // Tentativa 1: facingMode ideal com resolução flexível (ideal previne OverconstrainedError)
-      try {
-        await html5QrCode.start(
-          {
-            facingMode: { ideal: 'environment' },
-            width: { ideal: 1920 },
-            height: { ideal: 1080 },
-          },
+        await instance.start(
+          cameraConfig,
           qrConfig,
           handleDecoded,
           () => {}
         );
+      };
+
+      let started = false;
+      let lastError: unknown = null;
+
+      // Tentativa 1: Câmera traseira com restrição exata de 1 chave suportada pelo Html5Qrcode
+      try {
+        await tryStartCamera({ facingMode: 'environment' });
         started = true;
       } catch (err) {
         lastError = err;
       }
 
-      // Tentativa 2: facingMode string direto 'environment'
-      if (!started) {
-        try {
-          await html5QrCode.start(
-            { facingMode: 'environment' },
-            qrConfig,
-            handleDecoded,
-            () => {}
-          );
-          started = true;
-        } catch (err) {
-          lastError = err;
-        }
-      }
-
-      // Tentativa 3: Enumeração explícita de câmeras (selecionando traseira por label ou última da lista)
+      // Tentativa 2: Seleção direta pelo ID de hardware da câmera traseira via getCameras()
       if (!started) {
         try {
           const devices = await Html5Qrcode.getCameras();
@@ -188,12 +188,7 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({
               devices.find((d) => /back|rear|traseira|ambiente|environment/i.test(d.label)) ||
               devices[devices.length - 1];
 
-            await html5QrCode.start(
-              backCam.id,
-              qrConfig,
-              handleDecoded,
-              () => {}
-            );
+            await tryStartCamera(backCam.id);
             started = true;
           }
         } catch (err) {
@@ -201,15 +196,10 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({
         }
       }
 
-      // Tentativa 4: Qualquer câmera sem restrição (câmera frontal de fallback)
+      // Tentativa 3: Qualquer câmera disponível (câmera frontal de contingência)
       if (!started) {
         try {
-          await html5QrCode.start(
-            { facingMode: 'user' },
-            qrConfig,
-            handleDecoded,
-            () => {}
-          );
+          await tryStartCamera({ facingMode: 'user' });
           started = true;
         } catch (err) {
           lastError = err;
@@ -250,6 +240,8 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({
 
       setErrorMessage(userMsg);
       setIsScanning(false);
+    } finally {
+      isStartingRef.current = false;
     }
   };
 
@@ -312,33 +304,14 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({
   }, [isScanning]);
 
   const stopScanner = async () => {
-    if (qrReaderRef.current) {
-      try {
-        await qrReaderRef.current.stop();
-      } catch {
-        // Ignora erro de parada se não estava em execução
-      }
-      try {
-        qrReaderRef.current.clear();
-      } catch {
-        // Ignora erro de limpeza
-      }
-      qrReaderRef.current = null;
-      setIsScanning(false);
-      isProcessingRef.current = false;
-    }
+    await cleanupScanner();
+    setIsScanning(false);
+    isProcessingRef.current = false;
   };
 
   useEffect(() => {
     return () => {
-      if (qrReaderRef.current) {
-        qrReaderRef.current.stop().catch(() => {});
-        try {
-          qrReaderRef.current.clear();
-        } catch {
-          // Ignora
-        }
-      }
+      cleanupScanner();
     };
   }, []);
 
@@ -359,7 +332,7 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({
                 Navegadores de celular (Chrome e Safari) desativam a câmera ao acessar via HTTP comum (<code className="bg-amber-100 px-1 py-0.5 rounded font-mono text-[11px]">{typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.host}` : ''}</code>).
               </p>
               <p>
-                💡 Para corrigir provas pelo celular sem configurar HTTPS, utilize a aba ao lado <strong>"Upload de Foto"</strong>, que aciona a câmera nativa do celular diretamente.
+                Para corrigir provas pelo celular sem configurar HTTPS, utilize a aba ao lado <strong>"Upload de Foto"</strong>, que aciona a câmera nativa do celular diretamente.
               </p>
             </div>
           </div>
@@ -512,11 +485,11 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({
             >
               <Camera className="w-5 h-5" />
               <span>
-                {isCapturing ? 'Processando e Corrigindo...' : `📸 Capturar e Corrigir Folha (Versão ${activePayload.version})`}
+                {isCapturing ? 'Processando e Corrigindo...' : `Capturar e Corrigir Folha (Versão ${activePayload.version})`}
               </span>
             </button>
             <span className="text-[11px] text-slate-500">
-              💡 Dica: você também pode pressionar a <strong>Barra de Espaço</strong> para capturar instantaneamente.
+              Dica: você também pode pressionar a <strong>Barra de Espaço</strong> para capturar instantaneamente.
             </span>
           </div>
         )}

@@ -320,7 +320,7 @@ export const App: React.FC = () => {
 
                     {/* Aviso para telas pequenas */}
                     <div className="block lg:hidden mb-4 p-3 bg-indigo-50/70 border border-indigo-200 rounded-xl text-xs text-indigo-900 leading-relaxed">
-                      💡 <strong>Visualização A4 no Celular:</strong> A folha abaixo é exibida na proporção oficial de impressão A4. Deslize horizontalmente para inspecionar todas as seções (QR Code, cabeçalho e bolinhas).
+                      <strong>Visualização A4 no Celular:</strong> A folha abaixo é exibida na proporção oficial de impressão A4. Deslize horizontalmente para inspecionar todas as seções (QR Code, cabeçalho e bolinhas).
                     </div>
 
                     <div className="w-full overflow-x-auto pb-4">
@@ -420,7 +420,7 @@ export const App: React.FC = () => {
 
             {/* Aviso no celular para Tab 3 */}
             <div className="block lg:hidden p-3 bg-indigo-50/70 border border-indigo-200 rounded-xl text-xs text-indigo-900 leading-relaxed no-print">
-              💡 <strong>Visualização A4 no Celular:</strong> As páginas abaixo estão no tamanho real de impressão A4. Deslize horizontalmente para inspecionar. Para imprimir ou salvar em PDF no celular, use o botão <strong>Imprimir / Salvar PDF</strong> acima.
+              <strong>Visualização A4 no Celular:</strong> As páginas abaixo estão no tamanho real de impressão A4. Deslize horizontalmente para inspecionar. Para imprimir ou salvar em PDF no celular, use o botão <strong>Imprimir / Salvar PDF</strong> acima.
             </div>
 
             {/* Visualização de Páginas A4 com Quebras Visíveis */}
