@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { getStandardBubbleCoordinates, analyzeCanvasOmr } from '../src/utils/omrProcessor';
+import { getStandardBubbleCoordinates, analyzeCanvasOmr, gradeCanvasWithPayload } from '../src/utils/omrProcessor';
+import { DecryptedQrPayload } from '../src/types/omr';
 
 describe('Processador OMR', () => {
   it('deve calcular corretamente a quantidade e coordenadas das bolinhas', () => {
@@ -105,6 +106,40 @@ describe('Processador OMR', () => {
     expect(results[0].detectedMark).toBe('C');
     expect(results[0].fillRatios['C']).toBeGreaterThan(0.7);
     expect(results[0].fillRatios['A']).toBeLessThan(0.1);
+  });
+
+  it('deve calcular o GradingRecord completo com gradeCanvasWithPayload', () => {
+    const width = 800;
+    const height = 1100;
+    const data = new Uint8ClampedArray(width * height * 4);
+    data.fill(255); // Fundo branco
+
+    const mockCanvas = {
+      width,
+      height,
+      getContext: () => ({
+        getImageData: () => ({ width, height, data }),
+      }),
+    } as unknown as HTMLCanvasElement;
+
+    const payload: DecryptedQrPayload = {
+      examId: 'test-exam',
+      version: 'A',
+      key: { 1: 'C', 2: 'A' },
+      points: { 1: 2.0, 2: 3.0 },
+      totalQuestions: 2,
+      subjectiveQuestions: [],
+    };
+
+    const record = gradeCanvasWithPayload(mockCanvas, payload);
+    expect(record.versionLetter).toBe('A');
+    expect(record.maxScore).toBe(5.0);
+    expect(record.answers.length).toBe(2);
+    // Como a folha estava toda em branco, respostas devem ser em branco (0 pontos)
+    expect(record.totalScore).toBe(0);
+    expect(record.percentage).toBe(0);
+    expect(record.answers[0].status).toBe('blank');
+    expect(record.answers[1].status).toBe('blank');
   });
 });
 

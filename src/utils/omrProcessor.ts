@@ -1,4 +1,5 @@
-import { BubbleCoordinates, OmrRawDetection, SheetCorners } from '../types/omr';
+import { BubbleCoordinates, DecryptedQrPayload, OmrRawDetection, SheetCorners } from '../types/omr';
+import { GradedAnswer, GradingRecord } from '../types/exam';
 
 export interface GridConfig {
   totalQuestions: number;
@@ -93,11 +94,11 @@ export function detectOmrGrid(
   // 1. Bordas verticais da caixa OMR (esquerda e direita)
   let bestLeftX = -1;
   let bestLeftCount = -1;
-  const minLeft = Math.floor(width * 0.05);
-  const maxLeft = Math.floor(width * 0.20);
+  const minLeft = Math.floor(width * 0.02);
+  const maxLeft = Math.floor(width * 0.30);
   for (let x = minLeft; x <= maxLeft; x++) {
     let count = 0;
-    for (let y = Math.floor(height * 0.15); y <= Math.floor(height * 0.85); y += 2) {
+    for (let y = Math.floor(height * 0.10); y <= Math.floor(height * 0.90); y += 2) {
       if (getDarkness(x, y) > 0.45) count++;
     }
     if (count > bestLeftCount) {
@@ -108,11 +109,11 @@ export function detectOmrGrid(
 
   let bestRightX = -1;
   let bestRightCount = -1;
-  const minRight = Math.floor(width * 0.80);
-  const maxRight = Math.floor(width * 0.95);
+  const minRight = Math.floor(width * 0.70);
+  const maxRight = Math.floor(width * 0.98);
   for (let x = minRight; x <= maxRight; x++) {
     let count = 0;
-    for (let y = Math.floor(height * 0.15); y <= Math.floor(height * 0.85); y += 2) {
+    for (let y = Math.floor(height * 0.10); y <= Math.floor(height * 0.90); y += 2) {
       if (getDarkness(x, y) > 0.45) count++;
     }
     if (count > bestRightCount) {
@@ -121,7 +122,14 @@ export function detectOmrGrid(
     }
   }
 
-  if (bestLeftX === -1 || bestRightX === -1 || bestRightX <= bestLeftX + 100) {
+  const minBorderPixels = Math.floor(height * 0.10);
+  if (
+    bestLeftX === -1 ||
+    bestRightX === -1 ||
+    bestRightX <= bestLeftX + 100 ||
+    bestLeftCount < minBorderPixels ||
+    bestRightCount < minBorderPixels
+  ) {
     return null;
   }
 
@@ -130,7 +138,7 @@ export function detectOmrGrid(
   const span = rightX - leftX;
 
   // 2. Linhas horizontais entre leftX e rightX
-  const solidThreshold = span * 0.85;
+  const solidThreshold = span * 0.75;
   const hLines: number[] = [];
   let currentGroup: number[] = [];
 
@@ -187,7 +195,7 @@ export function detectOmrGrid(
         }
       }
 
-      if (maxLeftGap <= 6 && maxRightGap <= 6) {
+      if (maxLeftGap <= 15 && maxRightGap <= 15) {
         if (boxH > maxBoxH) {
           maxBoxH = boxH;
           bestBox = { top: y1, bottom: y2 };
@@ -455,4 +463,80 @@ export function warpPerspectiveCanvas(
   );
 
   return destCanvas;
+}
+
+/**
+ * Avalia um Canvas com a folha de respostas usando um gabarito descriptografado (DecryptedQrPayload)
+ * e produz o registro completo de correção (GradingRecord).
+ */
+export function gradeCanvasWithPayload(
+  canvas: HTMLCanvasElement,
+  payload: DecryptedQrPayload
+): GradingRecord {
+  const totalQuestions =
+    payload.totalQuestions ??
+    Math.max(...Object.keys(payload.key).map(Number), 0);
+  const subjectiveQuestions = payload.subjectiveQuestions ?? [];
+  const columnsCount = totalQuestions <= 12 ? 1 : 2;
+
+  const gridConfig: GridConfig = {
+    totalQuestions,
+    optionsPerQuestion: 5,
+    columnsCount,
+    subjectiveQuestions,
+  };
+
+  const bubbles = getStandardBubbleCoordinates(gridConfig);
+  const omrDetections = analyzeCanvasOmr(canvas, bubbles, undefined, gridConfig);
+
+  let totalPoints = 0;
+  let maxPoints = 0;
+  const answers: GradedAnswer[] = [];
+
+  const objectiveQuestionNumbers = Object.keys(payload.key)
+    .map(Number)
+    .sort((a, b) => a - b);
+
+  for (const i of objectiveQuestionNumbers) {
+    const correctOpt = payload.key[i] || 'A';
+    const qPoint = payload.points?.[i] ?? 1.0;
+    maxPoints += qPoint;
+
+    const detected = omrDetections.find((d) => d.questionNumber === i);
+    const marked = detected?.detectedMark || null;
+    const isCorrect = marked === correctOpt;
+    const pointsEarned = isCorrect ? qPoint : 0;
+    totalPoints += pointsEarned;
+
+    answers.push({
+      questionNumber: i,
+      markedOption: marked,
+      correctOption: correctOpt,
+      isCorrect,
+      status:
+        detected?.status === 'multiple'
+          ? 'multiple'
+          : marked === null
+          ? 'blank'
+          : isCorrect
+          ? 'correct'
+          : 'wrong',
+      pointsEarned,
+      maxPoints: qPoint,
+    });
+  }
+
+  const percentage = maxPoints > 0 ? (totalPoints / maxPoints) * 100 : 0;
+
+  return {
+    id: `rec-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+    timestamp: Date.now(),
+    studentName: '',
+    studentId: '',
+    versionLetter: payload.version,
+    totalScore: totalPoints,
+    maxScore: maxPoints,
+    percentage,
+    answers,
+  };
 }

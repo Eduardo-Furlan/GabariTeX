@@ -90,7 +90,7 @@ export const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({ version, heade
                 <img
                   src={qrDataUrl}
                   alt={`QR Code Versão ${version.versionLetter}`}
-                  className="w-24 h-24 bg-white"
+                  className="w-32 h-32 bg-white"
                 />
               )}
               <span className="text-[8px] font-mono text-slate-500 uppercase mt-0.5">
