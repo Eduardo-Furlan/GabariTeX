@@ -68,53 +68,154 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({
       return;
     }
     setErrorMessage(null);
+
+    // Verificação de Contexto Seguro (HTTPS ou localhost)
+    const isLocalhost =
+      typeof window !== 'undefined' &&
+      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    const isSecure = typeof window !== 'undefined' && (window.isSecureContext || isLocalhost);
+
+    if (!isSecure) {
+      setErrorMessage(
+        'Acesso bloqueado por falta de HTTPS: Navegadores móveis (Chrome/Safari) impedem o acesso à câmera via conexões HTTP na rede local (ex: http://192.168.x.x). Para usar no celular, acesse via HTTPS ou utilize a opção "Upload de Foto" ao lado (que usa a câmera nativa do celular).'
+      );
+      return;
+    }
+
+    if (!navigator?.mediaDevices?.getUserMedia) {
+      setErrorMessage(
+        'A API de câmera (mediaDevices.getUserMedia) não está disponível neste navegador. Verifique se o site possui conexão HTTPS e permissões liberadas.'
+      );
+      return;
+    }
+
     setStatusText('Acessando câmera...');
+
+    // Limpa instância anterior do scanner se houver
+    if (qrReaderRef.current) {
+      try {
+        await qrReaderRef.current.stop();
+      } catch {
+        // Ignora se já estiver parado
+      }
+      try {
+        qrReaderRef.current.clear();
+      } catch {
+        // Ignora erro de limpeza
+      }
+      qrReaderRef.current = null;
+    }
+
     try {
       const html5QrCode = new Html5Qrcode('camera-scanner-view');
       qrReaderRef.current = html5QrCode;
 
-      await html5QrCode.start(
-        {
-          facingMode: 'environment',
-          width: { min: 640, ideal: 1920 },
-          height: { min: 480, ideal: 1080 },
+      const qrConfig = {
+        fps: 15,
+        qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
+          const minDim = Math.min(viewfinderWidth, viewfinderHeight);
+          return {
+            width: Math.min(280, Math.floor(minDim * 0.75)),
+            height: Math.min(280, Math.floor(minDim * 0.75)),
+          };
         },
-        {
-          fps: 15,
-          qrbox: (viewfinderWidth, viewfinderHeight) => {
-            const minDim = Math.min(viewfinderWidth, viewfinderHeight);
-            return {
-              width: Math.min(280, Math.floor(minDim * 0.75)),
-              height: Math.min(280, Math.floor(minDim * 0.75)),
-            };
-          },
-        },
-        async (decodedText) => {
-          // Na Etapa 2 (versão travada), não é necessário ler QR Code
-          if (activePayloadRef.current) return;
-          if (isProcessingRef.current) return;
-          isProcessingRef.current = true;
-          setStatusText('QR Code lido! Decodificando gabarito...');
+      };
 
-          try {
-            const payload = await decryptAnswerKey(decodedText, teacherPassword);
-            playSuccessBeep();
-            onLockPayload(payload);
-            setStatusText(`Versão ${payload.version} travada! Posicione a folha e clique em Capturar.`);
-          } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : 'Falha ao descriptografar QR Code';
-            setErrorMessage(msg);
-            setStatusText(`Erro: ${msg}`);
-          } finally {
-            setTimeout(() => {
-              isProcessingRef.current = false;
-            }, 1000);
-          }
-        },
-        () => {
-          // Frame sem QR code
+      const handleDecoded = async (decodedText: string) => {
+        // Na Etapa 2 (versão travada), não é necessário ler QR Code
+        if (activePayloadRef.current) return;
+        if (isProcessingRef.current) return;
+        isProcessingRef.current = true;
+        setStatusText('QR Code lido! Decodificando gabarito...');
+
+        try {
+          const payload = await decryptAnswerKey(decodedText, teacherPassword);
+          playSuccessBeep();
+          onLockPayload(payload);
+          setStatusText(`Versão ${payload.version} travada! Posicione a folha e clique em Capturar.`);
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : 'Falha ao descriptografar QR Code';
+          setErrorMessage(msg);
+          setStatusText(`Erro: ${msg}`);
+        } finally {
+          setTimeout(() => {
+            isProcessingRef.current = false;
+          }, 1000);
         }
-      );
+      };
+
+      let started = false;
+      let lastError: unknown = null;
+
+      // Tentativa 1: facingMode ideal com resolução flexível (ideal previne OverconstrainedError)
+      try {
+        await html5QrCode.start(
+          {
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+          },
+          qrConfig,
+          handleDecoded,
+          () => {}
+        );
+        started = true;
+      } catch (err) {
+        lastError = err;
+      }
+
+      // Tentativa 2: facingMode string direto 'environment'
+      if (!started) {
+        try {
+          await html5QrCode.start(
+            { facingMode: 'environment' },
+            qrConfig,
+            handleDecoded,
+            () => {}
+          );
+          started = true;
+        } catch (err) {
+          lastError = err;
+        }
+      }
+
+      // Tentativa 3: Enumeração explícita de câmeras (selecionando traseira por label ou última da lista)
+      if (!started) {
+        try {
+          const devices = await Html5Qrcode.getCameras();
+          if (devices && devices.length > 0) {
+            const backCam =
+              devices.find((d) => /back|rear|traseira|ambiente|environment/i.test(d.label)) ||
+              devices[devices.length - 1];
+
+            await html5QrCode.start(
+              backCam.id,
+              qrConfig,
+              handleDecoded,
+              () => {}
+            );
+            started = true;
+          }
+        } catch (err) {
+          lastError = err;
+        }
+      }
+
+      // Tentativa 4: Qualquer câmera sem restrição (câmera frontal de fallback)
+      if (!started) {
+        try {
+          await html5QrCode.start(
+            { facingMode: 'user' },
+            qrConfig,
+            handleDecoded,
+            () => {}
+          );
+          started = true;
+        } catch (err) {
+          lastError = err;
+          throw lastError;
+        }
+      }
 
       setIsScanning(true);
       if (activePayloadRef.current) {
@@ -123,8 +224,31 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({
         setStatusText('Etapa 1: Aproxime do QR Code da folha (10-20 cm)');
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Não foi possível acessar a câmera.';
-      setErrorMessage(msg);
+      let rawMsg = '';
+      if (err instanceof Error) {
+        rawMsg = err.message || err.name;
+      } else if (typeof err === 'string') {
+        rawMsg = err;
+      } else if (err && typeof err === 'object' && 'message' in err) {
+        rawMsg = String((err as { message: unknown }).message);
+      } else {
+        rawMsg = 'Erro desconhecido';
+      }
+
+      const lower = rawMsg.toLowerCase();
+      let userMsg = `Não foi possível acessar a câmera: ${rawMsg}`;
+
+      if (lower.includes('permission') || lower.includes('notallowed') || lower.includes('denied')) {
+        userMsg = 'Permissão da câmera negada no navegador. Toque no ícone de opções/cadeado na barra de endereços do celular e permita o acesso à câmera.';
+      } else if (lower.includes('notfound') || lower.includes('devicesnotfound')) {
+        userMsg = 'Nenhuma câmera foi encontrada neste dispositivo.';
+      } else if (lower.includes('notreadable') || lower.includes('trackstart') || lower.includes('in use')) {
+        userMsg = 'A câmera pode estar sendo usada por outro aplicativo ou aba. Feche os outros aplicativos e tente novamente.';
+      } else if (lower.includes('overconstrained')) {
+        userMsg = 'A resolução da câmera não é suportada pelo aparelho. Tente a opção "Upload de Foto".';
+      }
+
+      setErrorMessage(userMsg);
       setIsScanning(false);
     }
   };
@@ -188,12 +312,16 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({
   }, [isScanning]);
 
   const stopScanner = async () => {
-    if (qrReaderRef.current && isScanning) {
+    if (qrReaderRef.current) {
       try {
         await qrReaderRef.current.stop();
+      } catch {
+        // Ignora erro de parada se não estava em execução
+      }
+      try {
         qrReaderRef.current.clear();
       } catch {
-        // Ignora erro de parada
+        // Ignora erro de limpeza
       }
       qrReaderRef.current = null;
       setIsScanning(false);
@@ -205,13 +333,38 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({
     return () => {
       if (qrReaderRef.current) {
         qrReaderRef.current.stop().catch(() => {});
+        try {
+          qrReaderRef.current.clear();
+        } catch {
+          // Ignora
+        }
       }
     };
   }, []);
 
+  const isLocalhost =
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+  const isSecureOrigin = typeof window !== 'undefined' && (window.isSecureContext || isLocalhost);
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col justify-between">
       <div>
+        {!isSecureOrigin && (
+          <div className="mb-4 p-3.5 bg-amber-50 border border-amber-300 rounded-xl text-xs text-amber-900 flex items-start gap-2.5">
+            <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
+            <div className="space-y-1 leading-relaxed">
+              <span className="font-bold text-amber-950">Aviso: Câmera bloqueada por falta de HTTPS</span>
+              <p>
+                Navegadores de celular (Chrome e Safari) desativam a câmera ao acessar via HTTP comum (<code className="bg-amber-100 px-1 py-0.5 rounded font-mono text-[11px]">{typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.host}` : ''}</code>).
+              </p>
+              <p>
+                💡 Para corrigir provas pelo celular sem configurar HTTPS, utilize a aba ao lado <strong>"Upload de Foto"</strong>, que aciona a câmera nativa do celular diretamente.
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100 flex-wrap gap-2">
           <div className="flex items-center gap-2">
             <Camera className="w-5 h-5 text-indigo-600" />

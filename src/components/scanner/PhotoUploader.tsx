@@ -4,7 +4,7 @@ import { ExamVersion, GradingRecord } from '../../types/exam';
 import { DecryptedQrPayload } from '../../types/omr';
 import { decryptAnswerKey } from '../../utils/crypto';
 import { gradeCanvasWithPayload } from '../../utils/omrProcessor';
-import { UploadCloud, AlertTriangle, Image as ImageIcon, CheckCircle2, QrCode } from 'lucide-react';
+import { UploadCloud, AlertTriangle, Image as ImageIcon, CheckCircle2, QrCode, Camera } from 'lucide-react';
 
 interface PhotoUploaderProps {
   teacherPassword: string;
@@ -26,6 +26,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const handleProcessImage = async (file: File) => {
     setIsProcessing(true);
@@ -220,37 +221,65 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
           )}
         </div>
 
-        <div
-          onClick={() => fileInputRef.current?.click()}
-          className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition ${
-            isProcessing
-              ? 'border-indigo-400 bg-indigo-50/50'
-              : 'border-slate-300 hover:border-indigo-400 hover:bg-indigo-50/30'
-          }`}
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            disabled={isProcessing}
-            onChange={(e) => {
-              if (e.target.files && e.target.files[0]) {
-                handleProcessImage(e.target.files[0]);
-              }
-            }}
-          />
+        {/* Inputs de Arquivo Ocultos */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          disabled={isProcessing}
+          onChange={(e) => {
+            if (e.target.files && e.target.files[0]) {
+              handleProcessImage(e.target.files[0]);
+            }
+          }}
+        />
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          disabled={isProcessing}
+          onChange={(e) => {
+            if (e.target.files && e.target.files[0]) {
+              handleProcessImage(e.target.files[0]);
+            }
+          }}
+        />
 
-          <div className="flex flex-col items-center justify-center">
-            <ImageIcon className="w-10 h-10 text-slate-400 mb-2" />
-            <span className="text-sm font-semibold text-slate-700">
+        <div className="space-y-3">
+          <button
+            type="button"
+            onClick={() => cameraInputRef.current?.click()}
+            disabled={isProcessing}
+            className="w-full py-3.5 px-4 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-extrabold text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+          >
+            <Camera className="w-5 h-5" />
+            <span>
               {isProcessing
-                ? 'Processando imagem e pontuando...'
+                ? 'Processando imagem...'
                 : activePayload
-                ? `Selecionar foto da folha (Versão ${activePayload.version})`
-                : 'Clique para selecionar foto ou digitalização do gabarito'}
+                ? `Tirar Foto com Câmera do Celular (Versão ${activePayload.version})`
+                : 'Tirar Foto com Câmera do Celular'}
             </span>
-            <span className="text-xs text-slate-400 mt-1">Formatos suportados: JPG, PNG, WEBP</span>
+          </button>
+
+          <div
+            onClick={() => fileInputRef.current?.click()}
+            className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition ${
+              isProcessing
+                ? 'border-indigo-400 bg-indigo-50/50'
+                : 'border-slate-300 hover:border-indigo-400 hover:bg-indigo-50/30'
+            }`}
+          >
+            <div className="flex flex-col items-center justify-center">
+              <ImageIcon className="w-7 h-7 text-slate-400 mb-1" />
+              <span className="text-xs font-semibold text-slate-700">
+                Ou selecionar foto salva na galeria / arquivos
+              </span>
+              <span className="text-[10px] text-slate-400 mt-0.5">Formatos suportados: JPG, PNG, WEBP</span>
+            </div>
           </div>
         </div>
 
