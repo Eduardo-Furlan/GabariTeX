@@ -3,8 +3,8 @@ import { Html5Qrcode } from 'html5-qrcode';
 import { ExamVersion, GradingRecord } from '../../types/exam';
 import { DecryptedQrPayload } from '../../types/omr';
 import { decryptAnswerKey } from '../../utils/crypto';
-import { gradeCanvasWithPayload } from '../../utils/omrProcessor';
-import { UploadCloud, AlertTriangle, Image as ImageIcon, CheckCircle2, QrCode, Camera } from 'lucide-react';
+import { gradeCanvasWithPayload, detectOmrGrid, GridConfig } from '../../utils/omrProcessor';
+import { AlertTriangle, Image as ImageIcon, CheckCircle2, QrCode, Camera, Check, Sparkles } from 'lucide-react';
 
 interface PhotoUploaderProps {
   teacherPassword: string;
@@ -25,12 +25,14 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
 }) => {
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const handleProcessImage = async (file: File) => {
     setIsProcessing(true);
     setErrorMessage(null);
+    setSuccessMessage(null);
 
     try {
       // Carrega imagem em um canvas para leitura das bolinhas e análise
@@ -66,7 +68,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
         try {
           decodedText = await qrScanner.scanFile(file, false);
         } catch {
-          // Normal em digitalizações de página inteira (>300 DPI)
+          // Normal em digitalizações de página inteira
         }
 
         const scanCanvas = async (subCanvas: HTMLCanvasElement): Promise<string> => {
@@ -143,17 +145,41 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
               decodedText = await scanCanvas(downCanvas);
             }
           } catch {
-            // Falha em todas as tentativas
+            // Falha
           }
         }
 
         if (!decodedText) {
-          throw new Error('Não foi possível detectar o QR Code na foto. Selecione a versão acima antes de enviar a foto.');
+          throw new Error('Não foi possível detectar o QR Code nesta foto. Selecione a versão da prova nos botões acima ou tire uma foto de perto do QR Code.');
         }
 
         // Descriptografa com a senha do professor
         targetPayload = await decryptAnswerKey(decodedText, teacherPassword);
         onLockPayload?.(targetPayload);
+
+        // Se a foto foi apenas um close-up do QR Code (sem a grade de respostas),
+        // trava a versão e orienta a fotografar o gabarito.
+        const totalQuestions =
+          targetPayload.totalQuestions ??
+          Math.max(...Object.keys(targetPayload.key).map(Number), 0);
+        const subjectiveQuestions = targetPayload.subjectiveQuestions ?? [];
+        const columnsCount = totalQuestions <= 12 ? 1 : 2;
+
+        const gridConfig: GridConfig = {
+          totalQuestions,
+          optionsPerQuestion: 5,
+          columnsCount,
+          subjectiveQuestions,
+        };
+
+        const detected = detectOmrGrid(canvas, gridConfig);
+        if (!detected || detected.length === 0) {
+          setIsProcessing(false);
+          setSuccessMessage(
+            `Versão ${targetPayload.version} detectada e travada com sucesso! Agora tire a foto da grade de respostas para corrigir.`
+          );
+          return;
+        }
       }
 
       // Analisa e corrige as bolinhas usando o gabarito
@@ -168,51 +194,56 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col justify-between">
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col justify-between">
       <div>
         <div id="hidden-qr-reader" className="hidden" />
 
-        <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100 flex-wrap gap-2">
-          <div className="flex items-center gap-2">
-            <UploadCloud className="w-5 h-5 text-indigo-600" />
+        <div className="flex items-center justify-between pb-4 mb-5 border-b border-slate-100 flex-wrap gap-2">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 bg-indigo-50 rounded-xl text-indigo-600">
+              <Camera className="w-5 h-5" />
+            </div>
             <div>
-              <h3 className="text-base font-bold text-slate-800">Upload de Foto / Digitalização</h3>
-              <span className="text-[11px] text-slate-500 font-medium">
-                {activePayload
-                  ? `Versão ${activePayload.version} ativa: o QR Code não precisa aparecer na foto`
-                  : 'A foto deve conter o QR Code ou selecione a versão abaixo'}
-              </span>
+              <h3 className="text-base font-bold text-slate-900">Leitor Óptico via Câmera do Celular / Foto</h3>
+              <p className="text-xs text-slate-500 font-medium">
+                Utiliza o aplicativo nativo de câmera com foco automático perfeito e alta nitidez
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Status da Versão no Upload */}
-        <div className="mb-4 p-3 rounded-xl border flex items-center justify-between flex-wrap gap-2 text-xs bg-slate-50 border-slate-200">
+        {/* Status e Seletor do Passo 1 */}
+        <div className="mb-5 p-4 rounded-xl border flex items-center justify-between flex-wrap gap-3 text-xs bg-slate-50/80 border-slate-200">
           {activePayload ? (
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-1 bg-emerald-600 text-white font-black rounded-lg flex items-center gap-1.5 shadow-sm">
-                <CheckCircle2 className="w-3.5 h-3.5" /> VERSÃO {activePayload.version}
-              </span>
-              <span className="text-slate-600 font-medium">
-                Pronto para corrigir fotos desta versão (apenas a grade de bolinhas é necessária).
-              </span>
+            <div className="flex items-center justify-between w-full flex-wrap gap-2">
+              <div className="flex items-center gap-2.5">
+                <span className="px-3 py-1 bg-emerald-600 text-white font-black rounded-lg flex items-center gap-1.5 shadow-sm text-xs">
+                  <CheckCircle2 className="w-4 h-4" /> VERSÃO {activePayload.version} TRAVADA
+                </span>
+                <span className="text-slate-700 font-medium text-xs">
+                  Pronto! Agora enquadre e fotografe apenas a grade de respostas.
+                </span>
+              </div>
+              <div className="flex items-center gap-1 text-[11px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                <Sparkles className="w-3.5 h-3.5" /> OMR com auto-alinhamento ativo
+              </div>
             </div>
           ) : (
-            <div className="flex items-center justify-between w-full flex-wrap gap-2">
-              <div className="flex items-center gap-2 text-slate-600">
-                <QrCode className="w-4 h-4 text-indigo-600" />
-                <span>Selecione a versão da folha para dispensar a leitura do QR Code:</span>
+            <div className="flex items-center justify-between w-full flex-wrap gap-3">
+              <div className="flex items-center gap-2 text-slate-700 font-medium">
+                <QrCode className="w-4 h-4 text-indigo-600 shrink-0" />
+                <span>Passo 1: Selecione a versão da prova ou tire uma foto de perto do QR Code:</span>
               </div>
               {availableVersions.length > 0 && onSelectExamVersion && (
-                <div className="flex gap-1">
+                <div className="flex items-center gap-1.5">
                   {availableVersions.map((v) => (
                     <button
                       key={v.versionLetter}
                       type="button"
                       onClick={() => onSelectExamVersion(v)}
-                      className="px-2 py-0.5 bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 border border-indigo-200 rounded font-bold transition"
+                      className="px-3 py-1 bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 border border-indigo-200 rounded-lg font-bold text-xs transition active:scale-95 shadow-sm"
                     >
-                      {v.versionLetter}
+                      Versão {v.versionLetter}
                     </button>
                   ))}
                 </div>
@@ -248,19 +279,24 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
           }}
         />
 
+        {/* Botões de Ação */}
         <div className="space-y-3">
           <button
             type="button"
             onClick={() => cameraInputRef.current?.click()}
             disabled={isProcessing}
-            className="w-full py-3.5 px-4 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-extrabold text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            className={`w-full py-4 px-5 text-white font-extrabold text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50 active:scale-[0.99] ${
+              activePayload
+                ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-700/20'
+                : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-700/20'
+            }`}
           >
             <Camera className="w-5 h-5" />
             <span>
               {isProcessing
                 ? 'Processando imagem...'
                 : activePayload
-                ? `Tirar Foto com Câmera do Celular (Versão ${activePayload.version})`
+                ? `Tirar Foto do Gabarito (Versão ${activePayload.version})`
                 : 'Tirar Foto com Câmera do Celular'}
             </span>
           </button>
@@ -274,27 +310,37 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
             }`}
           >
             <div className="flex flex-col items-center justify-center">
-              <ImageIcon className="w-7 h-7 text-slate-400 mb-1" />
+              <ImageIcon className="w-6 h-6 text-slate-400 mb-1.5" />
               <span className="text-xs font-semibold text-slate-700">
-                Ou selecionar foto salva na galeria / arquivos
+                Ou selecionar foto já tirada da galeria / arquivos
               </span>
               <span className="text-[10px] text-slate-400 mt-0.5">Formatos suportados: JPG, PNG, WEBP</span>
             </div>
           </div>
         </div>
 
+        {/* Mensagens de Sucesso e Erro */}
+        {successMessage && (
+          <div className="mt-4 p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 flex items-center gap-2">
+            <Check className="w-4 h-4 shrink-0 text-emerald-600 font-bold" />
+            <span className="font-medium">{successMessage}</span>
+          </div>
+        )}
+
         {errorMessage && (
-          <div className="mt-4 p-3 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-700 flex items-center gap-2">
+          <div className="mt-4 p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 shrink-0 text-rose-500" />
-            <span>{errorMessage}</span>
+            <span className="font-medium">{errorMessage}</span>
           </div>
         )}
       </div>
 
-      <div className="mt-4 p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600 space-y-1">
-        <p className="font-semibold text-slate-700">Dicas para foto ou digitalização:</p>
-        <p>• Com a <strong>versão travada</strong>, você pode enviar fotos recortadas apenas da grade de respostas.</p>
-        <p>• Assegure que as bordas da grade de bolinhas estejam visíveis e bem iluminadas.</p>
+      <div className="mt-6 p-4 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 space-y-1.5">
+        <p className="font-bold text-slate-800 flex items-center gap-1.5">
+          <Sparkles className="w-3.5 h-3.5 text-indigo-600" /> Como obter máxima precisão na leitura:
+        </p>
+        <p>• Com a <strong>versão travada</strong>, aproxime a câmera da caixa do gabarito até enquadrar toda a grade de respostas.</p>
+        <p>• O algoritmo com auto-alinhamento compensa pequenas inclinações, mas evite sombras fortes e reflexos diretos de luz sobre o papel.</p>
       </div>
     </div>
   );

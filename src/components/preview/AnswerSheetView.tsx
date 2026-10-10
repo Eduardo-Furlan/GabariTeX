@@ -128,7 +128,21 @@ export const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({ version, heade
         </div>
 
         {/* Grade de Bolinhas (OMR Grid) */}
-        <div className="my-5 border-2 border-black p-5 bg-white flex-1 flex flex-col justify-center">
+        <div className="my-5 border-2 border-black p-5 bg-white flex-1 flex flex-col justify-center relative">
+          {/* Marcadores de alinhamento nos 4 cantos da caixa OMR */}
+          <div className="absolute top-1.5 left-1.5 w-4 h-4 bg-black flex items-center justify-center">
+            <div className="w-1.5 h-1.5 bg-white" />
+          </div>
+          <div className="absolute top-1.5 right-1.5 w-4 h-4 bg-black flex items-center justify-center">
+            <div className="w-1.5 h-1.5 bg-white" />
+          </div>
+          <div className="absolute bottom-1.5 left-1.5 w-4 h-4 bg-black flex items-center justify-center">
+            <div className="w-1.5 h-1.5 bg-white" />
+          </div>
+          <div className="absolute bottom-1.5 right-1.5 w-4 h-4 bg-black flex items-center justify-center">
+            <div className="w-1.5 h-1.5 bg-white" />
+          </div>
+
           {totalQuestions === 0 ? (
             <div className="text-center py-8 text-slate-400 font-serif italic text-sm">
               Esta avaliação não possui questões no momento.
@@ -138,6 +152,7 @@ export const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({ version, heade
               {/* Coluna 1 */}
               <div className="space-y-2.5">
                 <div className="flex items-center text-xs font-black text-black border-b-2 border-black pb-1 uppercase tracking-wider">
+                  <div className="w-2.5 h-2.5 opacity-0 shrink-0 mr-1.5" />
                   <span className="w-12">Questão</span>
                   <div className="flex-1 flex justify-around">
                     {optionsList.map((opt) => (
@@ -146,9 +161,11 @@ export const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({ version, heade
                       </span>
                     ))}
                   </div>
+                  <div className="w-2.5 h-2.5 opacity-0 shrink-0 ml-1.5" />
                 </div>
                 {column1.map((q, idx) => (
                   <div key={q.id} className="flex items-center text-xs py-1 hover:bg-slate-50">
+                    <div className="w-2.5 h-2.5 bg-black shrink-0 mr-1.5" />
                     <span className="w-12 font-bold font-mono text-sm">
                       {String(idx + 1).padStart(2, '0')}.
                     </span>
@@ -168,6 +185,7 @@ export const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({ version, heade
                         Questão dissertativa
                       </div>
                     )}
+                    <div className="w-2.5 h-2.5 bg-black shrink-0 ml-1.5" />
                   </div>
                 ))}
               </div>
@@ -176,6 +194,7 @@ export const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({ version, heade
               {column2.length > 0 && (
                 <div className="space-y-2.5 border-l border-slate-300 pl-4 sm:pl-8">
                   <div className="flex items-center text-xs font-black text-black border-b-2 border-black pb-1 uppercase tracking-wider">
+                    <div className="w-2.5 h-2.5 opacity-0 shrink-0 mr-1.5" />
                     <span className="w-12">Questão</span>
                     <div className="flex-1 flex justify-around">
                       {optionsList.map((opt) => (
@@ -184,11 +203,13 @@ export const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({ version, heade
                         </span>
                       ))}
                     </div>
+                    <div className="w-2.5 h-2.5 opacity-0 shrink-0 ml-1.5" />
                   </div>
                   {column2.map((q, idx) => {
                     const qNum = questionsPerCol + idx + 1;
                     return (
                       <div key={q.id} className="flex items-center text-xs py-1 hover:bg-slate-50">
+                        <div className="w-2.5 h-2.5 bg-black shrink-0 mr-1.5" />
                         <span className="w-12 font-bold font-mono text-sm">
                           {String(qNum).padStart(2, '0')}.
                         </span>
@@ -208,6 +229,7 @@ export const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({ version, heade
                             Questão dissertativa
                           </div>
                         )}
+                        <div className="w-2.5 h-2.5 bg-black shrink-0 ml-1.5" />
                       </div>
                     );
                   })}

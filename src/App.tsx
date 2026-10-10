@@ -14,7 +14,6 @@ import { ExamHeaderEditor } from './components/editor/ExamHeaderEditor';
 import { QuestionList } from './components/editor/QuestionList';
 import { ExamPrintView } from './components/preview/ExamPrintView';
 import { AnswerSheetView } from './components/preview/AnswerSheetView';
-import { CameraScanner } from './components/scanner/CameraScanner';
 import { PhotoUploader } from './components/scanner/PhotoUploader';
 import { PasswordModal } from './components/scanner/PasswordModal';
 import { GradingModal } from './components/scanner/GradingModal';
@@ -530,7 +529,7 @@ export const App: React.FC = () => {
                     </span>
                   ) : (
                     <span className="px-2.5 py-1 bg-slate-100 text-slate-600 font-medium text-xs rounded-lg">
-                      Nenhuma (Modo Auto via QR Code na Câmera)
+                      Nenhuma (Selecione abaixo ou tire foto com QR Code)
                     </span>
                   )}
                 </div>
@@ -569,17 +568,7 @@ export const App: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <CameraScanner
-                teacherPassword={teacherPassword}
-                activePayload={activePayload}
-                onLockPayload={(payload) => setActivePayload(payload)}
-                onUnlockPayload={() => setActivePayload(null)}
-                onGraded={(res) => setGradingModalRecord(res)}
-                onRequestPasswordChange={() => setShowPasswordModal(true)}
-                availableVersions={versions}
-                onSelectExamVersion={handleSelectExamVersion}
-              />
+            <div className="max-w-4xl mx-auto">
               <PhotoUploader
                 teacherPassword={teacherPassword}
                 activePayload={activePayload}

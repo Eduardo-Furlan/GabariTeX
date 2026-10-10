@@ -137,29 +137,37 @@ export function detectOmrGrid(
   const rightX = bestRightX;
   const span = rightX - leftX;
 
-  // 2. Linhas horizontais entre leftX e rightX
-  const solidThreshold = span * 0.75;
+  // 2. Linhas horizontais entre leftX e rightX com tolerância vertical de inclinação (+/- 2px)
+  const solidThreshold = span * 0.65;
   const hLines: number[] = [];
-  let currentGroup: number[] = [];
+  let currentGroup: { y: number; count: number }[] = [];
 
   for (let y = 0; y < height; y++) {
     let darkCount = 0;
     for (let x = leftX + 5; x <= rightX - 5; x += 2) {
-      if (getDarkness(x, y) > 0.45) darkCount += 2;
+      if (
+        getDarkness(x, y) > 0.45 ||
+        (y > 0 && getDarkness(x, y - 1) > 0.45) ||
+        (y + 1 < height && getDarkness(x, y + 1) > 0.45) ||
+        (y > 1 && getDarkness(x, y - 2) > 0.45) ||
+        (y + 2 < height && getDarkness(x, y + 2) > 0.45)
+      ) {
+        darkCount += 2;
+      }
     }
     if (darkCount >= solidThreshold) {
-      if (currentGroup.length === 0 || y - currentGroup[currentGroup.length - 1] <= 3) {
-        currentGroup.push(y);
+      if (currentGroup.length === 0 || y - currentGroup[currentGroup.length - 1].y <= 4) {
+        currentGroup.push({ y, count: darkCount });
       } else {
-        const avg = Math.round(currentGroup.reduce((a, b) => a + b, 0) / currentGroup.length);
-        hLines.push(avg);
-        currentGroup = [y];
+        const best = currentGroup.reduce((max, cur) => (cur.count > max.count ? cur : max), currentGroup[0]);
+        hLines.push(best.y);
+        currentGroup = [{ y, count: darkCount }];
       }
     }
   }
   if (currentGroup.length > 0) {
-    const avg = Math.round(currentGroup.reduce((a, b) => a + b, 0) / currentGroup.length);
-    hLines.push(avg);
+    const best = currentGroup.reduce((max, cur) => (cur.count > max.count ? cur : max), currentGroup[0]);
+    hLines.push(best.y);
   }
 
   // Encontra a maior caixa sólida onde as bordas esquerda e direita são contínuas sem falhas
@@ -171,13 +179,13 @@ export function detectOmrGrid(
       const y1 = hLines[i];
       const y2 = hLines[j];
       const boxH = y2 - y1;
-      if (boxH < 60) continue;
+      if (boxH < 150) continue;
 
       let maxLeftGap = 0;
       let curLeftGap = 0;
       for (let y = y1; y <= y2; y++) {
         let hasDark = false;
-        for (let dx = -4; dx <= 4; dx++) {
+        for (let dx = -14; dx <= 14; dx++) {
           if (getDarkness(leftX + dx, y) >= 0.35) {
             hasDark = true;
             break;
@@ -195,7 +203,7 @@ export function detectOmrGrid(
       let curRightGap = 0;
       for (let y = y1; y <= y2; y++) {
         let hasDark = false;
-        for (let dx = -4; dx <= 4; dx++) {
+        for (let dx = -14; dx <= 14; dx++) {
           if (getDarkness(rightX + dx, y) >= 0.35) {
             hasDark = true;
             break;
@@ -209,7 +217,7 @@ export function detectOmrGrid(
         }
       }
 
-      if (maxLeftGap <= 25 && maxRightGap <= 25 && boxH >= Math.floor(height * 0.25)) {
+      if (maxLeftGap <= 40 && maxRightGap <= 40 && boxH >= Math.floor(height * 0.25)) {
         if (boxH > maxBoxH) {
           maxBoxH = boxH;
           bestBox = { top: y1, bottom: y2 };
@@ -228,20 +236,20 @@ export function detectOmrGrid(
   // 3. Linha divisória de cabeçalho dentro da caixa OMR (nos primeiros 50% da caixa)
   const hdrSearchEnd = boxTop + Math.floor(boxH * 0.50);
   let bestHdrY = -1;
-  let bestHdrCount = 0;
+  let bestHdrSum = 0;
 
   for (let y = boxTop + 10; y <= hdrSearchEnd; y++) {
-    let count = 0;
+    let sum = 0;
     for (let x = leftX + 10; x <= rightX - 10; x += 2) {
-      if (getDarkness(x, y) > 0.45) count += 2;
+      sum += getDarkness(x, y);
     }
-    if (count > bestHdrCount) {
-      bestHdrCount = count;
+    if (sum > bestHdrSum) {
+      bestHdrSum = sum;
       bestHdrY = y;
     }
   }
 
-  if (bestHdrY === -1 || bestHdrCount < span * 0.25) {
+  if (bestHdrY === -1 || bestHdrSum < span * 0.15) {
     return null;
   }
 
@@ -280,7 +288,38 @@ export function detectOmrGrid(
     const { start: segStart, end: segEnd } = segments[colIdx];
     const segW = segEnd - segStart;
 
-    const firstRowY = bestHdrY + segW * 0.0654;
+    // Mede a inclinação (tilt slope) da linha de cabeçalho para calibrar os eixos X e Y
+    const xSampleLeft = Math.floor(segStart + segW * 0.15);
+    const xSampleRight = Math.floor(segEnd - segW * 0.15);
+
+    let yLeft = bestHdrY;
+    let maxDarkLeft = -1;
+    for (let dy = -10; dy <= 10; dy++) {
+      let dSum = 0;
+      for (let dx = -3; dx <= 3; dx++) {
+        dSum += getDarkness(xSampleLeft + dx, bestHdrY + dy);
+      }
+      if (dSum > maxDarkLeft) {
+        maxDarkLeft = dSum;
+        yLeft = bestHdrY + dy;
+      }
+    }
+
+    let yRight = bestHdrY;
+    let maxDarkRight = -1;
+    for (let dy = -10; dy <= 10; dy++) {
+      let dSum = 0;
+      for (let dx = -3; dx <= 3; dx++) {
+        dSum += getDarkness(xSampleRight + dx, bestHdrY + dy);
+      }
+      if (dSum > maxDarkRight) {
+        maxDarkRight = dSum;
+        yRight = bestHdrY + dy;
+      }
+    }
+
+    const tiltSlope = (xSampleRight > xSampleLeft) ? (yRight - yLeft) / (xSampleRight - xSampleLeft) : 0;
+    const firstRowY0 = (yLeft + yRight) / 2 + segW * 0.0654 - tiltSlope * ((xSampleLeft + xSampleRight) / 2 - segStart);
     const rowPitch = segW * 0.1035;
     const radiusPercent = ((segW * 0.031) / Math.min(width, height)) * 100;
 
@@ -289,12 +328,13 @@ export function detectOmrGrid(
       if (qNum > totalQuestions) break;
       if (subjectiveSet.has(qNum)) continue;
 
-      const cy = firstRowY + rIdx * rowPitch;
-      const cyPercent = (cy / height) * 100;
+      const baseCy = firstRowY0 + rIdx * rowPitch;
 
       for (let oIdx = 0; oIdx < 5; oIdx++) {
         const cx = segStart + segW * (0.180 + oIdx * 0.181);
+        const cy = baseCy + tiltSlope * (cx - segStart);
         const cxPercent = (cx / width) * 100;
+        const cyPercent = (cy / height) * 100;
 
         bubbles.push({
           questionNumber: qNum,
@@ -352,11 +392,12 @@ export function analyzeCanvasOmr(
     const r = (b.radiusPercent / 100) * Math.min(width, height);
     const sampleRadius = Math.max(2, Math.floor(r * 0.65));
 
-    // Busca na vizinhança local (+/- 3px) para máxima robustez contra deslocamentos
+    // Busca na vizinhança local proporcional ao raio para máxima robustez contra deslocamentos
+    const searchWindow = Math.max(5, Math.floor(r * 0.75));
     let bestFillRatio = 0;
 
-    for (let dy = -3; dy <= 3; dy += 2) {
-      for (let dx = -3; dx <= 3; dx += 2) {
+    for (let dy = -searchWindow; dy <= searchWindow; dy += 2) {
+      for (let dx = -searchWindow; dx <= searchWindow; dx += 2) {
         const scx = cx + dx;
         const scy = cy + dy;
         let darkPixels = 0;
