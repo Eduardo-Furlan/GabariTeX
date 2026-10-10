@@ -141,5 +141,36 @@ describe('Processador OMR', () => {
     expect(record.answers[0].status).toBe('blank');
     expect(record.answers[1].status).toBe('blank');
   });
+
+  it('deve desconsiderar questão dissertativa intercalada sem deslocar as questões subsequentes', () => {
+    const width = 800;
+    const height = 1100;
+    const data = new Uint8ClampedArray(width * height * 4);
+    data.fill(255); // Fundo branco
+
+    const mockCanvas = {
+      width,
+      height,
+      getContext: () => ({
+        getImageData: () => ({ width, height, data }),
+      }),
+    } as unknown as HTMLCanvasElement;
+
+    const payload: DecryptedQrPayload = {
+      examId: 'test-exam-subj',
+      version: 'I',
+      key: { 1: 'E', 3: 'B', 4: 'D', 5: 'E', 6: 'E' },
+      points: { 1: 1.5, 3: 1.5, 4: 1.5, 5: 1.5, 6: 1.5 },
+      totalQuestions: 6,
+      subjectiveQuestions: [2],
+    };
+
+    const record = gradeCanvasWithPayload(mockCanvas, payload);
+    expect(record.versionLetter).toBe('I');
+    expect(record.answers.length).toBe(5);
+    const questionNumbers = record.answers.map((a) => a.questionNumber);
+    expect(questionNumbers).toEqual([1, 3, 4, 5, 6]);
+    expect(record.answers.some((a) => a.questionNumber === 2)).toBe(false);
+  });
 });
 

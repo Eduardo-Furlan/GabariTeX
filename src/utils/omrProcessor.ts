@@ -15,7 +15,7 @@ export function getStandardBubbleCoordinates(config: GridConfig): BubbleCoordina
   const bubbles: BubbleCoordinates[] = [];
   const { totalQuestions, optionsPerQuestion = 5, columnsCount, subjectiveQuestions = [] } = config;
   const subjectiveSet = new Set(subjectiveQuestions);
-  const questionsPerColumn = Math.ceil(totalQuestions / columnsCount);
+  const questionsPerColumn = totalQuestions <= 12 ? totalQuestions : Math.ceil(totalQuestions / columnsCount);
   const optionLabels: ('A' | 'B' | 'C' | 'D' | 'E')[] = ['A', 'B', 'C', 'D', 'E'];
 
   const startY = 36.5;
@@ -176,7 +176,14 @@ export function detectOmrGrid(
       let maxLeftGap = 0;
       let curLeftGap = 0;
       for (let y = y1; y <= y2; y++) {
-        if (getDarkness(leftX, y) < 0.4) {
+        let hasDark = false;
+        for (let dx = -4; dx <= 4; dx++) {
+          if (getDarkness(leftX + dx, y) >= 0.35) {
+            hasDark = true;
+            break;
+          }
+        }
+        if (!hasDark) {
           curLeftGap++;
           if (curLeftGap > maxLeftGap) maxLeftGap = curLeftGap;
         } else {
@@ -187,7 +194,14 @@ export function detectOmrGrid(
       let maxRightGap = 0;
       let curRightGap = 0;
       for (let y = y1; y <= y2; y++) {
-        if (getDarkness(rightX, y) < 0.4) {
+        let hasDark = false;
+        for (let dx = -4; dx <= 4; dx++) {
+          if (getDarkness(rightX + dx, y) >= 0.35) {
+            hasDark = true;
+            break;
+          }
+        }
+        if (!hasDark) {
           curRightGap++;
           if (curRightGap > maxRightGap) maxRightGap = curRightGap;
         } else {
@@ -195,7 +209,7 @@ export function detectOmrGrid(
         }
       }
 
-      if (maxLeftGap <= 15 && maxRightGap <= 15) {
+      if (maxLeftGap <= 25 && maxRightGap <= 25 && boxH >= Math.floor(height * 0.25)) {
         if (boxH > maxBoxH) {
           maxBoxH = boxH;
           bestBox = { top: y1, bottom: y2 };
@@ -211,8 +225,8 @@ export function detectOmrGrid(
   const { top: boxTop, bottom: boxBottom } = bestBox;
   const boxH = boxBottom - boxTop;
 
-  // 3. Linha divisória de cabeçalho dentro da caixa OMR (nos primeiros 40% da caixa)
-  const hdrSearchEnd = boxTop + Math.floor(boxH * 0.40);
+  // 3. Linha divisória de cabeçalho dentro da caixa OMR (nos primeiros 50% da caixa)
+  const hdrSearchEnd = boxTop + Math.floor(boxH * 0.50);
   let bestHdrY = -1;
   let bestHdrCount = 0;
 
@@ -257,23 +271,18 @@ export function detectOmrGrid(
   }
 
   const actualCols = segments.length;
-  const questionsPerColumn = actualCols === 1 ? totalQuestions : Math.ceil(totalQuestions / actualCols);
-
-  const scale = width / 724.0;
-  const firstRowY = bestHdrY + 22.0 * scale;
-  const lastRowY = boxBottom - 22.0 * scale;
-  const stdPitch = 35.0 * scale;
-  const rowPitch = questionsPerColumn > 1
-    ? Math.min(stdPitch, (lastRowY - firstRowY) / (questionsPerColumn - 1))
-    : stdPitch;
+  const questionsPerColumn = totalQuestions <= 12 ? totalQuestions : Math.ceil(totalQuestions / actualCols);
 
   const optionLabels: ('A' | 'B' | 'C' | 'D' | 'E')[] = ['A', 'B', 'C', 'D', 'E'];
   const bubbles: BubbleCoordinates[] = [];
-  const radiusPercent = (7.0 * scale / Math.min(width, height)) * 100;
 
   for (let colIdx = 0; colIdx < segments.length; colIdx++) {
     const { start: segStart, end: segEnd } = segments[colIdx];
     const segW = segEnd - segStart;
+
+    const firstRowY = bestHdrY + segW * 0.0654;
+    const rowPitch = segW * 0.1035;
+    const radiusPercent = ((segW * 0.031) / Math.min(width, height)) * 100;
 
     for (let rIdx = 0; rIdx < questionsPerColumn; rIdx++) {
       const qNum = colIdx * questionsPerColumn + rIdx + 1;
@@ -284,7 +293,7 @@ export function detectOmrGrid(
       const cyPercent = (cy / height) * 100;
 
       for (let oIdx = 0; oIdx < 5; oIdx++) {
-        const cx = segStart + segW * (0.194 + oIdx * 0.179);
+        const cx = segStart + segW * (0.180 + oIdx * 0.181);
         const cxPercent = (cx / width) * 100;
 
         bubbles.push({
@@ -318,12 +327,14 @@ export function analyzeCanvasOmr(
 
   // Tenta detecção dinâmica da grade na imagem
   let bubblesToUse = bubbles;
-  const inferredConfig: GridConfig = config ?? {
-    totalQuestions: bubbles.length > 0 ? Math.max(...bubbles.map((b) => b.questionNumber)) : 0,
-    optionsPerQuestion: 5,
-    columnsCount: bubbles.some((b) => b.centerXPercent > 50 && b.questionNumber <= 12) ? 1 : 2,
-    subjectiveQuestions: [],
-  };
+  const inferredConfig: GridConfig = config
+    ? config
+    : {
+        totalQuestions: bubbles.length > 0 ? Math.max(...bubbles.map((b) => b.questionNumber)) : 0,
+        optionsPerQuestion: 5,
+        columnsCount: bubbles.some((b) => b.centerXPercent > 50 && b.questionNumber <= 12) ? 1 : 2,
+        subjectiveQuestions: [],
+      };
 
   const detectedBubbles = detectOmrGrid(canvas, inferredConfig);
   if (detectedBubbles && detectedBubbles.length > 0) {
