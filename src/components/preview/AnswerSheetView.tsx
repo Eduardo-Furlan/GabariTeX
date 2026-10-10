@@ -37,25 +37,7 @@ export const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({ version, heade
 
   return (
     <div className="a4-sheet answer-sheet-print text-black font-sans flex flex-col justify-between relative">
-      {/* 4 Marcadores Fiduciais nos Cantos da Folha A4 */}
-      <div className="absolute top-2.5 left-2.5 w-7 h-7 bg-black flex items-center justify-center">
-        <div className="w-2.5 h-2.5 bg-white" />
-      </div>
-
-      <div className="absolute top-2.5 right-2.5 w-7 h-7 bg-black flex items-center justify-center">
-        <div className="w-2.5 h-2.5 bg-white" />
-      </div>
-
-      <div className="absolute bottom-2.5 left-2.5 w-7 h-7 bg-black flex items-center justify-center">
-        <div className="w-2.5 h-2.5 bg-white" />
-      </div>
-
-      <div className="absolute bottom-2.5 right-2.5 w-7 h-7 bg-black flex items-center justify-center">
-        <div className="w-2.5 h-2.5 bg-white" />
-      </div>
-
-      {/* Conteúdo Interno da Folha A4 com margem segura contra colisão dos fiduciais */}
-      <div className="px-12 py-2 flex-1 flex flex-col justify-between">
+      <div className="px-8 py-2 flex-1 flex flex-col justify-between">
         {/* Cabeçalho Oficial */}
         <div>
           <div className="flex items-start justify-between border-b-2 border-black pb-3">
