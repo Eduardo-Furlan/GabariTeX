@@ -14,7 +14,7 @@ export const ExamPrintView: React.FC<ExamPrintViewProps> = ({
   twoColumns = false,
 }) => {
   return (
-    <div className="a4-sheet exam-sheet-container text-black font-serif leading-normal flex flex-col justify-between">
+    <div className="a4-sheet paper exam-sheet-container text-black font-serif leading-normal flex flex-col justify-between">
       <div>
         {/* Cabeçalho Oficial do Caderno de Questões */}
         <div className="border-b-2 border-black pb-2.5 mb-3.5 font-sans">

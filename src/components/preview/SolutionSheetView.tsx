@@ -8,7 +8,7 @@ interface SolutionSheetViewProps {
 
 export const SolutionSheetView: React.FC<SolutionSheetViewProps> = ({ versions, header }) => {
   return (
-    <div className="bg-white p-8 rounded-lg shadow-sm border border-slate-300 max-w-[210mm] mx-auto my-6 text-black avoid-break">
+    <div className="paper bg-white p-8 rounded-lg shadow-sm border border-slate-300 max-w-[210mm] mx-auto my-6 text-black avoid-break">
       <div className="border-b-2 border-black pb-3 mb-4 text-center">
         <h1 className="text-xl font-bold uppercase tracking-wider">Gabarito Oficial do Professor</h1>
         <h2 className="text-sm font-semibold text-slate-800">
@@ -44,7 +44,7 @@ export const SolutionSheetView: React.FC<SolutionSheetViewProps> = ({ versions, 
                         <td className="py-1 font-bold text-slate-700">Q{qNum}</td>
                         <td className="py-1 text-right">
                           {q.type === 'objective' ? (
-                            <span className="inline-block w-6 h-6 rounded-full bg-emerald-600 text-white font-bold text-center leading-6">
+                            <span className="inline-block w-6 h-6 rounded-full bg-emerald-600 text-on-accent font-bold text-center leading-6">
                               {opt || '-'}
                             </span>
                           ) : (

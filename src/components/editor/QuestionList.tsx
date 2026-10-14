@@ -60,7 +60,7 @@ export const QuestionList: React.FC<QuestionListProps> = ({ questions, onChange 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 px-1 gap-3">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs sm:text-sm text-slate-600">
           <span className="flex items-center gap-1.5 font-medium">
-            <Layers className="w-4 h-4 text-indigo-600 shrink-0" />
+            <Layers className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
             Total: <strong>{questions.length}</strong>
           </span>
           <span className="text-slate-300 hidden sm:inline">•</span>
@@ -72,8 +72,8 @@ export const QuestionList: React.FC<QuestionListProps> = ({ questions, onChange 
             Dissertativas: <strong>{subjectiveCount}</strong>
           </span>
           <span className="text-slate-300 hidden sm:inline">•</span>
-          <span className="flex items-center gap-1 font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-            <Calculator className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+          <span className="flex items-center gap-1 font-semibold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-500/30">
+            <Calculator className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
             Pontuação: {totalPoints.toFixed(1)} pts
           </span>
         </div>
@@ -82,7 +82,7 @@ export const QuestionList: React.FC<QuestionListProps> = ({ questions, onChange 
           <button
             type="button"
             onClick={() => handleAddQuestion('objective')}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-sm transition"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-on-accent rounded-lg text-xs font-semibold shadow-sm transition"
           >
             <Plus className="w-3.5 h-3.5" /> Nova Objetiva
           </button>
@@ -112,7 +112,7 @@ export const QuestionList: React.FC<QuestionListProps> = ({ questions, onChange 
         <button
           type="button"
           onClick={() => handleAddQuestion('objective')}
-          className="flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs sm:text-sm font-semibold transition"
+          className="flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 rounded-xl text-xs sm:text-sm font-semibold transition"
         >
           <Plus className="w-4 h-4" /> Adicionar Questão Objetiva
         </button>

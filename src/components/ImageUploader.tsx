@@ -42,22 +42,24 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
           <button
             type="button"
             onClick={() => onImageChange(undefined, undefined)}
-            className="absolute top-2 right-2 p-1 bg-red-100 text-red-600 rounded-full hover:bg-red-200 transition"
+            className="absolute top-2 right-2 p-1 bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-300 rounded-full hover:bg-rose-200 dark:hover:bg-rose-500/30 transition"
             title="Remover imagem"
           >
             <X className="w-4 h-4" />
           </button>
-          <img
-            src={imageUrl}
-            alt="Figura da questão"
-            className="max-h-48 rounded object-contain mx-auto"
-          />
+          <div className="bg-[#ffffff] p-2 rounded border border-slate-200">
+            <img
+              src={imageUrl}
+              alt="Figura da questão"
+              className="max-h-48 rounded object-contain mx-auto"
+            />
+          </div>
           <input
             type="text"
             placeholder="Legenda da figura (ex: Figura 1: Esboço da curva)"
             value={imageCaption || ''}
             onChange={(e) => onImageChange(imageUrl, e.target.value)}
-            className="mt-2 w-full text-xs px-2 py-1 border border-slate-300 rounded bg-white"
+            className="mt-2 w-full text-xs px-2 py-1 border border-slate-300 rounded bg-white text-slate-800 placeholder:text-slate-400"
           />
         </div>
       ) : (
@@ -65,7 +67,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
-          className="border-2 border-dashed border-slate-300 hover:border-indigo-400 rounded-lg p-4 text-center cursor-pointer bg-slate-50 hover:bg-indigo-50/30 transition"
+          className="border-2 border-dashed border-slate-300 hover:border-indigo-400 dark:hover:border-indigo-500/50 rounded-lg p-4 text-center cursor-pointer bg-slate-50 hover:bg-indigo-50/30 dark:hover:bg-indigo-500/10 transition"
         >
           <input
             ref={fileInputRef}

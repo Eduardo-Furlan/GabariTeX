@@ -20,9 +20,9 @@ export const GradingModal: React.FC<GradingModalProps> = ({
   };
 
   const getScoreColor = (percentage: number) => {
-    if (percentage >= 70) return 'text-emerald-600 bg-emerald-50 border-emerald-200';
-    if (percentage >= 50) return 'text-amber-600 bg-amber-50 border-amber-200';
-    return 'text-rose-600 bg-rose-50 border-rose-200';
+    if (percentage >= 70) return 'text-emerald-600 bg-emerald-50 border-emerald-200 dark:text-emerald-300 dark:bg-emerald-950/50 dark:border-emerald-800/60';
+    if (percentage >= 50) return 'text-amber-600 bg-amber-50 border-amber-200 dark:text-amber-300 dark:bg-amber-950/50 dark:border-amber-800/60';
+    return 'text-rose-600 bg-rose-50 border-rose-200 dark:text-rose-300 dark:bg-rose-950/50 dark:border-rose-800/60';
   };
 
   return (
@@ -30,10 +30,10 @@ export const GradingModal: React.FC<GradingModalProps> = ({
       <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 my-8">
         <div className="flex items-center justify-between pb-4 border-b border-slate-100">
           <div className="flex items-center gap-2">
-            <Award className="w-6 h-6 text-indigo-600" />
+            <Award className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
             <h3 className="text-lg font-bold text-slate-900">Resultado da Correção</h3>
           </div>
-          <span className="px-2.5 py-1 bg-indigo-100 text-indigo-800 font-black text-xs rounded-md">
+          <span className="px-2.5 py-1 bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300 font-black text-xs rounded-md">
             VERSÃO {record.versionLetter}
           </span>
         </div>
@@ -70,7 +70,7 @@ export const GradingModal: React.FC<GradingModalProps> = ({
             <input
               type="text"
               placeholder="Digite o nome do aluno"
-              className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:outline-none"
               value={record.studentName}
               onChange={(e) => setRecord({ ...record, studentName: e.target.value })}
             />
@@ -82,7 +82,7 @@ export const GradingModal: React.FC<GradingModalProps> = ({
             <input
               type="text"
               placeholder="Ex: 20261045"
-              className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:outline-none"
               value={record.studentId}
               onChange={(e) => setRecord({ ...record, studentId: e.target.value })}
             />
@@ -103,26 +103,26 @@ export const GradingModal: React.FC<GradingModalProps> = ({
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-slate-700 w-8">Q{a.questionNumber}</span>
                   {a.status === 'correct' && (
-                    <span className="flex items-center gap-1 text-emerald-700 font-semibold">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Marcado:{' '}
+                    <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-300 font-semibold">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> Marcado:{' '}
                       {a.markedOption} (Correto)
                     </span>
                   )}
                   {a.status === 'wrong' && (
-                    <span className="flex items-center gap-1 text-rose-700 font-semibold">
-                      <XCircle className="w-3.5 h-3.5 text-rose-600" /> Marcado: {a.markedOption} |
+                    <span className="flex items-center gap-1 text-rose-700 dark:text-rose-300 font-semibold">
+                      <XCircle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" /> Marcado: {a.markedOption} |
                       Gabarito: {a.correctOption}
                     </span>
                   )}
                   {a.status === 'blank' && (
-                    <span className="flex items-center gap-1 text-amber-700 font-semibold">
-                      <AlertCircle className="w-3.5 h-3.5 text-amber-600" /> Em Branco (Gabarito:{' '}
+                    <span className="flex items-center gap-1 text-amber-700 dark:text-amber-300 font-semibold">
+                      <AlertCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /> Em Branco (Gabarito:{' '}
                       {a.correctOption})
                     </span>
                   )}
                   {a.status === 'multiple' && (
-                    <span className="flex items-center gap-1 text-purple-700 font-semibold">
-                      <AlertCircle className="w-3.5 h-3.5 text-purple-600" /> Rasura / Dupla
+                    <span className="flex items-center gap-1 text-purple-700 dark:text-purple-300 font-semibold">
+                      <AlertCircle className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" /> Rasura / Dupla
                       marcação
                     </span>
                   )}
@@ -148,7 +148,7 @@ export const GradingModal: React.FC<GradingModalProps> = ({
           <button
             type="button"
             onClick={handleSave}
-            className="flex items-center gap-1.5 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-sm transition"
+            className="flex items-center gap-1.5 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-on-accent rounded-lg text-xs font-bold shadow-sm transition"
           >
             <Save className="w-3.5 h-3.5" /> Salvar Nota no Livro
           </button>

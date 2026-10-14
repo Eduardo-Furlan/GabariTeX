@@ -3,6 +3,78 @@
 @tailwind utilities;
 
 @layer base {
+  :root,
+  .paper,
+  .keep-light-palette,
+  .a4-sheet {
+    --c-white: 255 255 255;
+    --c-page: 243 247 250;
+    --slate-50: 248 250 252;
+    --slate-100: 241 245 249;
+    --slate-200: 226 232 240;
+    --slate-300: 203 213 225;
+    --slate-400: 148 163 184;
+    --slate-500: 100 116 139;
+    --slate-600: 71 85 105;
+    --slate-700: 51 65 85;
+    --slate-800: 30 41 59;
+    --slate-900: 15 23 42;
+    --slate-950: 2 6 23;
+  }
+
+  html.dark {
+    --c-white: 15 23 42;
+    --c-page: 2 6 23;
+    --slate-50: 30 41 59;
+    --slate-100: 36 48 68;
+    --slate-200: 51 65 85;
+    --slate-300: 92 107 131;
+    --slate-400: 138 152 174;
+    --slate-500: 160 174 194;
+    --slate-600: 186 197 212;
+    --slate-700: 205 214 226;
+    --slate-800: 226 232 240;
+    --slate-900: 241 245 249;
+    --slate-950: 248 250 252;
+    color-scheme: dark;
+  }
+
+  html.dark .paper,
+  html.dark .keep-light-palette,
+  html.dark .a4-sheet {
+    --c-white: 255 255 255;
+    --c-page: 243 247 250;
+    --slate-50: 248 250 252;
+    --slate-100: 241 245 249;
+    --slate-200: 226 232 240;
+    --slate-300: 203 213 225;
+    --slate-400: 148 163 184;
+    --slate-500: 100 116 139;
+    --slate-600: 71 85 105;
+    --slate-700: 51 65 85;
+    --slate-800: 30 41 59;
+    --slate-900: 15 23 42;
+    --slate-950: 2 6 23;
+    color-scheme: light;
+    color: #000000;
+  }
+
+  .paper,
+  .keep-light-palette,
+  .a4-sheet {
+    color-scheme: light;
+    color: #000000;
+  }
+
+  html.dark ::selection {
+    background-color: rgb(79 70 229 / 0.4);
+    color: #ffffff;
+  }
+
+  html.dark .katex-error {
+    color: #f87171;
+  }
+
   body {
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }

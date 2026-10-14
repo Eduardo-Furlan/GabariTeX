@@ -161,7 +161,7 @@ export const App: React.FC = () => {
   const currentVersion = versions.find((v) => v.versionLetter === selectedVersionLetter) || versions[0];
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-100/70 overflow-x-hidden print:bg-white print:min-h-0 print:overflow-visible">
+    <div className="min-h-screen flex flex-col bg-page overflow-x-hidden print:bg-white print:min-h-0 print:overflow-visible">
       <Navbar
         activeTab={activeTab}
         onTabChange={setActiveTab}
@@ -180,8 +180,8 @@ export const App: React.FC = () => {
             <ExamHeaderEditor exam={exam} onChange={handleExamChange} />
 
             {exam.questions.length === 0 && (
-              <div className="bg-white rounded-xl shadow-sm border-2 border-dashed border-indigo-200 p-8 text-center my-6">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600 mx-auto mb-3">
+              <div className="bg-white rounded-xl shadow-sm border-2 border-dashed border-indigo-200 dark:border-indigo-500/30 p-8 text-center my-6">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 flex items-center justify-center text-indigo-600 dark:text-indigo-300 mx-auto mb-3">
                   <BookOpen className="w-6 h-6" />
                 </div>
                 <h3 className="text-base font-bold text-slate-800">
@@ -194,7 +194,7 @@ export const App: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleLoadSample}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm transition"
+                    className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-on-accent rounded-xl text-xs font-bold shadow-sm transition"
                   >
                     <BookOpen className="w-4 h-4" /> Carregar Exemplo Completo de Matemática
                   </button>
@@ -216,7 +216,7 @@ export const App: React.FC = () => {
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex items-center justify-between flex-wrap gap-4">
               <div>
                 <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                  <Shuffle className="w-5 h-5 text-indigo-600" />
+                  <Shuffle className="w-5 h-5 text-indigo-600 dark:text-indigo-300" />
                   Versões Randomizadas ({versions.length} {versions.length === 1 ? 'versão' : 'versões'})
                 </h2>
                 <p className="text-xs text-slate-500 mt-1">
@@ -234,7 +234,7 @@ export const App: React.FC = () => {
                       onClick={() => setSelectedVersionLetter(v.versionLetter)}
                       className={`w-9 h-9 rounded-lg font-bold text-xs transition ${
                         selectedVersionLetter === v.versionLetter
-                          ? 'bg-indigo-600 text-white shadow-sm'
+                          ? 'bg-indigo-600 text-on-accent shadow-sm'
                           : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                       }`}
                     >
@@ -252,7 +252,7 @@ export const App: React.FC = () => {
                   <div className="flex items-center justify-between mb-4 border-b pb-3 flex-wrap gap-2">
                     <div>
                       <h3 className="font-bold text-base text-slate-800 flex items-center gap-2">
-                        <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                        <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                         Gabarito Oficial — Versão {currentVersion.versionLetter}
                       </h3>
                       <p className="text-xs text-slate-500 mt-0.5">
@@ -261,7 +261,7 @@ export const App: React.FC = () => {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <span className="px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-lg flex items-center gap-1">
+                      <span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-xs font-bold rounded-lg flex items-center gap-1">
                         <CheckCircle2 className="w-3.5 h-3.5" /> Protegido por Senha
                       </span>
 
@@ -270,7 +270,7 @@ export const App: React.FC = () => {
                         onClick={() => setShowAnswerSheetPreview(!showAnswerSheetPreview)}
                         className="flex items-center gap-1.5 px-3 py-1 border border-slate-300 text-slate-700 hover:bg-slate-50 rounded-lg text-xs font-semibold transition"
                       >
-                        <Eye className="w-3.5 h-3.5 text-indigo-600" />
+                        <Eye className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-300" />
                         <span>{showAnswerSheetPreview ? 'Ocultar Cartão A4' : 'Visualizar Cartão A4'}</span>
                       </button>
                     </div>
@@ -292,7 +292,7 @@ export const App: React.FC = () => {
                           >
                             <span className="text-xs font-bold text-slate-700">Q{qNum}</span>
                             {q.type === 'objective' ? (
-                              <span className="w-7 h-7 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center shadow-sm">
+                              <span className="w-7 h-7 rounded-full bg-indigo-600 text-on-accent font-bold text-xs flex items-center justify-center shadow-sm">
                                 {opt || '-'}
                               </span>
                             ) : (
@@ -312,13 +312,13 @@ export const App: React.FC = () => {
                   <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200">
                     <div className="flex items-center justify-between mb-4 border-b pb-3 flex-wrap gap-2">
                       <span className="text-xs font-bold uppercase text-slate-700 flex items-center gap-1.5">
-                        <Eye className="w-4 h-4 text-indigo-600" />
+                        <Eye className="w-4 h-4 text-indigo-600 dark:text-indigo-300" />
                         Pré-visualização da Folha de Respostas A4 (Versão {currentVersion.versionLetter})
                       </span>
                     </div>
 
                     {/* Aviso para telas pequenas */}
-                    <div className="block lg:hidden mb-4 p-3 bg-indigo-50/70 border border-indigo-200 rounded-xl text-xs text-indigo-900 leading-relaxed">
+                    <div className="block lg:hidden mb-4 p-3 bg-indigo-50/70 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 rounded-xl text-xs text-indigo-900 dark:text-indigo-200 leading-relaxed">
                       <strong>Visualização A4 no Celular:</strong> A folha abaixo é exibida na proporção oficial de impressão A4. Deslize horizontalmente para inspecionar todas as seções (QR Code, cabeçalho e bolinhas).
                     </div>
 
@@ -340,7 +340,7 @@ export const App: React.FC = () => {
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4 no-print">
               <div>
                 <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                  <Printer className="w-5 h-5 text-indigo-600" />
+                  <Printer className="w-5 h-5 text-indigo-600 dark:text-indigo-300" />
                   Central de Impressão A4 / Exportação PDF
                 </h2>
                 <p className="text-xs text-slate-500 mt-1">
@@ -354,7 +354,7 @@ export const App: React.FC = () => {
                     type="button"
                     onClick={() => setPrintMode('complete')}
                     className={`flex-1 sm:flex-none px-3 py-1.5 rounded-md transition text-center whitespace-nowrap ${
-                      printMode === 'complete' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                      printMode === 'complete' ? 'bg-white text-indigo-700 dark:text-indigo-300 shadow-sm' : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
                     Prova Completa
@@ -363,7 +363,7 @@ export const App: React.FC = () => {
                     type="button"
                     onClick={() => setPrintMode('exam_only')}
                     className={`flex-1 sm:flex-none px-3 py-1.5 rounded-md transition text-center whitespace-nowrap ${
-                      printMode === 'exam_only' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                      printMode === 'exam_only' ? 'bg-white text-indigo-700 dark:text-indigo-300 shadow-sm' : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
                     Apenas Caderno
@@ -372,7 +372,7 @@ export const App: React.FC = () => {
                     type="button"
                     onClick={() => setPrintMode('answersheet_only')}
                     className={`flex-1 sm:flex-none px-3 py-1.5 rounded-md transition text-center whitespace-nowrap ${
-                      printMode === 'answersheet_only' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                      printMode === 'answersheet_only' ? 'bg-white text-indigo-700 dark:text-indigo-300 shadow-sm' : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
                     Apenas Cartão
@@ -381,7 +381,7 @@ export const App: React.FC = () => {
                     type="button"
                     onClick={() => setPrintMode('all_versions')}
                     className={`flex-1 sm:flex-none px-3 py-1.5 rounded-md transition text-center whitespace-nowrap ${
-                      printMode === 'all_versions' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                      printMode === 'all_versions' ? 'bg-white text-indigo-700 dark:text-indigo-300 shadow-sm' : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
                     Todas ({versions.length})
@@ -409,7 +409,7 @@ export const App: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => window.print()}
-                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md transition"
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-on-accent rounded-xl text-xs font-bold shadow-md transition"
                   >
                     <Printer className="w-4 h-4" /> Imprimir / Salvar PDF
                   </button>
@@ -418,7 +418,7 @@ export const App: React.FC = () => {
             </div>
 
             {/* Aviso no celular para Tab 3 */}
-            <div className="block lg:hidden p-3 bg-indigo-50/70 border border-indigo-200 rounded-xl text-xs text-indigo-900 leading-relaxed no-print">
+            <div className="block lg:hidden p-3 bg-indigo-50/70 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 rounded-xl text-xs text-indigo-900 dark:text-indigo-200 leading-relaxed no-print">
               <strong>Visualização A4 no Celular:</strong> As páginas abaixo estão no tamanho real de impressão A4. Deslize horizontalmente para inspecionar. Para imprimir ou salvar em PDF no celular, use o botão <strong>Imprimir / Salvar PDF</strong> acima.
             </div>
 
@@ -469,7 +469,7 @@ export const App: React.FC = () => {
                         twoColumns={exam.twoColumns}
                       />
                       {idx < versions.length - 1 && (
-                        <div className="a4-page-separator text-indigo-700 border-indigo-300 font-bold">
+                        <div className="a4-page-separator text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-500/30 font-bold">
                           Fim da Versão {v.versionLetter} — Próxima: Versão {versions[idx + 1].versionLetter}
                         </div>
                       )}
@@ -489,7 +489,7 @@ export const App: React.FC = () => {
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
               <div className="flex items-center justify-between flex-wrap gap-4">
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600 shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 flex items-center justify-center text-indigo-600 dark:text-indigo-300 shrink-0">
                     <ShieldCheck className="w-5 h-5" />
                   </div>
                   <div>
@@ -502,10 +502,10 @@ export const App: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 bg-amber-50/60 border border-amber-200 rounded-xl p-2.5 w-full sm:w-auto">
-                  <KeyRound className="w-4 h-4 text-amber-700 shrink-0" />
+                <div className="flex items-center gap-2 bg-amber-50/60 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/30 rounded-xl p-2.5 w-full sm:w-auto">
+                  <KeyRound className="w-4 h-4 text-amber-700 dark:text-amber-300 shrink-0" />
                   <div>
-                    <label className="block text-[10px] font-bold text-amber-900 uppercase">
+                    <label className="block text-[10px] font-bold text-amber-900 dark:text-amber-200 uppercase">
                       Senha Mestra para Descriptografia:
                     </label>
                     <input
@@ -513,7 +513,7 @@ export const App: React.FC = () => {
                       placeholder="Senha da prova"
                       value={teacherPassword}
                       onChange={(e) => updateTeacherPassword(e.target.value)}
-                      className="px-2.5 py-1 text-xs border border-amber-300 rounded font-mono font-bold bg-white focus:outline-none focus:ring-1 focus:ring-amber-500 mt-0.5"
+                      className="px-2.5 py-1 text-xs border border-amber-300 dark:border-amber-500/40 rounded font-mono font-bold bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-amber-500 mt-0.5"
                     />
                   </div>
                 </div>
@@ -524,8 +524,8 @@ export const App: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-slate-700">Versão Travada para Correção:</span>
                   {activePayload ? (
-                    <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 font-extrabold text-xs rounded-lg flex items-center gap-1.5 border border-emerald-300">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> VERSÃO {activePayload.version}
+                    <span className="px-2.5 py-1 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 font-extrabold text-xs rounded-lg flex items-center gap-1.5 border border-emerald-300 dark:border-emerald-500/30">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> VERSÃO {activePayload.version}
                     </span>
                   ) : (
                     <span className="px-2.5 py-1 bg-slate-100 text-slate-600 font-medium text-xs rounded-lg">
@@ -545,8 +545,8 @@ export const App: React.FC = () => {
                           onClick={() => handleSelectExamVersion(v)}
                           className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
                             activePayload?.version === v.versionLetter
-                              ? 'bg-emerald-600 text-white shadow-sm'
-                              : 'bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 border border-indigo-200'
+                              ? 'bg-emerald-600 text-on-accent shadow-sm'
+                              : 'bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-600 hover:text-on-accent text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30'
                           }`}
                         >
                           {v.versionLetter}
@@ -559,7 +559,7 @@ export const App: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setActivePayload(null)}
-                      className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-slate-600 hover:text-rose-600 hover:bg-slate-100 rounded-lg transition"
+                      className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-slate-600 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 rounded-lg transition"
                     >
                       <RefreshCw className="w-3 h-3" /> Destravar
                     </button>

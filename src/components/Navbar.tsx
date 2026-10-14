@@ -13,6 +13,7 @@ import {
   Menu,
   X,
 } from 'lucide-react';
+import { ThemeToggle } from './ThemeToggle';
 
 export type ActiveTab = 'editor' | 'versions' | 'print' | 'scanner' | 'gradebook';
 
@@ -59,7 +60,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="flex items-center justify-between min-h-[3.75rem] py-2">
           {/* Logo e Título */}
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600 shrink-0">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 flex items-center justify-center text-indigo-600 dark:text-indigo-300 shrink-0">
               <FileCheck2 className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div className="min-w-0">
@@ -74,6 +75,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Botão de Menu para Telas Menores (< lg) */}
           <div className="flex lg:hidden items-center gap-2">
+            <ThemeToggle />
             <input
               ref={fileInputRef}
               type="file"
@@ -133,22 +135,24 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               type="button"
               onClick={onLoadSample}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-semibold transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 rounded-lg text-xs font-semibold transition"
               title="Carregar exemplo completo de prova de cálculo/matemática com questões objetivas e dissertativa"
             >
-              <BookOpen className="w-3.5 h-3.5 text-indigo-600" />
+              <BookOpen className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-300" />
               <span>Exemplo Matemática</span>
             </button>
 
             <button
               type="button"
               onClick={onClearExam}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-slate-500 hover:text-rose-700 hover:bg-rose-50 border border-slate-200 rounded-lg text-xs font-semibold transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-slate-500 hover:text-rose-700 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-500/10 border border-slate-200 rounded-lg text-xs font-semibold transition"
               title="Limpar todos os dados e questões da prova atual"
             >
               <Trash2 className="w-3.5 h-3.5" />
               <span>Limpar Prova</span>
             </button>
+
+            <ThemeToggle />
           </div>
         </div>
 
@@ -188,9 +192,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                   onLoadSample();
                   setMobileMenuOpen(false);
                 }}
-                className="flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-semibold transition"
+                className="flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 rounded-lg text-xs font-semibold transition"
               >
-                <BookOpen className="w-3.5 h-3.5 text-indigo-600" />
+                <BookOpen className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-300" />
                 <span>Exemplo Matemática</span>
               </button>
 
@@ -200,7 +204,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   onClearExam();
                   setMobileMenuOpen(false);
                 }}
-                className="flex items-center justify-center gap-1.5 px-3 py-2 text-rose-700 bg-rose-50 border border-rose-200 rounded-lg text-xs font-semibold transition"
+                className="flex items-center justify-center gap-1.5 px-3 py-2 text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 rounded-lg text-xs font-semibold transition"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>Limpar Prova</span>
@@ -220,14 +224,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onClick={() => onTabChange(item.id)}
                 className={`shrink-0 flex items-center gap-1.5 sm:gap-2 py-2 px-2.5 sm:px-3 text-xs sm:text-sm font-semibold border-b-2 whitespace-nowrap transition ${
                   isActive
-                    ? 'border-indigo-600 text-indigo-700'
+                    ? 'border-indigo-600 dark:border-indigo-400 text-indigo-700 dark:text-indigo-300'
                     : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
                 }`}
               >
                 {item.icon}
                 <span>{item.label}</span>
                 {item.badge !== undefined && (
-                  <span className="ml-1 px-1.5 py-0.2 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-full">
+                  <span className="ml-1 px-1.5 py-0.2 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold rounded-full">
                     {item.badge}
                   </span>
                 )}

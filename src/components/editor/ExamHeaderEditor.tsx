@@ -21,7 +21,7 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
       <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
-        <FileText className="w-5 h-5 text-indigo-600" />
+        <FileText className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
         <h2 className="text-lg font-semibold text-slate-800">Cabeçalho & Configurações da Prova</h2>
       </div>
 
@@ -32,7 +32,7 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
           </label>
           <input
             type="text"
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:outline-none"
             placeholder="Ex: Universidade Federal..."
             value={exam.header.institution}
             onChange={(e) => updateHeader('institution', e.target.value)}
@@ -45,7 +45,7 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
           </label>
           <input
             type="text"
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:outline-none"
             placeholder="Ex: Cálculo I, Álgebra Linear..."
             value={exam.header.course}
             onChange={(e) => updateHeader('course', e.target.value)}
@@ -58,7 +58,7 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
           </label>
           <input
             type="text"
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:outline-none"
             placeholder="Ex: Prova 1, Exame Final..."
             value={exam.header.examTitle}
             onChange={(e) => updateHeader('examTitle', e.target.value)}
@@ -71,7 +71,7 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
           </label>
           <input
             type="text"
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:outline-none"
             placeholder="Nome do docente"
             value={exam.header.professor}
             onChange={(e) => updateHeader('professor', e.target.value)}
@@ -82,7 +82,7 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
           <label className="block text-xs font-semibold text-slate-600 uppercase mb-1">Data</label>
           <input
             type="text"
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:outline-none"
             placeholder="DD/MM/AAAA"
             value={exam.header.date}
             onChange={(e) => updateHeader('date', e.target.value)}
@@ -90,12 +90,12 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-600 uppercase mb-1 flex items-center gap-1 text-amber-700">
+          <label className="block text-xs font-semibold text-slate-600 uppercase mb-1 flex items-center gap-1 text-amber-700 dark:text-amber-400">
             <Shield className="w-3.5 h-3.5" /> Senha do Gabarito (QR Code)
           </label>
           <input
             type="text"
-            className="w-full px-3 py-2 border border-amber-300 bg-amber-50/40 rounded-lg text-sm font-mono focus:ring-2 focus:ring-amber-500 focus:outline-none"
+            className="w-full px-3 py-2 border border-amber-300 bg-amber-50/40 dark:border-amber-700/60 dark:bg-amber-950/30 rounded-lg text-sm font-mono focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400 focus:outline-none"
             placeholder="Senha para proteger o gabarito"
             value={exam.password}
             onChange={(e) => onChange({ ...exam, password: e.target.value })}
@@ -110,7 +110,7 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
         </label>
         <textarea
           rows={2}
-          className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+          className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:outline-none"
           placeholder="Instruções impressas no cabeçalho da prova..."
           value={exam.header.instructions}
           onChange={(e) => updateHeader('instructions', e.target.value)}
@@ -140,7 +140,7 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
               type="checkbox"
               checked={exam.shuffleQuestions}
               onChange={(e) => onChange({ ...exam, shuffleQuestions: e.target.checked })}
-              className="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+              className="rounded text-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-400 h-4 w-4"
             />
             Embaralhar Questões
           </label>
@@ -150,7 +150,7 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
               type="checkbox"
               checked={exam.shuffleOptions}
               onChange={(e) => onChange({ ...exam, shuffleOptions: e.target.checked })}
-              className="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+              className="rounded text-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-400 h-4 w-4"
             />
             Embaralhar Alternativas
           </label>
@@ -161,7 +161,7 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
               type="checkbox"
               checked={exam.twoColumns}
               onChange={(e) => onChange({ ...exam, twoColumns: e.target.checked })}
-              className="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+              className="rounded text-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-400 h-4 w-4"
             />
             Diagramar em 2 Colunas na Impressão
           </label>

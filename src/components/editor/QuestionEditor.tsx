@@ -95,7 +95,7 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 mb-4 transition hover:border-slate-300">
       <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100 flex-wrap gap-2">
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-          <span className="flex items-center justify-center w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 font-bold text-sm shrink-0">
+          <span className="flex items-center justify-center w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 font-bold text-sm shrink-0">
             {index + 1}
           </span>
           <span className="font-semibold text-slate-800 text-sm sm:text-base">Questão {index + 1}</span>
@@ -106,7 +106,7 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
               onClick={() => handleTypeChange('objective')}
               className={`px-2.5 sm:px-3 py-1 rounded-md transition ${
                 question.type === 'objective'
-                  ? 'bg-white text-indigo-700 shadow-sm font-semibold'
+                  ? 'bg-white text-indigo-700 dark:text-indigo-300 shadow-sm font-semibold'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -117,7 +117,7 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
               onClick={() => handleTypeChange('subjective')}
               className={`px-2.5 sm:px-3 py-1 rounded-md transition ${
                 question.type === 'subjective'
-                  ? 'bg-white text-indigo-700 shadow-sm font-semibold'
+                  ? 'bg-white text-indigo-700 dark:text-indigo-300 shadow-sm font-semibold'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -143,7 +143,7 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
           <button
             type="button"
             onClick={onDelete}
-            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 dark:hover:text-red-400 rounded-lg transition"
             title="Excluir questão"
           >
             <Trash2 className="w-4 h-4" />
@@ -171,7 +171,7 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
                 key={btn.label}
                 type="button"
                 onClick={() => insertMathSnippet(btn.val)}
-                className="px-1.5 py-0.5 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 border border-slate-200 rounded font-mono text-[10px]"
+                className="px-1.5 py-0.5 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-950 dark:hover:text-indigo-300 border border-slate-200 rounded font-mono text-[10px]"
               >
                 {btn.label}
               </button>
@@ -181,7 +181,7 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
 
         <textarea
           rows={3}
-          className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+          className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:outline-none"
           placeholder="Digite o enunciado da questão. Use $...$ para equações na linha ou \[...\] para fórmulas destacadas..."
           value={question.prompt}
           onChange={(e) => onChange({ ...question, prompt: e.target.value })}
@@ -215,7 +215,7 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
               <button
                 type="button"
                 onClick={handleAddOption}
-                className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium"
               >
                 <Plus className="w-3.5 h-3.5" /> Adicionar Alternativa ({OPTION_LABELS[question.options.length]})
               </button>
@@ -228,18 +228,18 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
                 key={opt.id}
                 className={`flex items-start gap-2 p-2.5 rounded-lg border transition ${
                   opt.isCorrect
-                    ? 'border-emerald-300 bg-emerald-50/40'
+                    ? 'border-emerald-300 bg-emerald-50/40 dark:border-emerald-700/60 dark:bg-emerald-950/30'
                     : 'border-slate-200 bg-slate-50/50'
                 }`}
               >
                 <button
                   type="button"
                   onClick={() => handleSetCorrectOption(optIndex)}
-                  className="mt-1 text-slate-400 hover:text-emerald-600 transition"
+                  className="mt-1 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition"
                   title={opt.isCorrect ? 'Alternativa Correta' : 'Marcar como correta'}
                 >
                   {opt.isCorrect ? (
-                    <CheckCircle2 className="w-5 h-5 text-emerald-600 fill-emerald-100" />
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600 fill-emerald-100 dark:text-emerald-400 dark:fill-emerald-950" />
                   ) : (
                     <Circle className="w-5 h-5 text-slate-400" />
                   )}
@@ -252,7 +252,7 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
                 <div className="flex-1 min-w-0">
                   <input
                     type="text"
-                    className="w-full px-2.5 py-1 text-sm border border-slate-300 rounded bg-white font-mono focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                    className="w-full px-2.5 py-1 text-sm border border-slate-300 rounded bg-white font-mono focus:ring-1 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:outline-none"
                     placeholder={`Texto da alternativa ${opt.label} (suporta $LaTeX$)...`}
                     value={opt.text}
                     onChange={(e) => handleOptionTextChange(optIndex, e.target.value)}
@@ -268,7 +268,7 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
                   <button
                     type="button"
                     onClick={() => handleRemoveOption(optIndex)}
-                    className="mt-1 p-1 text-slate-300 hover:text-red-500 transition"
+                    className="mt-1 p-1 text-slate-300 hover:text-red-500 dark:hover:text-red-400 transition"
                     title="Excluir alternativa"
                   >
                     <Trash2 className="w-3.5 h-3.5" />

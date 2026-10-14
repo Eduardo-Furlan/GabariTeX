@@ -34,9 +34,9 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
       <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100 flex-wrap gap-3">
         <div className="flex items-center gap-2">
-          <Users className="w-5 h-5 text-indigo-600" />
+          <Users className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
           <h2 className="text-base font-bold text-slate-800">Livro de Notas da Turma</h2>
-          <span className="ml-2 px-2.5 py-0.5 bg-indigo-50 text-indigo-700 text-xs font-bold rounded-full">
+          <span className="ml-2 px-2.5 py-0.5 bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 text-xs font-bold rounded-full">
             {records.length} {records.length === 1 ? 'prova corrigida' : 'provas corrigidas'}
           </span>
         </div>
@@ -46,7 +46,7 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
             type="button"
             onClick={() => exportGradebookToCsv(records)}
             disabled={records.length === 0}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg text-xs font-semibold shadow-sm transition"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-on-accent rounded-lg text-xs font-semibold shadow-sm transition"
           >
             <Download className="w-3.5 h-3.5" /> Exportar para Excel / CSV
           </button>
@@ -54,7 +54,7 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
             <button
               type="button"
               onClick={onClearAll}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg text-xs font-medium transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 dark:hover:text-red-400 rounded-lg text-xs font-medium transition"
             >
               <Trash2 className="w-3.5 h-3.5" /> Limpar Histórico
             </button>
@@ -74,7 +74,7 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
           </div>
           <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
             <span className="text-xs font-semibold text-slate-500 uppercase block">Aproveitamento Médio</span>
-            <span className="text-2xl font-bold text-indigo-700">{averagePercentage.toFixed(1)}%</span>
+            <span className="text-2xl font-bold text-indigo-700 dark:text-indigo-300">{averagePercentage.toFixed(1)}%</span>
           </div>
         </div>
       )}
@@ -122,10 +122,10 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
                       <span
                         className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-bold ${
                           r.percentage >= 70
-                            ? 'bg-emerald-100 text-emerald-800'
+                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300'
                             : r.percentage >= 50
-                            ? 'bg-amber-100 text-amber-800'
-                            : 'bg-rose-100 text-rose-800'
+                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300'
+                            : 'bg-rose-100 text-rose-800 dark:bg-rose-950/70 dark:text-rose-300'
                         }`}
                       >
                         {r.percentage.toFixed(1)}%
@@ -144,7 +144,7 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
                         <button
                           type="button"
                           onClick={() => onDeleteRecord(r.id)}
-                          className="p-1 text-slate-400 hover:text-rose-600 rounded transition"
+                          className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded transition"
                           title="Excluir nota"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -166,16 +166,16 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
                                 key={a.questionNumber}
                                 className={`p-2 rounded border flex flex-col items-center text-center ${
                                   a.isCorrect
-                                    ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                                    : 'bg-rose-50 border-rose-200 text-rose-800'
+                                    ? 'bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-950/40 dark:border-emerald-800/60 dark:text-emerald-300'
+                                    : 'bg-rose-50 border-rose-200 text-rose-800 dark:bg-rose-950/40 dark:border-rose-800/60 dark:text-rose-300'
                                 }`}
                               >
                                 <span className="font-bold">Q{a.questionNumber}</span>
                                 <div className="flex items-center gap-1 my-0.5">
                                   {a.isCorrect ? (
-                                    <CheckCircle className="w-3 h-3 text-emerald-600" />
+                                    <CheckCircle className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                                   ) : (
-                                    <XCircle className="w-3 h-3 text-rose-600" />
+                                    <XCircle className="w-3 h-3 text-rose-600 dark:text-rose-400" />
                                   )}
                                   <span>{a.markedOption || '—'}</span>
                                 </div>

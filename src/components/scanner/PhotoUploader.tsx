@@ -258,7 +258,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
                 onClick={() => setIsDebugMode(!isDebugMode)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-sm ${
                   isDebugMode
-                    ? 'bg-amber-500 text-white shadow-amber-500/20'
+                    ? 'bg-amber-500 text-on-accent shadow-amber-500/20'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
@@ -274,7 +274,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
           {activePayload ? (
             <div className="flex items-center justify-between w-full flex-wrap gap-2">
               <div className="flex items-center gap-2.5">
-                <span className="px-3 py-1 bg-emerald-600 text-white font-black rounded-lg flex items-center gap-1.5 shadow-sm text-xs">
+                <span className="px-3 py-1 bg-emerald-600 text-on-accent font-black rounded-lg flex items-center gap-1.5 shadow-sm text-xs">
                   <CheckCircle2 className="w-4 h-4" /> VERSÃO {activePayload.version} TRAVADA
                 </span>
                 <span className="text-slate-700 font-medium text-xs">
@@ -298,7 +298,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
                       key={v.versionLetter}
                       type="button"
                       onClick={() => onSelectExamVersion(v)}
-                      className="px-3 py-1 bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 border border-indigo-200 rounded-lg font-bold text-xs transition active:scale-95 shadow-sm"
+                      className="px-3 py-1 bg-indigo-50 hover:bg-indigo-600 hover:text-on-accent text-indigo-700 border border-indigo-200 rounded-lg font-bold text-xs transition active:scale-95 shadow-sm"
                     >
                       Versão {v.versionLetter}
                     </button>
@@ -311,7 +311,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
 
         {/* Painel do Modo Diagnóstico OMR / Resultado Debug */}
         {isDebugAllowed && isDebugMode && debugResult && (
-          <div className="mb-6 p-5 bg-slate-900 text-slate-100 rounded-2xl shadow-xl border border-slate-800 space-y-5 animate-in fade-in duration-300">
+          <div className="keep-light-palette mb-6 p-5 bg-slate-900 text-slate-100 rounded-2xl shadow-xl border border-slate-800 space-y-5 animate-in fade-in duration-300">
             {/* Barra de Título do Debug */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-800 flex-wrap gap-2">
               <div className="flex items-center gap-2">
@@ -319,7 +319,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
                   <Eye className="w-4 h-4" />
                 </span>
                 <div>
-                  <h4 className="font-extrabold text-sm text-white">
+                  <h4 className="font-extrabold text-sm text-on-accent">
                     Diagnóstico OMR — Visualização em Tempo Real
                   </h4>
                   <p className="text-[11px] text-slate-400">
@@ -352,7 +352,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsImageModalOpen(true)}
-                  className="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow-sm"
+                  className="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-on-accent rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow-sm"
                 >
                   <Maximize2 className="w-3.5 h-3.5" /> Zoom da Leitura
                 </button>
@@ -522,7 +522,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
                   onGraded(debugResult.record);
                   setSuccessMessage('Correção confirmada e registrada com sucesso!');
                 }}
-                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black transition shadow-lg shadow-emerald-900/30 flex items-center gap-2"
+                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-on-accent rounded-xl text-xs font-black transition shadow-lg shadow-emerald-900/30 flex items-center gap-2"
               >
                 <Check className="w-4 h-4" /> Confirmar e Salvar no Livro de Notas
               </button>
@@ -563,7 +563,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
             type="button"
             onClick={() => cameraInputRef.current?.click()}
             disabled={isProcessing}
-            className={`w-full py-4 px-5 text-white font-extrabold text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50 active:scale-[0.99] ${
+            className={`w-full py-4 px-5 text-on-accent font-extrabold text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50 active:scale-[0.99] ${
               activePayload
                 ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-700/20'
                 : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-700/20'
@@ -628,15 +628,15 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
       {/* Modal de Zoom da Imagem Anotada */}
       {isImageModalOpen && debugResult?.debugCanvasUrl && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+          <div className="keep-light-palette bg-slate-900 border border-slate-700 rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
             <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-              <h4 className="font-bold text-sm text-white flex items-center gap-2">
+              <h4 className="font-bold text-sm text-on-accent flex items-center gap-2">
                 <Eye className="w-4 h-4 text-sky-400" /> Inspeção Visual de Alta Resolução do OMR
               </h4>
               <button
                 type="button"
                 onClick={() => setIsImageModalOpen(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                className="p-1 rounded-lg text-slate-400 hover:text-on-accent hover:bg-slate-800 transition"
               >
                 <X className="w-5 h-5" />
               </button>
