@@ -33,3 +33,42 @@ export interface DecryptedQrPayload {
   totalQuestions?: number;
   subjectiveQuestions?: number[];
 }
+
+export interface OmrBubbleDebug {
+  questionNumber: number;
+  optionLabel: 'A' | 'B' | 'C' | 'D' | 'E';
+  cx: number;
+  cy: number;
+  radius: number;
+  fillRatio: number;
+  isMarked: boolean;
+}
+
+export interface OmrTimingMarkDebug {
+  rowNumber: number;
+  leftX: number;
+  leftY: number;
+  rightX: number;
+  rightY: number;
+}
+
+export interface OmrDebugInfo {
+  method: 'timing_marks' | 'corner_fiducials' | 'box_borders' | 'standard_fallback';
+  box?: {
+    leftX: number;
+    rightX: number;
+    topY: number;
+    bottomY: number;
+    hdrY: number;
+    tiltSlope: number;
+  };
+  fiducials?: {
+    topLeft?: Point;
+    topRight?: Point;
+    bottomLeft?: Point;
+    bottomRight?: Point;
+  };
+  timingMarks?: OmrTimingMarkDebug[];
+  bubbles: OmrBubbleDebug[];
+  logs: string[];
+}
