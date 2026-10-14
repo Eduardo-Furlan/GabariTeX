@@ -53,7 +53,7 @@ export interface OmrTimingMarkDebug {
 }
 
 export interface OmrDebugInfo {
-  method: 'timing_marks' | 'corner_fiducials' | 'box_borders' | 'standard_fallback';
+  method: 'fiducials_timing_marks' | 'timing_marks' | 'corner_fiducials' | 'box_borders' | 'standard_fallback';
   box?: {
     leftX: number;
     rightX: number;

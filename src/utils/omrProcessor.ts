@@ -4,9 +4,11 @@ import {
   OmrRawDetection,
   SheetCorners,
   OmrDebugInfo,
-  OmrTimingMarkDebug,
 } from '../types/omr';
 import { GradedAnswer, GradingRecord } from '../types/exam';
+import { toGray } from './omr/grayImage';
+import { detectSheet } from './omr/sheetDetector';
+import { readBubbles } from './omr/bubbleReader';
 
 export interface GridConfig {
   totalQuestions: number;
@@ -77,517 +79,55 @@ export function getStandardBubbleCoordinates(config: GridConfig): BubbleCoordina
 }
 
 /**
- * Detecta a grade OMR utilizando os sincronizadores de linha (timing marks) à esquerda e à direita
- * de cada questão. Fornece máxima robustez contra perspectiva, curvaturas e cortes de borda.
- */
-export function detectOmrByTimingMarks(
-  canvas: HTMLCanvasElement,
-  config: GridConfig,
-  debugInfo?: Partial<OmrDebugInfo>
-): BubbleCoordinates[] | null {
-  const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  if (!ctx) return null;
-  const width = canvas.width;
-  const height = canvas.height;
-  if (width < 100 || height < 100) return null;
-
-  const imgData = ctx.getImageData(0, 0, width, height);
-  const data = imgData.data;
-
-  const getDarkness = (x: number, y: number): number => {
-    if (x < 0 || x >= width || y < 0 || y >= height) return 0;
-    const idx = (y * width + x) * 4;
-    const lum = 0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
-    return (255 - lum) / 255;
-  };
-
-  const { totalQuestions, subjectiveQuestions = [], columnsCount = 1 } = config;
-  const subjectiveSet = new Set(subjectiveQuestions);
-  const questionsPerColumn = totalQuestions <= 12 ? totalQuestions : Math.ceil(totalQuestions / columnsCount);
-
-  // Helper para escanear uma coluna vertical em busca de marcas periódicas com espaçamento regular
-  const scanColumnRange = (xStart: number, xEnd: number): { bestCol: number; peaks: number[] } | null => {
-    let bestCol = -1;
-    let bestPeaks: number[] = [];
-    let bestScore = -999999;
-
-    for (let x = xStart; x <= xEnd; x += 2) {
-      const yMin = Math.floor(height * 0.12);
-      const yMax = Math.floor(height * 0.88);
-
-      const rawPeaks: number[] = [];
-      let inSeg = false;
-      let startY = 0;
-
-      for (let y = yMin; y <= yMax; y++) {
-        let sum = 0;
-        for (let dx = -2; dx <= 2; dx++) {
-          sum += getDarkness(x + dx, y);
-        }
-        const val = sum / 5;
-
-        if (val > 0.50 && !inSeg) {
-          inSeg = true;
-          startY = y;
-        } else if (val <= 0.50 && inSeg) {
-          inSeg = false;
-          const segLen = y - startY;
-          if (segLen >= 5 && segLen <= 35) {
-            rawPeaks.push(Math.floor((startY + y) / 2));
-          }
-        }
-      }
-      if (inSeg) {
-        const segLen = yMax - startY;
-        if (segLen >= 5 && segLen <= 35) {
-          rawPeaks.push(Math.floor((startY + yMax) / 2));
-        }
-      }
-
-      if (rawPeaks.length >= 3) {
-        const diffs = rawPeaks.slice(1).map((p, i) => p - rawPeaks[i]);
-        const sortedDiffs = [...diffs].sort((a, b) => a - b);
-        const medianP = sortedDiffs[Math.floor(sortedDiffs.length / 2)];
-
-        let peaks = [...rawPeaks];
-        // Remove borda de cabeçalho superior se tiver distância menor que 75% do passo regular
-        while (peaks.length >= 3 && peaks[1] - peaks[0] < 0.75 * medianP) {
-          peaks = peaks.slice(1);
-        }
-        // Remove borda inferior se tiver distância menor que 75% do passo regular
-        while (peaks.length >= 3 && peaks[peaks.length - 1] - peaks[peaks.length - 2] < 0.75 * medianP) {
-          peaks = peaks.slice(0, -1);
-        }
-
-        const cleanDiffs = peaks.slice(1).map((p, i) => p - peaks[i]);
-        if (cleanDiffs.length >= 2) {
-          const meanP = cleanDiffs.reduce((a, b) => a + b, 0) / cleanDiffs.length;
-          const variance = cleanDiffs.reduce((a, b) => a + Math.pow(b - meanP, 2), 0) / cleanDiffs.length;
-          const stdP = Math.sqrt(variance);
-
-          const countDiff = Math.abs(peaks.length - questionsPerColumn);
-          if (stdP < medianP * 0.20) {
-            const score = 1000 - countDiff * 100 - stdP * 5;
-            if (score > bestScore) {
-              bestScore = score;
-              bestCol = x;
-              bestPeaks = peaks;
-            }
-          }
-        }
-      }
-    }
-
-    if (bestCol === -1 || bestPeaks.length < 3) return null;
-    return { bestCol, peaks: bestPeaks };
-  };
-
-  const leftResult = scanColumnRange(Math.floor(width * 0.10), Math.floor(width * 0.45));
-  const rightResult = scanColumnRange(Math.floor(width * 0.55), Math.floor(width * 0.90));
-
-  if (!leftResult || !rightResult) return null;
-
-  let leftPeaks = leftResult.peaks;
-  let rightPeaks = rightResult.peaks;
-
-  // Se a coluna esquerda capturou o cabeçalho (1 marca extra acima de todas as outras)
-  if (leftPeaks.length === rightPeaks.length + 1 && leftPeaks[0] < rightPeaks[0] - 25) {
-    leftPeaks = leftPeaks.slice(1);
-  } else if (rightPeaks.length === leftPeaks.length + 1 && rightPeaks[0] < leftPeaks[0] - 25) {
-    rightPeaks = rightPeaks.slice(1);
-  }
-
-  // Se ambas as colunas tiverem marcas a mais que questionsPerColumn, seleciona as últimas questionsPerColumn
-  if (leftPeaks.length > questionsPerColumn && rightPeaks.length > questionsPerColumn) {
-    leftPeaks = leftPeaks.slice(leftPeaks.length - questionsPerColumn);
-    rightPeaks = rightPeaks.slice(rightPeaks.length - questionsPerColumn);
-  }
-
-  const matchedRowsCount = Math.min(leftPeaks.length, rightPeaks.length, questionsPerColumn);
-  if (matchedRowsCount < Math.min(questionsPerColumn, 4)) return null;
-
-  const leftX = leftResult.bestCol;
-  const rightX = rightResult.bestCol;
-  const span = rightX - leftX;
-  if (span < 100) return null;
-
-  const optionLabels: ('A' | 'B' | 'C' | 'D' | 'E')[] = ['A', 'B', 'C', 'D', 'E'];
-  const bubbles: BubbleCoordinates[] = [];
-  const radiusPercent = ((span * 0.024) / Math.min(width, height)) * 100;
-
-  const timingMarksDebug: OmrTimingMarkDebug[] = [];
-
-  for (let rIdx = 0; rIdx < matchedRowsCount; rIdx++) {
-    const qNum = rIdx + 1;
-    const yL = leftPeaks[rIdx];
-    const yR = rightPeaks[rIdx];
-
-    timingMarksDebug.push({
-      rowNumber: qNum,
-      leftX,
-      leftY: yL,
-      rightX,
-      rightY: yR,
-    });
-
-    if (qNum > totalQuestions) break;
-    if (subjectiveSet.has(qNum)) continue;
-
-    for (let oIdx = 0; oIdx < 5; oIdx++) {
-      const frac = 0.224 + oIdx * 0.164;
-      const bx = leftX + span * frac;
-      const by = yL + (yR - yL) * frac;
-
-      bubbles.push({
-        questionNumber: qNum,
-        optionLabel: optionLabels[oIdx],
-        centerXPercent: (bx / width) * 100,
-        centerYPercent: (by / height) * 100,
-        radiusPercent,
-      });
-    }
-  }
-
-  if (debugInfo) {
-    debugInfo.timingMarks = timingMarksDebug;
-  }
-
-  return bubbles;
-}
-
-/**
- * Detecta dinamicamente a caixa delimitadora do gabarito e calcula as coordenadas
- * exatas das bolinhas no canvas através das bordas externas e linha de cabeçalho.
- */
-export function detectOmrByBox(
-  canvas: HTMLCanvasElement,
-  config: GridConfig,
-  debugInfo?: Partial<OmrDebugInfo>
-): BubbleCoordinates[] | null {
-  const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  if (!ctx) return null;
-
-  const width = canvas.width;
-  const height = canvas.height;
-  if (width < 100 || height < 100) return null;
-
-  const imgData = ctx.getImageData(0, 0, width, height);
-  const data = imgData.data;
-
-  const { totalQuestions, subjectiveQuestions = [] } = config;
-  const subjectiveSet = new Set(subjectiveQuestions);
-
-  const getDarkness = (x: number, y: number): number => {
-    if (x < 0 || x >= width || y < 0 || y >= height) return 0;
-    const idx = (y * width + x) * 4;
-    const lum = 0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
-    return (255 - lum) / 255;
-  };
-
-  // 1. Bordas verticais da caixa OMR (esquerda e direita)
-  let bestLeftX = -1;
-  let bestLeftCount = -1;
-  const minLeft = Math.max(1, Math.floor(width * 0.005));
-  const maxLeft = Math.floor(width * 0.35);
-  for (let x = minLeft; x <= maxLeft; x++) {
-    let count = 0;
-    for (let y = Math.floor(height * 0.10); y <= Math.floor(height * 0.90); y += 2) {
-      if (getDarkness(x, y) > 0.45) count++;
-    }
-    if (count > bestLeftCount) {
-      bestLeftCount = count;
-      bestLeftX = x;
-    }
-  }
-
-  let bestRightX = -1;
-  let bestRightCount = -1;
-  const minRight = Math.floor(width * 0.65);
-  const maxRight = width - 2;
-  for (let x = minRight; x <= maxRight; x++) {
-    let count = 0;
-    for (let y = Math.floor(height * 0.10); y <= Math.floor(height * 0.90); y += 2) {
-      if (getDarkness(x, y) > 0.45) count++;
-    }
-    if (count > bestRightCount) {
-      bestRightCount = count;
-      bestRightX = x;
-    }
-  }
-
-  const minBorderPixels = Math.floor(height * 0.10);
-  if (
-    bestLeftX === -1 ||
-    bestRightX === -1 ||
-    bestRightX <= bestLeftX + 100 ||
-    bestLeftCount < minBorderPixels ||
-    bestRightCount < minBorderPixels
-  ) {
-    return null;
-  }
-
-  const leftX = bestLeftX;
-  const rightX = bestRightX;
-  const span = rightX - leftX;
-
-  // 2. Linhas horizontais entre leftX e rightX com tolerância vertical de inclinação (+/- 2px)
-  const solidThreshold = span * 0.65;
-  const hLines: number[] = [];
-  let currentGroup: { y: number; count: number }[] = [];
-
-  for (let y = 0; y < height; y++) {
-    let darkCount = 0;
-    for (let x = leftX + 5; x <= rightX - 5; x += 2) {
-      if (
-        getDarkness(x, y) > 0.45 ||
-        (y > 0 && getDarkness(x, y - 1) > 0.45) ||
-        (y + 1 < height && getDarkness(x, y + 1) > 0.45) ||
-        (y > 1 && getDarkness(x, y - 2) > 0.45) ||
-        (y + 2 < height && getDarkness(x, y + 2) > 0.45)
-      ) {
-        darkCount += 2;
-      }
-    }
-    if (darkCount >= solidThreshold) {
-      if (currentGroup.length === 0 || y - currentGroup[currentGroup.length - 1].y <= 4) {
-        currentGroup.push({ y, count: darkCount });
-      } else {
-        const best = currentGroup.reduce((max, cur) => (cur.count > max.count ? cur : max), currentGroup[0]);
-        hLines.push(best.y);
-        currentGroup = [{ y, count: darkCount }];
-      }
-    }
-  }
-  if (currentGroup.length > 0) {
-    const best = currentGroup.reduce((max, cur) => (cur.count > max.count ? cur : max), currentGroup[0]);
-    hLines.push(best.y);
-  }
-
-  // Encontra a maior caixa sólida onde as bordas esquerda e direita são contínuas sem falhas
-  let bestBox: { top: number; bottom: number } | null = null;
-  let maxBoxH = 0;
-
-  for (let i = 0; i < hLines.length; i++) {
-    for (let j = i + 1; j < hLines.length; j++) {
-      const y1 = hLines[i];
-      const y2 = hLines[j];
-      const boxH = y2 - y1;
-      if (boxH < 150) continue;
-
-      let maxLeftGap = 0;
-      let curLeftGap = 0;
-      for (let y = y1; y <= y2; y++) {
-        let hasDark = false;
-        for (let dx = -14; dx <= 14; dx++) {
-          if (getDarkness(leftX + dx, y) >= 0.35) {
-            hasDark = true;
-            break;
-          }
-        }
-        if (!hasDark) {
-          curLeftGap++;
-          if (curLeftGap > maxLeftGap) maxLeftGap = curLeftGap;
-        } else {
-          curLeftGap = 0;
-        }
-      }
-
-      let maxRightGap = 0;
-      let curRightGap = 0;
-      for (let y = y1; y <= y2; y++) {
-        let hasDark = false;
-        for (let dx = -14; dx <= 14; dx++) {
-          if (getDarkness(rightX + dx, y) >= 0.35) {
-            hasDark = true;
-            break;
-          }
-        }
-        if (!hasDark) {
-          curRightGap++;
-          if (curRightGap > maxRightGap) maxRightGap = curRightGap;
-        } else {
-          curRightGap = 0;
-        }
-      }
-
-      if (maxLeftGap <= 40 && maxRightGap <= 40 && boxH >= Math.floor(height * 0.25)) {
-        if (boxH > maxBoxH) {
-          maxBoxH = boxH;
-          bestBox = { top: y1, bottom: y2 };
-        }
-      }
-    }
-  }
-
-  if (!bestBox) {
-    return null;
-  }
-
-  const { top: boxTop, bottom: boxBottom } = bestBox;
-  const boxH = boxBottom - boxTop;
-
-  // 3. Linha divisória de cabeçalho dentro da caixa OMR (nos primeiros 50% da caixa)
-  const hdrSearchEnd = boxTop + Math.floor(boxH * 0.50);
-  let bestHdrY = -1;
-  let bestHdrSum = 0;
-
-  for (let y = boxTop + 10; y <= hdrSearchEnd; y++) {
-    let sum = 0;
-    for (let x = leftX + 10; x <= rightX - 10; x += 2) {
-      sum += getDarkness(x, y);
-    }
-    if (sum > bestHdrSum) {
-      bestHdrSum = sum;
-      bestHdrY = y;
-    }
-  }
-
-  if (bestHdrY === -1 || bestHdrSum < span * 0.15) {
-    return null;
-  }
-
-  // Segmentos contínuos da linha de cabeçalho
-  const segments: { start: number; end: number }[] = [];
-  let inSegment = false;
-  let segStart = 0;
-
-  for (let x = leftX + 10; x <= rightX - 10; x++) {
-    const isDark = getDarkness(x, bestHdrY) > 0.45;
-    if (isDark && !inSegment) {
-      inSegment = true;
-      segStart = x;
-    } else if (!isDark && inSegment) {
-      inSegment = false;
-      if (x - segStart > 40) {
-        segments.push({ start: segStart, end: x });
-      }
-    }
-  }
-  if (inSegment && (rightX - 10 - segStart) > 40) {
-    segments.push({ start: segStart, end: rightX - 10 });
-  }
-
-  if (segments.length === 0) {
-    return null;
-  }
-
-  const actualCols = segments.length;
-  const questionsPerColumn = totalQuestions <= 12 ? totalQuestions : Math.ceil(totalQuestions / actualCols);
-
-  const optionLabels: ('A' | 'B' | 'C' | 'D' | 'E')[] = ['A', 'B', 'C', 'D', 'E'];
-  const bubbles: BubbleCoordinates[] = [];
-
-  for (let colIdx = 0; colIdx < segments.length; colIdx++) {
-    const { start: sStart, end: sEnd } = segments[colIdx];
-    const segW = sEnd - sStart;
-
-    // Mede a inclinação (tilt slope) da linha de cabeçalho para calibrar os eixos X e Y
-    const xSampleLeft = Math.floor(sStart + segW * 0.15);
-    const xSampleRight = Math.floor(sEnd - segW * 0.15);
-
-    let yLeft = bestHdrY;
-    let maxDarkLeft = -1;
-    for (let dy = -10; dy <= 10; dy++) {
-      let dSum = 0;
-      for (let dx = -3; dx <= 3; dx++) {
-        dSum += getDarkness(xSampleLeft + dx, bestHdrY + dy);
-      }
-      if (dSum > maxDarkLeft) {
-        maxDarkLeft = dSum;
-        yLeft = bestHdrY + dy;
-      }
-    }
-
-    let yRight = bestHdrY;
-    let maxDarkRight = -1;
-    for (let dy = -10; dy <= 10; dy++) {
-      let dSum = 0;
-      for (let dx = -3; dx <= 3; dx++) {
-        dSum += getDarkness(xSampleRight + dx, bestHdrY + dy);
-      }
-      if (dSum > maxDarkRight) {
-        maxDarkRight = dSum;
-        yRight = bestHdrY + dy;
-      }
-    }
-
-    const tiltSlope = (xSampleRight > xSampleLeft) ? (yRight - yLeft) / (xSampleRight - xSampleLeft) : 0;
-    const firstRowY0 = (yLeft + yRight) / 2 + segW * 0.0654 - tiltSlope * ((xSampleLeft + xSampleRight) / 2 - sStart);
-    const rowPitch = segW * 0.1035;
-    const radiusPercent = ((segW * 0.031) / Math.min(width, height)) * 100;
-
-    if (debugInfo && !debugInfo.box) {
-      debugInfo.box = {
-        leftX,
-        rightX,
-        topY: boxTop,
-        bottomY: boxBottom,
-        hdrY: bestHdrY,
-        tiltSlope,
-      };
-    }
-
-    for (let rIdx = 0; rIdx < questionsPerColumn; rIdx++) {
-      const qNum = colIdx * questionsPerColumn + rIdx + 1;
-      if (qNum > totalQuestions) break;
-      if (subjectiveSet.has(qNum)) continue;
-
-      const baseCy = firstRowY0 + rIdx * rowPitch;
-
-      for (let oIdx = 0; oIdx < 5; oIdx++) {
-        const cx = sStart + segW * (0.180 + oIdx * 0.181);
-        const cy = baseCy + tiltSlope * (cx - sStart);
-        const cxPercent = (cx / width) * 100;
-        const cyPercent = (cy / height) * 100;
-
-        bubbles.push({
-          questionNumber: qNum,
-          optionLabel: optionLabels[oIdx],
-          centerXPercent: cxPercent,
-          centerYPercent: cyPercent,
-          radiusPercent,
-        });
-      }
-    }
-  }
-
-  return bubbles;
-}
-
-/**
- * Ponto de entrada dinâmico que seleciona automaticamente o método mais confiável:
- * 1. Sincronizadores de linha (timing marks) - máxima precisão
- * 2. Caixa delimitadora e linha de cabeçalho - fallback
+ * Detecta a grade OMR utilizando os 4 fiduciais de canto e sincronizadores de linha.
  */
 export function detectOmrGrid(
   canvas: HTMLCanvasElement,
   config: GridConfig,
   debugInfo?: Partial<OmrDebugInfo>
 ): BubbleCoordinates[] | null {
-  const timingBubbles = detectOmrByTimingMarks(canvas, config, debugInfo);
-  if (timingBubbles && timingBubbles.length > 0) {
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  if (!ctx) return null;
+  const width = canvas.width;
+  const height = canvas.height;
+  if (width < 100 || height < 100) return null;
+
+  try {
+    const imgData = ctx.getImageData(0, 0, width, height);
+    const gray = toGray(imgData);
+    const questionsPerColumn =
+      config.totalQuestions <= 12
+        ? config.totalQuestions
+        : Math.ceil(config.totalQuestions / Math.max(1, config.columnsCount));
+
+    const det = detectSheet(gray, config.columnsCount, questionsPerColumn);
+    const result = readBubbles(gray, det, {
+      totalQuestions: config.totalQuestions,
+      subjectiveQuestions: config.subjectiveQuestions,
+    });
+
     if (debugInfo) {
-      debugInfo.method = 'timing_marks';
-      debugInfo.logs?.push(`Sincronizadores de linha detectados com sucesso (${debugInfo.timingMarks?.length} linhas mapeadas).`);
+      debugInfo.method = 'fiducials_timing_marks';
+      debugInfo.fiducials = {
+        topLeft: det.corners[0],
+        topRight: det.corners[1],
+        bottomRight: det.corners[2],
+        bottomLeft: det.corners[3],
+      };
+      debugInfo.timingMarks = result.timingMarks;
+      debugInfo.logs?.push(
+        `Folha detectada com sucesso via 4 fiduciais e ${result.timingMarks.length} sincronizadores de linha.`
+      );
     }
-    return timingBubbles;
-  }
 
-  const boxBubbles = detectOmrByBox(canvas, config, debugInfo);
-  if (boxBubbles && boxBubbles.length > 0) {
+    return result.bubbles;
+  } catch (err) {
     if (debugInfo) {
-      debugInfo.method = 'box_borders';
-      debugInfo.logs?.push(`Caixa delimitadora do gabarito detectada: limites (${debugInfo.box?.leftX}, ${debugInfo.box?.topY}) a (${debugInfo.box?.rightX}, ${debugInfo.box?.bottomY}).`);
+      const msg = err instanceof Error ? err.message : String(err);
+      debugInfo.logs?.push(`Detecção por fiduciais falhou: ${msg}`);
     }
-    return boxBubbles;
+    return null;
   }
-
-  if (debugInfo) {
-    debugInfo.method = 'standard_fallback';
-    debugInfo.logs?.push('Nenhum marcador ou caixa detectada na imagem. Utilizando coordenadas padronizadas de folha A4.');
-  }
-
-  return null;
 }
 
 /**
@@ -616,8 +156,6 @@ export function analyzeCanvasOmrWithDebug(
   const height = canvas.height;
   debugInfo.logs.push(`Dimensões da imagem: ${width}x${height}px`);
 
-  // Tenta detecção dinâmica da grade na imagem
-  let bubblesToUse = bubbles;
   const inferredConfig: GridConfig = config
     ? config
     : {
@@ -627,10 +165,45 @@ export function analyzeCanvasOmrWithDebug(
         subjectiveQuestions: [],
       };
 
-  const detectedBubbles = detectOmrGrid(canvas, inferredConfig, debugInfo);
-  if (detectedBubbles && detectedBubbles.length > 0) {
-    bubblesToUse = detectedBubbles;
+  // Tenta detecção dinâmica de alta precisão por fiduciais e sincronizadores de linha
+  try {
+    const imgData = ctx.getImageData(0, 0, width, height);
+    const gray = toGray(imgData);
+    const questionsPerColumn =
+      inferredConfig.totalQuestions <= 12
+        ? inferredConfig.totalQuestions
+        : Math.ceil(inferredConfig.totalQuestions / Math.max(1, inferredConfig.columnsCount));
+
+    const det = detectSheet(gray, inferredConfig.columnsCount, questionsPerColumn);
+    const result = readBubbles(gray, det, {
+      totalQuestions: inferredConfig.totalQuestions,
+      subjectiveQuestions: inferredConfig.subjectiveQuestions,
+    });
+
+    debugInfo.method = 'fiducials_timing_marks';
+    debugInfo.fiducials = {
+      topLeft: det.corners[0],
+      topRight: det.corners[1],
+      bottomRight: det.corners[2],
+      bottomLeft: det.corners[3],
+    };
+    debugInfo.timingMarks = result.timingMarks;
+    debugInfo.bubbles = result.debugBubbles;
+    debugInfo.logs.push(
+      `Folha detectada com sucesso via 4 fiduciais e ${result.timingMarks.length} sincronizadores de linha.`
+    );
+
+    return {
+      detections: result.detections,
+      debugInfo,
+      bubbles: result.bubbles,
+    };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    debugInfo.logs.push(`Detecção por fiduciais não disponível: ${msg}. Utilizando coordenadas padronizadas.`);
   }
+
+  let bubblesToUse = bubbles;
 
   const imgData = ctx.getImageData(0, 0, width, height);
   const data = imgData.data;
@@ -801,7 +374,33 @@ export function drawOmrDebugCanvas(
   // 1. Imagem original de fundo
   ctx.drawImage(sourceCanvas, 0, 0);
 
-  // 2. Se houver caixa detectada, desenha as bordas da caixa
+  // 2. Se houver fiduciais de canto detectados, desenha o polígono e marcadores
+  if (debugInfo.fiducials) {
+    const { topLeft, topRight, bottomRight, bottomLeft } = debugInfo.fiducials;
+    if (topLeft && topRight && bottomRight && bottomLeft) {
+      ctx.save();
+      ctx.strokeStyle = '#a855f7';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(topLeft.x, topLeft.y);
+      ctx.lineTo(topRight.x, topRight.y);
+      ctx.lineTo(bottomRight.x, bottomRight.y);
+      ctx.lineTo(bottomLeft.x, bottomLeft.y);
+      ctx.closePath();
+      ctx.stroke();
+
+      for (const p of [topLeft, topRight, bottomRight, bottomLeft]) {
+        ctx.fillStyle = '#a855f7';
+        ctx.fillRect(p.x - 7, p.y - 7, 14, 14);
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(p.x - 7, p.y - 7, 14, 14);
+      }
+      ctx.restore();
+    }
+  }
+
+  // 3. Se houver caixa detectada, desenha as bordas da caixa
   if (debugInfo.box) {
     const { leftX, rightX, topY, bottomY, hdrY } = debugInfo.box;
     ctx.save();
@@ -903,6 +502,7 @@ export function drawOmrDebugCanvas(
 
   // 5. HUD Banner no canto superior esquerdo com status
   const methodNames: Record<string, string> = {
+    fiducials_timing_marks: 'Fiduciais + Sincronizadores (OMR)',
     timing_marks: 'Sincronizadores de Linha (Timing Marks)',
     box_borders: 'Caixa Delimitadora (Bordas OMR)',
     standard_fallback: 'Posição Padrão A4 (Fallback)',

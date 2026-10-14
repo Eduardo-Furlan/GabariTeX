@@ -325,7 +325,9 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
                   <p className="text-[11px] text-slate-400">
                     Método:{' '}
                     <span className="text-sky-400 font-bold">
-                      {debugResult.debugInfo.method === 'timing_marks'
+                      {debugResult.debugInfo.method === 'fiducials_timing_marks'
+                        ? 'Fiduciais + Sincronizadores (OMR)'
+                        : debugResult.debugInfo.method === 'timing_marks'
                         ? 'Sincronizadores de Linha (Timing Marks)'
                         : debugResult.debugInfo.method === 'box_borders'
                         ? 'Caixa Delimitadora (Bordas)'

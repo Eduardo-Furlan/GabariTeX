@@ -1,0 +1,267 @@
+import { GrayImage } from './grayImage';
+import { SheetDetectionResult } from './sheetDetector';
+import {
+  BubbleCoordinates,
+  OmrBubbleDebug,
+  OmrRawDetection,
+  OmrTimingMarkDebug,
+} from '../../types/omr';
+
+export const FR = [0.222, 0.390, 0.554, 0.720, 0.888];
+export const OPTION_LABELS: ('A' | 'B' | 'C' | 'D' | 'E')[] = [
+  'A',
+  'B',
+  'C',
+  'D',
+  'E',
+];
+
+export interface BubbleReaderOptions {
+  totalQuestions: number;
+  subjectiveQuestions?: number[];
+  optionsPerQuestion?: number;
+  innerRadiusFactor?: number;
+  ambiguousThreshold?: number;
+  markedThreshold?: number;
+}
+
+export interface BubbleReaderResult {
+  detections: OmrRawDetection[];
+  bubbles: BubbleCoordinates[];
+  debugBubbles: OmrBubbleDebug[];
+  timingMarks: OmrTimingMarkDebug[];
+}
+
+/**
+ * Lê e classifica o preenchimento de cada bolinha com base na folha e linhas detectadas.
+ */
+export function readBubbles(
+  gray: GrayImage,
+  det: SheetDetectionResult,
+  options: BubbleReaderOptions
+): BubbleReaderResult {
+  const {
+    totalQuestions,
+    subjectiveQuestions = [],
+    innerRadiusFactor = 0.60,
+    ambiguousThreshold = 0.35,
+    markedThreshold = 0.55,
+  } = options;
+
+  const { width, height, data } = gray;
+  const subjectiveSet = new Set(subjectiveQuestions);
+
+  // 1. Amostra a intensidade média da tinta sobre os sincronizadores detectados
+  const inkSamples: number[] = [];
+  for (const col of det.columns) {
+    for (const [l, r] of col) {
+      for (const p of [l, r]) {
+        const px = Math.round(p.x);
+        const py = Math.round(p.y);
+        if (px >= 1 && px < width - 1 && py >= 1 && py < height - 1) {
+          let sum = 0;
+          for (let dy = -1; dy <= 1; dy++) {
+            const rowOffset = (py + dy) * width;
+            for (let dx = -1; dx <= 1; dx++) {
+              sum += data[rowOffset + px + dx];
+            }
+          }
+          inkSamples.push(sum / 9);
+        }
+      }
+    }
+  }
+
+  inkSamples.sort((a, b) => a - b);
+  const ink =
+    inkSamples.length > 0
+      ? inkSamples[Math.floor(inkSamples.length / 2)]
+      : 50.0;
+
+  const detections: OmrRawDetection[] = [];
+  const bubbles: BubbleCoordinates[] = [];
+  const debugBubbles: OmrBubbleDebug[] = [];
+  const timingMarks: OmrTimingMarkDebug[] = [];
+
+  const questionsPerColumn =
+    totalQuestions <= 12
+      ? totalQuestions
+      : Math.ceil(totalQuestions / Math.max(1, det.columns.length));
+
+  for (let cIdx = 0; cIdx < det.columns.length; cIdx++) {
+    const colPairs = det.columns[cIdx];
+    for (let rIdx = 0; rIdx < colPairs.length; rIdx++) {
+      const currentQ = cIdx * questionsPerColumn + rIdx + 1;
+      if (currentQ > totalQuestions) {
+        continue;
+      }
+
+      const [l, r] = colPairs[rIdx];
+
+      timingMarks.push({
+        rowNumber: currentQ,
+        leftX: l.x,
+        leftY: l.y,
+        rightX: r.x,
+        rightY: r.y,
+      });
+
+      const isSubjective = subjectiveSet.has(currentQ);
+      const dx = r.x - l.x;
+      const dy = r.y - l.y;
+      const dist = Math.hypot(dx, dy);
+      const rad = dist * 0.032;
+
+      const fillRatios: Record<'A' | 'B' | 'C' | 'D' | 'E', number> = {
+        A: 0,
+        B: 0,
+        C: 0,
+        D: 0,
+        E: 0,
+      };
+
+      const rIn = Math.max(2, Math.round(rad * innerRadiusFactor));
+      const rOut1 = Math.round(rad * 1.4);
+      const rOut2 = Math.round(rad * 1.9);
+      const rInSq = rIn * rIn;
+      const rOut1Sq = rOut1 * rOut1;
+      const rOut2Sq = rOut2 * rOut2;
+
+      for (let o = 0; o < FR.length; o++) {
+        const optLabel = OPTION_LABELS[o];
+        const f = FR[o];
+        const cx = l.x + dx * f;
+        const cy = l.y + dy * f;
+        const cxRound = Math.round(cx);
+        const cyRound = Math.round(cy);
+
+        bubbles.push({
+          questionNumber: currentQ,
+          optionLabel: optLabel,
+          centerXPercent: (cx / width) * 100,
+          centerYPercent: (cy / height) * 100,
+          radiusPercent: (rad / Math.min(width, height)) * 100,
+        });
+
+        if (isSubjective) {
+          continue;
+        }
+
+        // Amostra o anel de papel circundante [1.4*r, 1.9*r]
+        const yMin = Math.max(0, cyRound - rOut2);
+        const yMax = Math.min(height - 1, cyRound + rOut2);
+        const xMin = Math.max(0, cxRound - rOut2);
+        const xMax = Math.min(width - 1, cxRound + rOut2);
+
+        const ringValues: number[] = [];
+        for (let py = yMin; py <= yMax; py++) {
+          const rowOffset = py * width;
+          const dySq = (py - cyRound) * (py - cyRound);
+          for (let px = xMin; px <= xMax; px++) {
+            const dSq = (px - cxRound) * (px - cxRound) + dySq;
+            if (dSq >= rOut1Sq && dSq <= rOut2Sq) {
+              ringValues.push(data[rowOffset + px]);
+            }
+          }
+        }
+
+        ringValues.sort((a, b) => a - b);
+        const paper =
+          ringValues.length > 0
+            ? ringValues[Math.floor(ringValues.length / 2)]
+            : 200.0;
+
+        const thr = (paper + ink) / 2.0;
+
+        // Amostra o disco interno de raio rIn
+        let diskCount = 0;
+        let darkCount = 0;
+        const inYMin = Math.max(0, cyRound - rIn);
+        const inYMax = Math.min(height - 1, cyRound + rIn);
+        const inXMin = Math.max(0, cxRound - rIn);
+        const inXMax = Math.min(width - 1, cxRound + rIn);
+
+        for (let py = inYMin; py <= inYMax; py++) {
+          const rowOffset = py * width;
+          const dySq = (py - cyRound) * (py - cyRound);
+          for (let px = inXMin; px <= inXMax; px++) {
+            const dSq = (px - cxRound) * (px - cxRound) + dySq;
+            if (dSq <= rInSq) {
+              diskCount++;
+              if (data[rowOffset + px] < thr) {
+                darkCount++;
+              }
+            }
+          }
+        }
+
+        const fill = diskCount > 0 ? darkCount / diskCount : 0;
+        fillRatios[optLabel] = fill;
+
+        debugBubbles.push({
+          questionNumber: currentQ,
+          optionLabel: optLabel,
+          cx,
+          cy,
+          radius: rad,
+          fillRatio: fill,
+          isMarked: fill >= markedThreshold,
+        });
+      }
+
+      if (isSubjective) {
+        detections.push({
+          questionNumber: currentQ,
+          fillRatios,
+          detectedMark: null,
+          status: 'blank',
+        });
+        continue;
+      }
+
+      // Decisão da resposta da questão
+      const markedIndices: number[] = [];
+      const ambiguousIndices: number[] = [];
+
+      for (let o = 0; o < 5; o++) {
+        const val = fillRatios[OPTION_LABELS[o]];
+        if (val >= markedThreshold) {
+          markedIndices.push(o);
+        } else if (val >= ambiguousThreshold) {
+          ambiguousIndices.push(o);
+        }
+      }
+
+      let detectedMark: 'A' | 'B' | 'C' | 'D' | 'E' | null = null;
+      let status: 'marked' | 'blank' | 'multiple' = 'blank';
+
+      if (markedIndices.length === 1 && ambiguousIndices.length === 0) {
+        status = 'marked';
+        detectedMark = OPTION_LABELS[markedIndices[0]];
+      } else if (markedIndices.length === 0 && ambiguousIndices.length === 0) {
+        status = 'blank';
+        detectedMark = null;
+      } else {
+        status = 'multiple';
+        detectedMark = null;
+      }
+
+      detections.push({
+        questionNumber: currentQ,
+        fillRatios,
+        detectedMark,
+        status,
+      });
+    }
+  }
+
+  // Ordena por número da questão
+  detections.sort((a, b) => a.questionNumber - b.questionNumber);
+
+  return {
+    detections,
+    bubbles,
+    debugBubbles,
+    timingMarks,
+  };
+}
