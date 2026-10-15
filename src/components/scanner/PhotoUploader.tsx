@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { ExamVersion, GradingRecord } from '../../types/exam';
-import { DecryptedQrPayload, OmrDebugInfo } from '../../types/omr';
+import { DecryptedQrPayload, OmrDebugInfo, GradingEvidence } from '../../types/omr';
 import { decryptAnswerKey } from '../../utils/crypto';
 import { gradeCanvasWithPayloadDebug, detectOmrGrid, GridConfig } from '../../utils/omrProcessor';
 import {
@@ -26,7 +26,7 @@ interface PhotoUploaderProps {
   teacherPassword: string;
   activePayload: DecryptedQrPayload | null;
   onLockPayload?: (payload: DecryptedQrPayload) => void;
-  onGraded: (record: GradingRecord) => void;
+  onGraded: (record: GradingRecord, evidence?: GradingEvidence) => void;
   availableVersions?: ExamVersion[];
   onSelectExamVersion?: (v: ExamVersion) => void;
 }
@@ -52,6 +52,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
     record: GradingRecord;
     debugInfo: OmrDebugInfo;
     debugCanvasUrl: string;
+    evidence?: GradingEvidence;
   } | null>(null);
   const [showLogs, setShowLogs] = useState<boolean>(false);
   const [isImageModalOpen, setIsImageModalOpen] = useState<boolean>(false);
@@ -89,60 +90,96 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
       if (!targetPayload) {
         let decodedText: string | null = null;
 
-        if (teacherPassword && teacherPassword.trim()) {
+        try {
+          const qrScanner = new Html5Qrcode('hidden-qr-reader');
           try {
-            const qrScanner = new Html5Qrcode('hidden-qr-reader');
-            try {
-              decodedText = await qrScanner.scanFile(file, false);
-            } catch {
-              // Continua para tentativas com recorte
-            }
+            decodedText = await qrScanner.scanFile(file, false);
+          } catch {
+            // Continua para tentativas com recorte
+          }
 
-            const scanCanvas = async (subCanvas: HTMLCanvasElement): Promise<string> => {
-              const blob = await new Promise<Blob | null>((resolve) =>
-                subCanvas.toBlob(resolve, 'image/png')
-              );
-              if (!blob) throw new Error('Falha ao gerar blob do canvas');
-              const cropFile = new File([blob], 'qr-crop.png', { type: 'image/png' });
-              return await qrScanner.scanFile(cropFile, false);
-            };
+          const scanCanvas = async (subCanvas: HTMLCanvasElement): Promise<string> => {
+            const blob = await new Promise<Blob | null>((resolve) =>
+              subCanvas.toBlob(resolve, 'image/png')
+            );
+            if (!blob) throw new Error('Falha ao gerar blob do canvas');
+            const cropFile = new File([blob], 'qr-crop.png', { type: 'image/png' });
+            return await qrScanner.scanFile(cropFile, false);
+          };
 
-            // Tentativa: Quadrante superior direito
-            if (!decodedText) {
-              const cropX = Math.floor(canvas.width * 0.45);
-              const cropY = 0;
-              const cropW = canvas.width - cropX;
-              const cropH = Math.floor(canvas.height * 0.35);
-              const scale = Math.min(1, 1000 / Math.max(cropW, cropH));
-              const cropCanvas = document.createElement('canvas');
-              cropCanvas.width = Math.max(250, Math.floor(cropW * scale));
-              cropCanvas.height = Math.max(250, Math.floor(cropH * scale));
-              const cropCtx = cropCanvas.getContext('2d');
-              if (cropCtx) {
-                cropCtx.imageSmoothingEnabled = false;
-                cropCtx.drawImage(canvas, cropX, cropY, cropW, cropH, 0, 0, cropCanvas.width, cropCanvas.height);
-                try {
-                  decodedText = await scanCanvas(cropCanvas);
-                } catch {
-                  // Falha
-                }
+          // Tentativa 1: Quadrante superior direito (onde fica o QR Code da folha do GabariTeX)
+          if (!decodedText) {
+            const cropX = Math.floor(canvas.width * 0.45);
+            const cropY = 0;
+            const cropW = canvas.width - cropX;
+            const cropH = Math.floor(canvas.height * 0.32);
+            const maxDim = Math.max(cropW, cropH);
+            const scale = Math.min(1, 1400 / maxDim);
+            const cropCanvas = document.createElement('canvas');
+            cropCanvas.width = Math.max(300, Math.round(cropW * scale));
+            cropCanvas.height = Math.max(300, Math.round(cropH * scale));
+            const cropCtx = cropCanvas.getContext('2d');
+            if (cropCtx) {
+              cropCtx.imageSmoothingEnabled = true;
+              cropCtx.imageSmoothingQuality = 'high';
+              cropCtx.drawImage(canvas, cropX, cropY, cropW, cropH, 0, 0, cropCanvas.width, cropCanvas.height);
+              try {
+                decodedText = await scanCanvas(cropCanvas);
+              } catch {
+                // Falha
               }
             }
-
-            if (decodedText) {
-              targetPayload = await decryptAnswerKey(decodedText, teacherPassword);
-              onLockPayload?.(targetPayload);
-            }
-          } catch {
-            // Falha silenciosa no QR scan
           }
+
+          // Tentativa 2: Metade superior inteira (para enquadramento inclinado ou deslocado)
+          if (!decodedText) {
+            const topH = Math.floor(canvas.height * 0.42);
+            const maxDim = Math.max(canvas.width, topH);
+            const scale = Math.min(1, 1400 / maxDim);
+            const topCanvas = document.createElement('canvas');
+            topCanvas.width = Math.max(300, Math.round(canvas.width * scale));
+            topCanvas.height = Math.max(300, Math.round(topH * scale));
+            const topCtx = topCanvas.getContext('2d');
+            if (topCtx) {
+              topCtx.imageSmoothingEnabled = true;
+              topCtx.imageSmoothingQuality = 'high';
+              topCtx.drawImage(canvas, 0, 0, canvas.width, topH, 0, 0, topCanvas.width, topCanvas.height);
+              try {
+                decodedText = await scanCanvas(topCanvas);
+              } catch {
+                // Falha
+              }
+            }
+          }
+
+          if (decodedText) {
+            if (teacherPassword && teacherPassword.trim()) {
+              try {
+                targetPayload = await decryptAnswerKey(decodedText, teacherPassword);
+                onLockPayload?.(targetPayload);
+                setSuccessMessage(
+                  `QR Code identificado! Gabarito da Versão ${targetPayload.version} carregado com sucesso.`
+                );
+              } catch {
+                setErrorMessage(
+                  'QR Code detectado na folha, porém a senha informada não confere com a senha da prova. Verifique a senha do professor.'
+                );
+              }
+            } else {
+              setErrorMessage(
+                'QR Code detectado na folha! Por favor, informe a senha da prova para desbloquear a correção.'
+              );
+            }
+          }
+        } catch {
+          // Falha silenciosa no leitor de QR
         }
 
-        // Se o QR Code não foi encontrado na foto
+        // Se o QR Code não foi encontrado ou não pôde ser descriptografado
         if (!targetPayload) {
-          if (availableVersions.length > 0) {
-            // Aplica a primeira versão disponível para permitir inspeção da grade
-            const defaultVer = availableVersions[0];
+          const defaultVer = availableVersions.find((v) => v.questions && v.questions.length > 0);
+          if (defaultVer) {
+            // Aplica a primeira versão com questões disponíveis para permitir inspeção da grade
             const pointsMap: Record<number, number> = {};
             const subjectiveQuestions: number[] = [];
             defaultVer.questions.forEach((q, idx) => {
@@ -167,14 +204,14 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
               `Foto da grade de respostas detectada. Aplicando gabarito da Versão ${defaultVer.versionLetter}.`
             );
           } else {
-            // Mock gabarito de 10 questões para teste visual em modo diagnóstico
+            // Mock gabarito de 10 questões para teste visual em modo diagnóstico quando não há prova
             targetPayload = {
               examId: 'debug-exam',
               version: 'A',
               key: { 1: 'A', 2: 'B', 3: 'C', 4: 'C', 5: 'D', 6: 'A', 7: 'E', 8: 'A', 9: 'B', 10: 'C' },
               points: { 1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1, 9: 1, 10: 1 },
               totalQuestions: 10,
-              subjectiveQuestions: [3, 6],
+              subjectiveQuestions: [1, 2, 4],
             };
           }
         }
@@ -205,7 +242,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
       }
 
       // 3. Analisa e gera diagnóstico completo do OMR
-      const { record, debugInfo, debugCanvasUrl } = gradeCanvasWithPayloadDebug(
+      const { record, debugInfo, debugCanvasUrl, evidence } = gradeCanvasWithPayloadDebug(
         canvas,
         targetPayload
       );
@@ -213,9 +250,9 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
       setIsProcessing(false);
 
       if (isDebugAllowed && isDebugMode) {
-        setDebugResult({ record, debugInfo, debugCanvasUrl });
+        setDebugResult({ record, debugInfo, debugCanvasUrl, evidence });
       } else {
-        onGraded(record);
+        onGraded(record, evidence);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Não foi possível ler o gabarito na foto.';
@@ -235,7 +272,18 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col justify-between">
       <div>
-        <div id="hidden-qr-reader" className="hidden" />
+        <div
+          id="hidden-qr-reader"
+          style={{
+            position: 'fixed',
+            top: -9999,
+            left: -9999,
+            width: 800,
+            height: 800,
+            opacity: 0,
+            pointerEvents: 'none',
+          }}
+        />
 
         {/* Header com Toggle do Modo Diagnóstico */}
         <div className="flex items-center justify-between pb-4 mb-5 border-b border-slate-100 flex-wrap gap-3">
@@ -519,7 +567,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  onGraded(debugResult.record);
+                  onGraded(debugResult.record, debugResult.evidence);
                   setSuccessMessage('Correção confirmada e registrada com sucesso!');
                 }}
                 className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-on-accent rounded-xl text-xs font-black transition shadow-lg shadow-emerald-900/30 flex items-center gap-2"

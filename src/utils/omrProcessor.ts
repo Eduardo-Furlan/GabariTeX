@@ -4,11 +4,14 @@ import {
   OmrRawDetection,
   SheetCorners,
   OmrDebugInfo,
+  GradingEvidence,
 } from '../types/omr';
 import { GradedAnswer, GradingRecord } from '../types/exam';
 import { toGray } from './omr/grayImage';
 import { detectSheet } from './omr/sheetDetector';
 import { readBubbles } from './omr/bubbleReader';
+import { buildObjectiveAnswer, recomputeTotals } from './grading';
+import { buildEvidence } from './omrEvidence';
 
 export interface GridConfig {
   totalQuestions: number;
@@ -96,13 +99,19 @@ export function detectOmrGrid(
     const imgData = ctx.getImageData(0, 0, width, height);
     const gray = toGray(imgData);
     const questionsPerColumn =
-      config.totalQuestions <= 12
-        ? config.totalQuestions
-        : Math.ceil(config.totalQuestions / Math.max(1, config.columnsCount));
+      config.totalQuestions > 0
+        ? config.totalQuestions <= 12
+          ? config.totalQuestions
+          : Math.ceil(config.totalQuestions / Math.max(1, config.columnsCount))
+        : undefined;
 
     const det = detectSheet(gray, config.columnsCount, questionsPerColumn);
+    const detectedTotalQuestions = det.columns.reduce((sum, col) => sum + col.length, 0);
+    const effectiveTotalQuestions =
+      config.totalQuestions > 0 ? config.totalQuestions : detectedTotalQuestions;
+
     const result = readBubbles(gray, det, {
-      totalQuestions: config.totalQuestions,
+      totalQuestions: effectiveTotalQuestions,
       subjectiveQuestions: config.subjectiveQuestions,
     });
 
@@ -170,13 +179,19 @@ export function analyzeCanvasOmrWithDebug(
     const imgData = ctx.getImageData(0, 0, width, height);
     const gray = toGray(imgData);
     const questionsPerColumn =
-      inferredConfig.totalQuestions <= 12
-        ? inferredConfig.totalQuestions
-        : Math.ceil(inferredConfig.totalQuestions / Math.max(1, inferredConfig.columnsCount));
+      inferredConfig.totalQuestions > 0
+        ? inferredConfig.totalQuestions <= 12
+          ? inferredConfig.totalQuestions
+          : Math.ceil(inferredConfig.totalQuestions / Math.max(1, inferredConfig.columnsCount))
+        : undefined;
 
     const det = detectSheet(gray, inferredConfig.columnsCount, questionsPerColumn);
+    const detectedTotalQuestions = det.columns.reduce((sum, col) => sum + col.length, 0);
+    const effectiveTotalQuestions =
+      inferredConfig.totalQuestions > 0 ? inferredConfig.totalQuestions : detectedTotalQuestions;
+
     const result = readBubbles(gray, det, {
-      totalQuestions: inferredConfig.totalQuestions,
+      totalQuestions: effectiveTotalQuestions,
       subjectiveQuestions: inferredConfig.subjectiveQuestions,
     });
 
@@ -574,6 +589,7 @@ export function gradeCanvasWithPayloadDebug(
   record: GradingRecord;
   debugInfo: OmrDebugInfo;
   debugCanvasUrl: string;
+  evidence?: GradingEvidence;
 } {
   const totalQuestions =
     payload.totalQuestions ??
@@ -596,8 +612,6 @@ export function gradeCanvasWithPayloadDebug(
     gridConfig
   );
 
-  let totalPoints = 0;
-  let maxPoints = 0;
   const answers: GradedAnswer[] = [];
 
   const objectiveQuestionNumbers = Object.keys(payload.key)
@@ -607,45 +621,38 @@ export function gradeCanvasWithPayloadDebug(
   for (const i of objectiveQuestionNumbers) {
     const correctOpt = payload.key[i] || 'A';
     const qPoint = payload.points?.[i] ?? 1.0;
-    maxPoints += qPoint;
-
     const detected = omrDetections.find((d) => d.questionNumber === i);
-    const marked = detected?.detectedMark || null;
-    const isCorrect = marked === correctOpt;
-    const pointsEarned = isCorrect ? qPoint : 0;
-    totalPoints += pointsEarned;
 
-    answers.push({
-      questionNumber: i,
-      markedOption: marked,
-      correctOption: correctOpt,
-      isCorrect,
-      status:
-        detected?.status === 'multiple'
-          ? 'multiple'
-          : marked === null
-          ? 'blank'
-          : isCorrect
-          ? 'correct'
-          : 'wrong',
-      pointsEarned,
-      maxPoints: qPoint,
-    });
+    answers.push(
+      buildObjectiveAnswer({
+        questionNumber: i,
+        correctOption: correctOpt,
+        maxPoints: qPoint,
+        detection: detected,
+      })
+    );
   }
 
-  const percentage = maxPoints > 0 ? (totalPoints / maxPoints) * 100 : 0;
-
-  const record: GradingRecord = {
+  const initialRecord: GradingRecord = {
     id: `rec-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
     timestamp: Date.now(),
     studentName: '',
     studentId: '',
     versionLetter: payload.version,
-    totalScore: totalPoints,
-    maxScore: maxPoints,
-    percentage,
+    totalScore: 0,
+    maxScore: 0,
+    percentage: 0,
     answers,
   };
+
+  const record = recomputeTotals(initialRecord);
+
+  let evidence: GradingEvidence | undefined;
+  try {
+    evidence = buildEvidence(canvas, debugInfo, record);
+  } catch {
+    evidence = undefined;
+  }
 
   let debugCanvasUrl = '';
   try {
@@ -661,6 +668,7 @@ export function gradeCanvasWithPayloadDebug(
     record,
     debugInfo,
     debugCanvasUrl,
+    evidence,
   };
 }
 

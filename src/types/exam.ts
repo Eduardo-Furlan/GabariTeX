@@ -46,6 +46,8 @@ export interface ExamVersion {
   encryptedQrPayload: string;
 }
 
+export type OptionLabel = 'A' | 'B' | 'C' | 'D' | 'E';
+
 export interface GradedAnswer {
   questionNumber: number;
   markedOption: string | null;
@@ -54,6 +56,10 @@ export interface GradedAnswer {
   status: 'correct' | 'wrong' | 'blank' | 'multiple';
   pointsEarned: number;
   maxPoints: number;
+  detectedOption?: string | null;
+  fillRatios?: Record<OptionLabel, number>;
+  needsReview?: boolean;
+  manualOverride?: boolean;
 }
 
 export interface GradingRecord {

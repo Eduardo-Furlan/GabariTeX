@@ -255,7 +255,7 @@ export function detectSheet(
       }
     }
 
-    if (expectedRows !== undefined && pairs.length !== expectedRows) {
+    if (expectedRows !== undefined && expectedRows > 0 && pairs.length !== expectedRows) {
       throw new OmrDetectionError(
         'ROWS_MISMATCH',
         `Linhas pareadas: ${pairs.length}, esperado: ${expectedRows}.`

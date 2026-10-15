@@ -108,4 +108,13 @@ describe('Detecção OMR pura em TypeScript (Fiduciais + Sincronizadores)', () =
     expect(record.maxScore).toBe(8);
     expect(record.percentage).toBe(100);
   });
+
+  it('deve detectar linhas dinamicamente sem erro quando expectedRows for 0 ou undefined', () => {
+    const gray2 = loadJpgAsGray('tests/2.jpg');
+    const detZero = detectSheet(gray2, 1, 0);
+    expect(detZero.columns[0].length).toBe(10);
+
+    const detUndef = detectSheet(gray2, 1, undefined);
+    expect(detUndef.columns[0].length).toBe(10);
+  });
 });

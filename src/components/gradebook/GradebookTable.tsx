@@ -1,16 +1,30 @@
 import React, { useState } from 'react';
-import { GradingRecord } from '../../types/exam';
+import { GradingRecord, OptionLabel } from '../../types/exam';
 import { exportGradebookToCsv } from '../../utils/storage';
-import { Download, Trash2, ChevronDown, ChevronUp, Users, CheckCircle, XCircle } from 'lucide-react';
+import { applyManualOverride, revertOverride, recomputeTotals, ManualChoice } from '../../utils/grading';
+import { AnswerChoiceGroup } from '../scanner/AnswerChoiceGroup';
+import {
+  Download,
+  Trash2,
+  ChevronDown,
+  ChevronUp,
+  Users,
+  CheckCircle,
+  XCircle,
+  Pencil,
+  RotateCcw,
+} from 'lucide-react';
 
 interface GradebookTableProps {
   records: GradingRecord[];
+  onUpdateRecord?: (record: GradingRecord) => void;
   onDeleteRecord: (id: string) => void;
   onClearAll: () => void;
 }
 
 export const GradebookTable: React.FC<GradebookTableProps> = ({
   records,
+  onUpdateRecord,
   onDeleteRecord,
   onClearAll,
 }) => {
@@ -157,33 +171,104 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
                     <tr className="bg-slate-50/80">
                       <td colSpan={6} className="p-4">
                         <div className="text-xs">
-                          <span className="font-semibold text-slate-700 block mb-2">
-                            Resumo das Respostas:
-                          </span>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2">
-                            {r.answers.map((a) => (
-                              <div
-                                key={a.questionNumber}
-                                className={`p-2 rounded border flex flex-col items-center text-center ${
-                                  a.isCorrect
-                                    ? 'bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-950/40 dark:border-emerald-800/60 dark:text-emerald-300'
-                                    : 'bg-rose-50 border-rose-200 text-rose-800 dark:bg-rose-950/40 dark:border-rose-800/60 dark:text-rose-300'
-                                }`}
-                              >
-                                <span className="font-bold">Q{a.questionNumber}</span>
-                                <div className="flex items-center gap-1 my-0.5">
-                                  {a.isCorrect ? (
-                                    <CheckCircle className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                            <span className="font-semibold text-slate-700 block">
+                              Resumo e Edição das Respostas:
+                            </span>
+                            {onUpdateRecord && (
+                              <span className="text-[11px] text-slate-500">
+                                Clique nos seletores abaixo para corrigir qualquer alternativa diretamente no livro.
+                              </span>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                            {r.answers.map((a) => {
+                              const currentChoice: ManualChoice =
+                                a.status === 'blank'
+                                  ? 'BLANK'
+                                  : a.status === 'multiple'
+                                  ? 'INVALID'
+                                  : (a.markedOption as OptionLabel) || 'BLANK';
+
+                              return (
+                                <div
+                                  key={a.questionNumber}
+                                  className={`p-2.5 rounded-lg border flex flex-col justify-between gap-1.5 ${
+                                    a.isCorrect
+                                      ? 'bg-emerald-50/60 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800/60'
+                                      : 'bg-rose-50/60 border-rose-200 dark:bg-rose-950/30 dark:border-rose-800/60'
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="font-bold text-slate-800">Q{a.questionNumber}</span>
+                                      {a.manualOverride && (
+                                        <span
+                                          className="flex items-center gap-0.5 text-[10px] text-indigo-700 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-950 px-1 py-0.5 rounded font-semibold"
+                                          title={`Ajustado manualmente (original: ${a.detectedOption || '—'})`}
+                                        >
+                                          <Pencil className="w-2.5 h-2.5" /> Editado
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      {a.isCorrect ? (
+                                        <span className="flex items-center gap-0.5 text-emerald-700 dark:text-emerald-300 font-bold">
+                                          <CheckCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                          {a.markedOption}
+                                        </span>
+                                      ) : (
+                                        <span className="flex items-center gap-0.5 text-rose-700 dark:text-rose-300 font-bold">
+                                          <XCircle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+                                          {a.markedOption || (a.status === 'multiple' ? 'Rasura' : 'Branco')}
+                                        </span>
+                                      )}
+                                      <span className="text-[10px] text-slate-500 ml-1">
+                                        (Gab: {a.correctOption})
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  {onUpdateRecord ? (
+                                    <div className="flex items-center justify-between pt-1 border-t border-slate-200/50 mt-1 gap-1">
+                                      <AnswerChoiceGroup
+                                        size="sm"
+                                        value={currentChoice}
+                                        onChange={(choice) => {
+                                          const updatedAnswers = r.answers.map((ans) =>
+                                            ans.questionNumber === a.questionNumber
+                                              ? applyManualOverride(ans, choice)
+                                              : ans
+                                          );
+                                          onUpdateRecord(recomputeTotals({ ...r, answers: updatedAnswers }));
+                                        }}
+                                      />
+                                      {a.manualOverride && (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const updatedAnswers = r.answers.map((ans) =>
+                                              ans.questionNumber === a.questionNumber
+                                                ? revertOverride(ans)
+                                                : ans
+                                            );
+                                            onUpdateRecord(recomputeTotals({ ...r, answers: updatedAnswers }));
+                                          }}
+                                          className="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 p-0.5 transition"
+                                          title="Restaurar valor detectado originalmente"
+                                        >
+                                          <RotateCcw className="w-3 h-3" />
+                                        </button>
+                                      )}
+                                    </div>
                                   ) : (
-                                    <XCircle className="w-3 h-3 text-rose-600 dark:text-rose-400" />
+                                    <div className="text-[10px] text-slate-500 text-right">
+                                      {a.pointsEarned.toFixed(1)} / {a.maxPoints.toFixed(1)} pt
+                                    </div>
                                   )}
-                                  <span>{a.markedOption || '—'}</span>
                                 </div>
-                                <span className="text-[10px] text-slate-500">
-                                  Gab: {a.correctOption}
-                                </span>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </div>
                       </td>

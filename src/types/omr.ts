@@ -72,3 +72,8 @@ export interface OmrDebugInfo {
   bubbles: OmrBubbleDebug[];
   logs: string[];
 }
+
+export interface GradingEvidence {
+  rowCrops: Record<number, string>;
+  sheetThumbUrl?: string;
+}

@@ -1,0 +1,187 @@
+import { GradedAnswer, GradingRecord, OptionLabel } from '../types/exam';
+import { OmrRawDetection } from '../types/omr';
+
+export type ManualChoice = OptionLabel | 'BLANK' | 'INVALID';
+
+/**
+ * Constrói um GradedAnswer para uma questão objetiva a partir da leitura OMR bruta.
+ */
+export function buildObjectiveAnswer(args: {
+  questionNumber: number;
+  correctOption: string;
+  maxPoints: number;
+  detection?: OmrRawDetection;
+}): GradedAnswer {
+  const { questionNumber, correctOption, maxPoints, detection } = args;
+  const detectedMark = detection?.detectedMark || null;
+  const isMultiple = detection?.status === 'multiple';
+  const isBlank = !isMultiple && detectedMark === null;
+  const isCorrect = !isMultiple && !isBlank && detectedMark === correctOption;
+
+  const status: GradedAnswer['status'] = isMultiple
+    ? 'multiple'
+    : isBlank
+    ? 'blank'
+    : isCorrect
+    ? 'correct'
+    : 'wrong';
+
+  const pointsEarned = isCorrect ? maxPoints : 0;
+
+  // Regra de needsReview:
+  // - status === 'multiple'
+  // - ou (status === 'marked' e fillRatio da marcada < 0.75)
+  // Questões em branco (< 0.30) não são sinalizadas individualmente
+  let needsReview = false;
+  if (isMultiple) {
+    needsReview = true;
+  } else if (detection?.status === 'marked' && detectedMark) {
+    const ratio = detection.fillRatios[detectedMark] ?? 1.0;
+    if (ratio < 0.75) {
+      needsReview = true;
+    }
+  }
+
+  let fillRatios: Record<OptionLabel, number> | undefined;
+  if (needsReview && detection?.fillRatios) {
+    fillRatios = {
+      A: Number(detection.fillRatios.A.toFixed(2)),
+      B: Number(detection.fillRatios.B.toFixed(2)),
+      C: Number(detection.fillRatios.C.toFixed(2)),
+      D: Number(detection.fillRatios.D.toFixed(2)),
+      E: Number(detection.fillRatios.E.toFixed(2)),
+    };
+  }
+
+  return {
+    questionNumber,
+    markedOption: detectedMark,
+    correctOption,
+    isCorrect,
+    status,
+    pointsEarned,
+    maxPoints,
+    detectedOption: detectedMark,
+    fillRatios,
+    needsReview,
+    manualOverride: false,
+  };
+}
+
+/**
+ * Aplica uma escolha manual do professor sobre a resposta lida.
+ */
+export function applyManualOverride(a: GradedAnswer, choice: ManualChoice): GradedAnswer {
+  const detectedOption = a.detectedOption !== undefined ? a.detectedOption : a.markedOption;
+
+  if (choice === 'BLANK') {
+    return {
+      ...a,
+      detectedOption,
+      markedOption: null,
+      isCorrect: false,
+      status: 'blank',
+      pointsEarned: 0,
+      manualOverride: true,
+      needsReview: false,
+    };
+  }
+
+  if (choice === 'INVALID') {
+    return {
+      ...a,
+      detectedOption,
+      markedOption: null,
+      isCorrect: false,
+      status: 'multiple',
+      pointsEarned: 0,
+      manualOverride: true,
+      needsReview: false,
+    };
+  }
+
+  const isCorrect = choice === a.correctOption;
+  return {
+    ...a,
+    detectedOption,
+    markedOption: choice,
+    isCorrect,
+    status: isCorrect ? 'correct' : 'wrong',
+    pointsEarned: isCorrect ? a.maxPoints : 0,
+    manualOverride: true,
+    needsReview: false,
+  };
+}
+
+/**
+ * Reverte a intervenção manual do professor para a leitura detectada pela máquina.
+ */
+export function revertOverride(a: GradedAnswer): GradedAnswer {
+  const orig = a.detectedOption ?? null;
+
+  if (orig !== null) {
+    const isCorrect = orig === a.correctOption;
+    const ratio = a.fillRatios ? a.fillRatios[orig as OptionLabel] : undefined;
+    const needsReview = ratio !== undefined ? ratio < 0.75 : false;
+
+    return {
+      ...a,
+      markedOption: orig,
+      isCorrect,
+      status: isCorrect ? 'correct' : 'wrong',
+      pointsEarned: isCorrect ? a.maxPoints : 0,
+      manualOverride: false,
+      needsReview,
+    };
+  }
+
+  // Se orig era null, checa se era rasura (múltipla) ou em branco
+  const isMultiple = a.fillRatios
+    ? Object.values(a.fillRatios).filter((r) => r >= 0.3).length >= 2
+    : false;
+
+  return {
+    ...a,
+    markedOption: null,
+    isCorrect: false,
+    status: isMultiple ? 'multiple' : 'blank',
+    pointsEarned: 0,
+    manualOverride: false,
+    needsReview: isMultiple,
+  };
+}
+
+/**
+ * Recalcula totais (totalScore, maxScore, percentage) de um GradingRecord sem mutar o objeto.
+ */
+export function recomputeTotals(r: GradingRecord): GradingRecord {
+  const totalScore = r.answers.reduce((acc, a) => acc + a.pointsEarned, 0);
+  const maxScore = r.answers.reduce((acc, a) => acc + a.maxPoints, 0);
+  const percentage = maxScore > 0 ? Number(((totalScore / maxScore) * 100).toFixed(2)) : 0;
+
+  return {
+    ...r,
+    totalScore: Number(totalScore.toFixed(2)),
+    maxScore: Number(maxScore.toFixed(2)),
+    percentage,
+  };
+}
+
+/**
+ * Conta quantas questões de um registro precisam de revisão humana.
+ */
+export function countNeedsReview(r: GradingRecord): number {
+  return r.answers.filter((a) => a.needsReview).length;
+}
+
+/**
+ * Auxiliar para suporte a questões dissertativas (Plano 02).
+ */
+export function countPendingSubjective(_r: GradingRecord): number {
+  return 0;
+}
+
+export function isPartial(_r: GradingRecord): boolean {
+  return false;
+}
+

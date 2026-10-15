@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { ExamVersion, GradingRecord } from '../../types/exam';
-import { DecryptedQrPayload } from '../../types/omr';
+import { DecryptedQrPayload, GradingEvidence } from '../../types/omr';
 import { decryptAnswerKey } from '../../utils/crypto';
-import { gradeCanvasWithPayload } from '../../utils/omrProcessor';
+import { gradeCanvasWithPayloadDebug } from '../../utils/omrProcessor';
 import { Camera, AlertTriangle, KeyRound, CheckCircle2, RefreshCw, QrCode } from 'lucide-react';
 
 interface CameraScannerProps {
@@ -11,7 +11,7 @@ interface CameraScannerProps {
   activePayload: DecryptedQrPayload | null;
   onLockPayload: (payload: DecryptedQrPayload) => void;
   onUnlockPayload: () => void;
-  onGraded: (record: GradingRecord) => void;
+  onGraded: (record: GradingRecord, evidence?: GradingEvidence) => void;
   onRequestPasswordChange: () => void;
   availableVersions?: ExamVersion[];
   onSelectExamVersion?: (v: ExamVersion) => void;
@@ -272,9 +272,9 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({
       }
       ctx.drawImage(videoElem, 0, 0, canvas.width, canvas.height);
 
-      const record = gradeCanvasWithPayload(canvas, payload);
+      const { record, evidence } = gradeCanvasWithPayloadDebug(canvas, payload);
       playSuccessBeep();
-      onGraded(record);
+      onGraded(record, evidence);
       setStatusText(`Folha corrigida (Nota: ${record.totalScore.toFixed(1)} pts). Posicione a próxima!`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Falha ao processar folha de respostas.';

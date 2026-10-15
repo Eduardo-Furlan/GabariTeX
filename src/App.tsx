@@ -18,7 +18,7 @@ import { PhotoUploader } from './components/scanner/PhotoUploader';
 import { PasswordModal } from './components/scanner/PasswordModal';
 import { GradingModal } from './components/scanner/GradingModal';
 import { GradebookTable } from './components/gradebook/GradebookTable';
-import { DecryptedQrPayload } from './types/omr';
+import { DecryptedQrPayload, GradingEvidence } from './types/omr';
 import { Printer, Shuffle, Eye, ShieldCheck, BookOpen, KeyRound, CheckCircle2, RefreshCw } from 'lucide-react';
 import './styles/print.css';
 
@@ -44,7 +44,10 @@ export const App: React.FC = () => {
   });
 
   const [showPasswordModal, setShowPasswordModal] = useState<boolean>(false);
-  const [gradingModalRecord, setGradingModalRecord] = useState<GradingRecord | null>(null);
+  const [gradingSession, setGradingSession] = useState<{
+    record: GradingRecord;
+    evidence?: GradingEvidence;
+  } | null>(null);
   const [activePayload, setActivePayload] = useState<DecryptedQrPayload | null>(null);
 
   const [records, setRecords] = useState<GradingRecord[]>(() => {
@@ -154,8 +157,12 @@ export const App: React.FC = () => {
   };
 
   const handleGradeSaved = (newRecord: GradingRecord) => {
-    setRecords((prev) => [newRecord, ...prev]);
-    setGradingModalRecord(null);
+    setRecords((prev) => [newRecord, ...prev.filter((r) => r.id !== newRecord.id)]);
+    setGradingSession(null);
+  };
+
+  const handleUpdateRecord = (updatedRecord: GradingRecord) => {
+    setRecords((prev) => prev.map((r) => (r.id === updatedRecord.id ? updatedRecord : r)));
   };
 
   const currentVersion = versions.find((v) => v.versionLetter === selectedVersionLetter) || versions[0];
@@ -573,7 +580,7 @@ export const App: React.FC = () => {
                 teacherPassword={teacherPassword}
                 activePayload={activePayload}
                 onLockPayload={(payload) => setActivePayload(payload)}
-                onGraded={(res) => setGradingModalRecord(res)}
+                onGraded={(record, evidence) => setGradingSession({ record, evidence })}
                 availableVersions={versions}
                 onSelectExamVersion={handleSelectExamVersion}
               />
@@ -585,6 +592,7 @@ export const App: React.FC = () => {
         {activeTab === 'gradebook' && (
           <GradebookTable
             records={records}
+            onUpdateRecord={handleUpdateRecord}
             onDeleteRecord={(id) => setRecords((prev) => prev.filter((r) => r.id !== id))}
             onClearAll={() => {
               if (confirm('Tem certeza de que deseja apagar todas as notas corrigidas?')) {
@@ -605,11 +613,12 @@ export const App: React.FC = () => {
       )}
 
       {/* MODAL DE CORREÇÃO E CONFIRMAÇÃO DE NOTA */}
-      {gradingModalRecord && (
+      {gradingSession && (
         <GradingModal
-          initialRecord={gradingModalRecord}
+          initialRecord={gradingSession.record}
+          evidence={gradingSession.evidence}
           onSave={handleGradeSaved}
-          onCancel={() => setGradingModalRecord(null)}
+          onCancel={() => setGradingSession(null)}
         />
       )}
     </div>

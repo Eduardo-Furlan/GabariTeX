@@ -59,7 +59,7 @@ export function exportGradebookToCsv(records: GradingRecord[]): void {
 
   const qHeaders = allQuestionNumbers.map((qNum) => `Q${qNum}`).join(';');
 
-  const header = `Aluno;Matrícula;Versão;Nota;Nota Máxima;Porcentagem (%);${qHeaders};Data\n`;
+  const header = `Aluno;Matrícula;Versão;Nota;Nota Máxima;Porcentagem (%);${qHeaders};Revisões manuais;Data\n`;
 
   const rows = records.map((r) => {
     const qAnswers = allQuestionNumbers
@@ -70,8 +70,9 @@ export function exportGradebookToCsv(records: GradingRecord[]): void {
       })
       .join(';');
 
+    const manualOverridesCount = r.answers.filter((a) => a.manualOverride).length;
     const dateStr = new Date(r.timestamp).toLocaleString('pt-BR');
-    return `"${r.studentName}";"${r.studentId}";"${r.versionLetter}";${r.totalScore.toFixed(2)};${r.maxScore.toFixed(2)};${r.percentage.toFixed(1)}%;${qAnswers};"${dateStr}"`;
+    return `"${r.studentName}";"${r.studentId}";"${r.versionLetter}";${r.totalScore.toFixed(2)};${r.maxScore.toFixed(2)};${r.percentage.toFixed(1)}%;${qAnswers};${manualOverridesCount};"${dateStr}"`;
   });
 
   const csvContent = '\uFEFF' + header + rows.join('\n');
