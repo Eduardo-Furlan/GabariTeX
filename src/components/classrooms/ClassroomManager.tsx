@@ -83,13 +83,27 @@ export const ClassroomManager: React.FC<ClassroomManagerProps> = ({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Quando o modal abre, inicializa a seleção na turma ativa (ou na primeira turma disponível)
   useEffect(() => {
-    if (activeClassId && classes.some((c) => c.id === activeClassId)) {
-      setSelectedClassId(activeClassId);
-    } else if (classes.length > 0 && (!selectedClassId || !classes.some((c) => c.id === selectedClassId))) {
-      setSelectedClassId(classes[0].id);
+    if (isOpen) {
+      if (activeClassId && classes.some((c) => c.id === activeClassId)) {
+        setSelectedClassId(activeClassId);
+      } else if (classes.length > 0 && (!selectedClassId || !classes.some((c) => c.id === selectedClassId))) {
+        setSelectedClassId(classes[0].id);
+      }
     }
-  }, [activeClassId, classes, selectedClassId]);
+  }, [isOpen]);
+
+  // Se a turma selecionada deixar de existir (excluída), seleciona uma turma válida restante
+  useEffect(() => {
+    if (classes.length > 0 && selectedClassId && !classes.some((c) => c.id === selectedClassId)) {
+      setSelectedClassId(
+        activeClassId && classes.some((c) => c.id === activeClassId) ? activeClassId : classes[0].id
+      );
+    } else if (classes.length === 0) {
+      setSelectedClassId(null);
+    }
+  }, [classes, selectedClassId, activeClassId]);
 
   // Tecla ESC para fechar
   useEffect(() => {
