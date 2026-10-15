@@ -18,8 +18,11 @@ import { PhotoUploader } from './components/scanner/PhotoUploader';
 import { PasswordModal } from './components/scanner/PasswordModal';
 import { GradingModal } from './components/scanner/GradingModal';
 import { GradebookTable } from './components/gradebook/GradebookTable';
+import { BackupPanel } from './components/BackupPanel';
+import { BackupFile } from './utils/backup';
+import { useAutosave } from './hooks/useAutosave';
 import { DecryptedQrPayload, GradingEvidence } from './types/omr';
-import { Printer, Shuffle, Eye, ShieldCheck, BookOpen, KeyRound, CheckCircle2, RefreshCw } from 'lucide-react';
+import { Printer, Shuffle, Eye, ShieldCheck, BookOpen, KeyRound, CheckCircle2, RefreshCw, AlertTriangle } from 'lucide-react';
 import './styles/print.css';
 
 type PrintMode = 'complete' | 'exam_only' | 'answersheet_only' | 'all_versions';
@@ -54,6 +57,14 @@ export const App: React.FC = () => {
     return loadGradebookFromStorage();
   });
 
+  const [isBackupPanelOpen, setIsBackupPanelOpen] = useState<boolean>(false);
+
+  // Autosave com debounce (400ms para a prova, 300ms para notas) e flush automático em pagehide/visibilitychange
+  const examAutosave = useAutosave(exam, saveExamToStorage, 400);
+  const gradebookAutosave = useAutosave(records, saveGradebookToStorage, 300);
+  const hasStorageError =
+    examAutosave.status === 'error' || gradebookAutosave.status === 'error';
+
   const updateTeacherPassword = (newPass: string) => {
     setTeacherPassword(newPass);
     localStorage.setItem('mcorr_teacher_password', newPass);
@@ -74,13 +85,20 @@ export const App: React.FC = () => {
   }, [selectedVersionLetter]);
 
   useEffect(() => {
-    saveExamToStorage(exam);
     refreshVersions(exam);
   }, [exam, refreshVersions]);
 
-  useEffect(() => {
-    saveGradebookToStorage(records);
-  }, [records]);
+  const handleRestoreBackup = (backup: BackupFile) => {
+    setExam(backup.exam);
+    setRecords(backup.gradebook);
+    if (backup.teacherPassword) {
+      updateTeacherPassword(backup.teacherPassword);
+    }
+  };
+
+  const handleMergeGradebook = (merged: GradingRecord[]) => {
+    setRecords(merged);
+  };
 
   const handleExamChange = (updated: Exam) => {
     setExam(updated);
@@ -176,9 +194,30 @@ export const App: React.FC = () => {
         onImportJson={handleImportJson}
         onLoadSample={handleLoadSample}
         onClearExam={handleClearExam}
+        onOpenBackup={() => setIsBackupPanelOpen(true)}
         hasQuestions={exam.questions.length > 0}
         gradedCount={records.length}
+        autosaveState={examAutosave}
       />
+
+      {hasStorageError && (
+        <div className="bg-rose-600 text-on-accent px-4 py-2 text-xs font-semibold flex items-center justify-between shadow-md no-print">
+          <div className="flex items-center gap-2 max-w-7xl mx-auto w-full flex-wrap">
+            <AlertTriangle className="w-4 h-4 shrink-0 text-rose-200" />
+            <span>
+              Não foi possível salvar automaticamente (armazenamento do navegador cheio ou restrito).
+              Faça um backup dos seus dados agora para não perder alterações.
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsBackupPanelOpen(true)}
+              className="ml-auto shrink-0 px-3 py-1 bg-white text-rose-700 hover:bg-rose-50 rounded-lg text-xs font-bold transition shadow-sm"
+            >
+              Abrir Painel de Backup
+            </button>
+          </div>
+        </div>
+      )}
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 print:p-0 print:m-0 print:max-w-none">
         {/* ABA 1: CRIAR PROVA */}
@@ -599,6 +638,7 @@ export const App: React.FC = () => {
                 setRecords([]);
               }
             }}
+            onOpenBackupPanel={() => setIsBackupPanelOpen(true)}
           />
         )}
       </main>
@@ -619,6 +659,18 @@ export const App: React.FC = () => {
           evidence={gradingSession.evidence}
           onSave={handleGradeSaved}
           onCancel={() => setGradingSession(null)}
+        />
+      )}
+
+      {/* MODAL DE DADOS E BACKUP COMPLETO */}
+      {isBackupPanelOpen && (
+        <BackupPanel
+          exam={exam}
+          gradebook={records}
+          teacherPassword={teacherPassword}
+          onRestoreBackup={handleRestoreBackup}
+          onMergeGradebook={handleMergeGradebook}
+          onClose={() => setIsBackupPanelOpen(false)}
         />
       )}
     </div>

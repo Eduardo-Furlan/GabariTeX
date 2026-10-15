@@ -1,5 +1,6 @@
-import React, { useRef } from 'react';
-import { X, Image as ImageIcon } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { X, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { downscaleImage } from '../utils/image';
 
 interface ImageUploaderProps {
   imageUrl?: string;
@@ -13,19 +14,30 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   onImageChange,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
 
-  const handleFile = (file: File) => {
+  const handleFile = async (file: File) => {
     if (!file.type.startsWith('image/')) {
       alert('Por favor, selecione um arquivo de imagem.');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const result = e.target?.result as string;
-      onImageChange(result, imageCaption || '');
-    };
-    reader.readAsDataURL(file);
+    try {
+      setIsProcessing(true);
+      const dataUrl = await downscaleImage(file, 1200, 0.85);
+      onImageChange(dataUrl, imageCaption || '');
+    } catch (err) {
+      console.error('Erro ao redimensionar imagem', err);
+      // Fallback para FileReader padrão se o canvas falhar
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        onImageChange(result, imageCaption || '');
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -81,9 +93,18 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
             }}
           />
           <div className="flex flex-col items-center justify-center text-slate-500">
-            <ImageIcon className="w-6 h-6 text-slate-400 mb-1" />
-            <span className="text-xs font-medium">Adicionar Imagem / Gráfico (opcional)</span>
-            <span className="text-[11px] text-slate-400">Clique ou arraste um arquivo de imagem</span>
+            {isProcessing ? (
+              <>
+                <Loader2 className="w-6 h-6 text-indigo-500 animate-spin mb-1" />
+                <span className="text-xs font-medium text-indigo-600">Otimizando e comprimindo imagem...</span>
+              </>
+            ) : (
+              <>
+                <ImageIcon className="w-6 h-6 text-slate-400 mb-1" />
+                <span className="text-xs font-medium">Adicionar Imagem / Gráfico (opcional)</span>
+                <span className="text-[11px] text-slate-400">Clique ou arraste um arquivo de imagem</span>
+              </>
+            )}
           </div>
         </div>
       )}

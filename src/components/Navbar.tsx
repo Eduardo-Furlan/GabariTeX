@@ -12,8 +12,13 @@ import {
   Trash2,
   Menu,
   X,
+  Database,
+  Check,
+  Loader2,
+  AlertTriangle,
 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
+import { AutosaveState } from '../hooks/useAutosave';
 
 export type ActiveTab = 'editor' | 'versions' | 'print' | 'scanner' | 'gradebook';
 
@@ -24,8 +29,10 @@ interface NavbarProps {
   onImportJson: (file: File) => void;
   onLoadSample: () => void;
   onClearExam: () => void;
+  onOpenBackup: () => void;
   hasQuestions: boolean;
   gradedCount: number;
+  autosaveState?: AutosaveState;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -35,7 +42,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   onImportJson,
   onLoadSample,
   onClearExam,
+  onOpenBackup,
   gradedCount,
+  autosaveState,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
@@ -100,6 +109,45 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Ações Desktop (>= lg) */}
           <div className="hidden lg:flex items-center gap-2">
+            {/* Indicador de Salvamento Automático */}
+            {autosaveState && (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                {autosaveState.status === 'saving' && (
+                  <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+                    <Loader2 className="w-3 h-3 text-indigo-500 animate-spin" />
+                    <span>Salvando...</span>
+                  </span>
+                )}
+                {autosaveState.status === 'saved' && (
+                  <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                    <Check className="w-3 h-3 text-emerald-500" />
+                    <span>
+                      Salvo às{' '}
+                      {autosaveState.savedAt
+                        ? autosaveState.savedAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+                        : ''}
+                    </span>
+                  </span>
+                )}
+                {autosaveState.status === 'error' && (
+                  <span className="flex items-center gap-1 text-rose-600 dark:text-rose-400 font-bold">
+                    <AlertTriangle className="w-3 h-3 text-rose-500" />
+                    <span>Erro ao salvar</span>
+                  </span>
+                )}
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={onOpenBackup}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 rounded-lg text-xs font-bold transition shadow-sm"
+              title="Gerenciar backups completos, sincronizar notas e verificar armazenamento"
+            >
+              <Database className="w-3.5 h-3.5" />
+              <span>Dados & Backup</span>
+            </button>
+
             <input
               ref={fileInputRef}
               type="file"
@@ -116,36 +164,36 @@ export const Navbar: React.FC<NavbarProps> = ({
               type="button"
               onClick={() => fileInputRef.current?.click()}
               className="flex items-center gap-1.5 px-2.5 py-1.5 border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-medium transition"
-              title="Carregar banco de questões de um arquivo JSON"
+              title="Carregar banco de questões da prova de um arquivo JSON"
             >
               <Upload className="w-3.5 h-3.5" />
-              <span>Importar JSON</span>
+              <span>Importar Prova</span>
             </button>
 
             <button
               type="button"
               onClick={onExportJson}
               className="flex items-center gap-1.5 px-2.5 py-1.5 border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-medium transition"
-              title="Salvar prova e banco de questões em arquivo JSON"
+              title="Salvar banco de questões da prova em arquivo JSON"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>Exportar JSON</span>
+              <span>Exportar Prova</span>
             </button>
 
             <button
               type="button"
               onClick={onLoadSample}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 rounded-lg text-xs font-semibold transition"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-medium transition"
               title="Carregar exemplo completo de prova de cálculo/matemática com questões objetivas e dissertativa"
             >
-              <BookOpen className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-300" />
+              <BookOpen className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
               <span>Exemplo Matemática</span>
             </button>
 
             <button
               type="button"
               onClick={onClearExam}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-slate-500 hover:text-rose-700 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-500/10 border border-slate-200 rounded-lg text-xs font-semibold transition"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-slate-500 hover:text-rose-700 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-500/10 border border-slate-200 rounded-lg text-xs font-semibold transition"
               title="Limpar todos os dados e questões da prova atual"
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -159,6 +207,18 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Menu Retrátil Mobile (< lg) */}
         {mobileMenuOpen && (
           <div className="lg:hidden py-3 border-t border-slate-100 flex flex-col gap-2 bg-slate-50/90 -mx-4 px-4 sm:-mx-6 sm:px-6">
+            <button
+              type="button"
+              onClick={() => {
+                onOpenBackup();
+                setMobileMenuOpen(false);
+              }}
+              className="flex items-center justify-center gap-2 px-3 py-2 bg-indigo-600 text-on-accent font-bold rounded-lg text-xs shadow-sm transition"
+            >
+              <Database className="w-4 h-4" />
+              <span>Dados & Backup Completo</span>
+            </button>
+
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
@@ -169,7 +229,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 className="flex items-center justify-center gap-1.5 px-3 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg text-xs font-medium shadow-sm transition"
               >
                 <Upload className="w-3.5 h-3.5 text-indigo-600" />
-                <span>Importar JSON</span>
+                <span>Importar Prova</span>
               </button>
 
               <button
@@ -181,7 +241,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 className="flex items-center justify-center gap-1.5 px-3 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg text-xs font-medium shadow-sm transition"
               >
                 <Download className="w-3.5 h-3.5 text-indigo-600" />
-                <span>Exportar JSON</span>
+                <span>Exportar Prova</span>
               </button>
             </div>
 

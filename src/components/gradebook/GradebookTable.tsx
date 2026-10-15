@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { GradingRecord, OptionLabel } from '../../types/exam';
-import { exportGradebookToCsv } from '../../utils/storage';
+import { exportGradebookToCsv, loadLastBackupDate } from '../../utils/storage';
 import { applyManualOverride, revertOverride, recomputeTotals, ManualChoice } from '../../utils/grading';
 import { AnswerChoiceGroup } from '../scanner/AnswerChoiceGroup';
 import {
@@ -13,6 +13,8 @@ import {
   XCircle,
   Pencil,
   RotateCcw,
+  Database,
+  ShieldAlert,
 } from 'lucide-react';
 
 interface GradebookTableProps {
@@ -20,6 +22,7 @@ interface GradebookTableProps {
   onUpdateRecord?: (record: GradingRecord) => void;
   onDeleteRecord: (id: string) => void;
   onClearAll: () => void;
+  onOpenBackupPanel?: () => void;
 }
 
 export const GradebookTable: React.FC<GradebookTableProps> = ({
@@ -27,8 +30,14 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
   onUpdateRecord,
   onDeleteRecord,
   onClearAll,
+  onOpenBackupPanel,
 }) => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const lastBackupDate = loadLastBackupDate();
+  const daysSince = lastBackupDate
+    ? Math.floor((Date.now() - lastBackupDate.getTime()) / (1000 * 60 * 60 * 24))
+    : null;
+  const isBackupStale = records.length > 0 && (daysSince === null || daysSince >= 7);
 
   const toggleExpand = (id: string) => {
     setExpandedId(expandedId === id ? null : id);
@@ -75,6 +84,44 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
           )}
         </div>
       </div>
+
+      {/* Faixa de Lembrete de Backup */}
+      {records.length > 0 && (
+        <div
+          className={`mb-5 px-4 py-2.5 rounded-xl border text-xs flex items-center justify-between flex-wrap gap-2 transition ${
+            isBackupStale
+              ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/60 text-amber-900 dark:text-amber-200'
+              : 'bg-slate-50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            {isBackupStale ? (
+              <ShieldAlert className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+            ) : (
+              <Database className="w-4 h-4 text-indigo-500 shrink-0" />
+            )}
+            <span>
+              {lastBackupDate
+                ? `Último backup completo: ${daysSince === 0 ? 'hoje' : daysSince === 1 ? 'ontem' : `há ${daysSince} dias`}`
+                : 'Último backup: nenhum realizado ainda'}
+              {isBackupStale && ' — Recomendamos exportar um backup para proteger suas notas contra perdas.'}
+            </span>
+          </div>
+          {onOpenBackupPanel && (
+            <button
+              type="button"
+              onClick={onOpenBackupPanel}
+              className={`font-bold text-xs underline transition ${
+                isBackupStale
+                  ? 'text-amber-800 dark:text-amber-300 hover:text-amber-950'
+                  : 'text-indigo-600 dark:text-indigo-400 hover:text-indigo-800'
+              }`}
+            >
+              Fazer backup agora
+            </button>
+          )}
+        </div>
+      )}
 
       {records.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
