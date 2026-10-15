@@ -5,6 +5,10 @@ import {
   revertOverride,
   recomputeTotals,
   countNeedsReview,
+  setSubjectiveScore,
+  countPendingSubjective,
+  isPartial,
+  computeAverages,
 } from '../src/utils/grading';
 import { OmrRawDetection } from '../src/types/omr';
 import { GradingRecord } from '../src/types/exam';
@@ -309,6 +313,137 @@ describe('grading utilities', () => {
 
       // Verify immutability
       expect(record.totalScore).toBe(0);
+    });
+  });
+
+  describe('subjective scoring and averages (Plano 02)', () => {
+    const baseRecord: GradingRecord = {
+      id: 'rec-subj-1',
+      timestamp: 1000000,
+      studentName: 'Marina Silva',
+      studentId: '2026001',
+      versionLetter: 'A',
+      totalScore: 4.0,
+      maxScore: 6.0,
+      percentage: 66.67,
+      answers: [
+        {
+          questionNumber: 1,
+          markedOption: 'A',
+          correctOption: 'A',
+          isCorrect: true,
+          status: 'correct',
+          pointsEarned: 2.0,
+          maxPoints: 2.0,
+          needsReview: false,
+        },
+        {
+          questionNumber: 2,
+          markedOption: 'B',
+          correctOption: 'B',
+          isCorrect: true,
+          status: 'correct',
+          pointsEarned: 2.0,
+          maxPoints: 2.0,
+          needsReview: false,
+        },
+        {
+          questionNumber: 3,
+          markedOption: 'C',
+          correctOption: 'D',
+          isCorrect: false,
+          status: 'wrong',
+          pointsEarned: 0,
+          maxPoints: 2.0,
+          needsReview: false,
+        },
+      ],
+      subjectiveAnswers: [
+        {
+          questionNumber: 4,
+          maxPoints: 2.0,
+          pointsEarned: null,
+        },
+        {
+          questionNumber: 5,
+          maxPoints: 2.0,
+          pointsEarned: null,
+        },
+      ],
+    };
+
+    it('identifica registros parciais e conta questões pendentes corretamente', () => {
+      const withTotals = recomputeTotals(baseRecord);
+
+      expect(isPartial(withTotals)).toBe(true);
+      expect(countPendingSubjective(withTotals)).toBe(2);
+      // Objetivas: 4/6; Dissertativas pendentes contam 0 na totalScore, mas entram no maxScore
+      expect(withTotals.totalScore).toBe(4.0);
+      expect(withTotals.maxScore).toBe(10.0);
+      expect(withTotals.percentage).toBe(40.0);
+    });
+
+    it('setSubjectiveScore faz clamp em [0, maxPoints] e arredonda a 2 casas decimais', () => {
+      // Teste clamp superior
+      const clampedHigh = setSubjectiveScore(baseRecord, 4, 3.5);
+      const q4High = clampedHigh.subjectiveAnswers?.find((s) => s.questionNumber === 4);
+      expect(q4High?.pointsEarned).toBe(2.0); // maxPoints era 2.0
+
+      // Teste clamp inferior
+      const clampedLow = setSubjectiveScore(baseRecord, 4, -1.0);
+      const q4Low = clampedLow.subjectiveAnswers?.find((s) => s.questionNumber === 4);
+      expect(q4Low?.pointsEarned).toBe(0);
+
+      // Teste arredondamento
+      const rounded = setSubjectiveScore(baseRecord, 4, 1.6666);
+      const q4Rounded = rounded.subjectiveAnswers?.find((s) => s.questionNumber === 4);
+      expect(q4Rounded?.pointsEarned).toBe(1.67);
+
+      // Teste imutabilidade
+      expect(baseRecord.subjectiveAnswers?.[0].pointsEarned).toBeNull();
+    });
+
+    it('lançar notas dissertativas fecha o total e desmarca status parcial', () => {
+      const afterQ4 = setSubjectiveScore(baseRecord, 4, 1.5);
+      expect(isPartial(afterQ4)).toBe(true);
+      expect(countPendingSubjective(afterQ4)).toBe(1);
+      expect(afterQ4.totalScore).toBe(5.5); // 4.0 obj + 1.5 diss
+      expect(afterQ4.maxScore).toBe(10.0);
+      expect(afterQ4.percentage).toBe(55.0);
+
+      const afterQ5 = setSubjectiveScore(afterQ4, 5, 2.0);
+      expect(isPartial(afterQ5)).toBe(false);
+      expect(countPendingSubjective(afterQ5)).toBe(0);
+      expect(afterQ5.totalScore).toBe(7.5); // 4.0 obj + 1.5 + 2.0
+      expect(afterQ5.maxScore).toBe(10.0);
+      expect(afterQ5.percentage).toBe(75.0);
+    });
+
+    it('computeAverages considera apenas registros completos e reporta parciais excluídos', () => {
+      const complete1 = setSubjectiveScore(setSubjectiveScore(baseRecord, 4, 2.0), 5, 2.0); // total 8.0 (80%)
+      const complete2 = setSubjectiveScore(setSubjectiveScore(baseRecord, 4, 1.0), 5, 1.0); // total 6.0 (60%)
+      const partialRecord = baseRecord; // total 4.0 (40%), parcial
+
+      const avg = computeAverages([complete1, complete2, partialRecord]);
+
+      expect(avg.totalEvaluated).toBe(2);
+      expect(avg.excludedPartialCount).toBe(1);
+      expect(avg.averageScore).toBe(7.0); // (8 + 6) / 2
+      expect(avg.averagePercentage).toBe(70.0); // (80 + 60) / 2
+    });
+
+    it('computeAverages lida com lista vazia ou quando todos são parciais', () => {
+      const emptyAvg = computeAverages([]);
+      expect(emptyAvg.averageScore).toBe(0);
+      expect(emptyAvg.averagePercentage).toBe(0);
+      expect(emptyAvg.totalEvaluated).toBe(0);
+      expect(emptyAvg.excludedPartialCount).toBe(0);
+
+      const allPartialAvg = computeAverages([baseRecord]);
+      expect(allPartialAvg.averageScore).toBe(0);
+      expect(allPartialAvg.averagePercentage).toBe(0);
+      expect(allPartialAvg.totalEvaluated).toBe(0);
+      expect(allPartialAvg.excludedPartialCount).toBe(1);
     });
   });
 });

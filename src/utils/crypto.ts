@@ -61,13 +61,14 @@ export async function encryptAnswerKey(
   password: string
 ): Promise<string> {
   const enc = new TextEncoder();
-  const compact = {
+  const compact: Record<string, unknown> = {
     e: payload.examId,
     v: payload.version,
     k: payload.key,
     p: payload.points,
     t: payload.totalQuestions,
     s: payload.subjectiveQuestions,
+    sp: payload.subjectivePoints,
   };
   const plaintext = enc.encode(JSON.stringify(compact));
 
@@ -137,6 +138,7 @@ export async function decryptAnswerKey(
         points: (parsed.p || parsed.points) as Record<number, number> | undefined,
         totalQuestions: (parsed.t || parsed.totalQuestions) as number | undefined,
         subjectiveQuestions: (parsed.s || parsed.subjectiveQuestions) as number[] | undefined,
+        subjectivePoints: (parsed.sp || parsed.subjectivePoints) as Record<number, number> | undefined,
       };
     }
 

@@ -60,4 +60,56 @@ describe('Web Crypto AES-256-GCM Gabarito Security', () => {
 
     await expect(decryptAnswerKey(corrupted, password)).rejects.toThrow();
   });
+
+  it('deve realizar round-trip de subjectivePoints preservando as notas máximas', async () => {
+    const payloadWithSubj: DecryptedQrPayload = {
+      ...samplePayload,
+      subjectiveQuestions: [6, 7],
+      subjectivePoints: { 6: 2.5, 7: 3.0 },
+    };
+
+    const encrypted = await encryptAnswerKey(payloadWithSubj, password);
+    const decrypted = await decryptAnswerKey(encrypted, password);
+
+    expect(decrypted.subjectiveQuestions).toEqual([6, 7]);
+    expect(decrypted.subjectivePoints).toEqual({ 6: 2.5, 7: 3.0 });
+  });
+
+  it('deve retornar subjectivePoints como undefined se o QR não contiver a chave sp', async () => {
+    // samplePayload não possui subjectivePoints
+    const encrypted = await encryptAnswerKey(samplePayload, password);
+    const decrypted = await decryptAnswerKey(encrypted, password);
+
+    expect(decrypted.subjectivePoints).toBeUndefined();
+  });
+
+  it('prova com 50 questões (sendo 10 dissertativas) deve gerar string criptografada < 2000 caracteres', async () => {
+    const objKey: Record<number, string> = {};
+    const objPoints: Record<number, number> = {};
+    const subjQuestions: number[] = [];
+    const subjPoints: Record<number, number> = {};
+
+    for (let q = 1; q <= 40; q++) {
+      objKey[q] = ['A', 'B', 'C', 'D', 'E'][q % 5];
+      objPoints[q] = 1.5;
+    }
+    for (let q = 41; q <= 50; q++) {
+      subjQuestions.push(q);
+      subjPoints[q] = 2.0;
+    }
+
+    const largePayload: DecryptedQrPayload = {
+      examId: 'prova-semestral-final-2026',
+      version: 'A',
+      key: objKey,
+      points: objPoints,
+      totalQuestions: 50,
+      subjectiveQuestions: subjQuestions,
+      subjectivePoints: subjPoints,
+    };
+
+    const encrypted = await encryptAnswerKey(largePayload, password);
+    // Deve caber com folga em um QR Code versão 40-L (capacidade máx ~2953 bytes)
+    expect(encrypted.length).toBeLessThan(2000);
+  });
 });

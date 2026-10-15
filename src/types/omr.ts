@@ -32,6 +32,7 @@ export interface DecryptedQrPayload {
   points?: Record<number, number>;
   totalQuestions?: number;
   subjectiveQuestions?: number[];
+  subjectivePoints?: Record<number, number>;
 }
 
 export interface OmrBubbleDebug {

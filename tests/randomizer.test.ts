@@ -90,6 +90,11 @@ describe('Randomizador de Provas e Gabaritos', () => {
       const payload = await decryptAnswerKey(version.encryptedQrPayload, initialSampleExam.password);
       expect(payload.version).toBe(version.versionLetter);
       expect(payload.key).toEqual(version.objectiveAnswerKey);
+      expect(payload.subjectiveQuestions).toBeDefined();
+      expect(payload.subjectiveQuestions?.length).toBe(1);
+      expect(payload.subjectivePoints).toBeDefined();
+      const subjQNum = payload.subjectiveQuestions![0];
+      expect(payload.subjectivePoints![subjQNum]).toBe(2.5);
     }
   });
 });

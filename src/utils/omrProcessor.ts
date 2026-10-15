@@ -6,7 +6,7 @@ import {
   OmrDebugInfo,
   GradingEvidence,
 } from '../types/omr';
-import { GradedAnswer, GradingRecord } from '../types/exam';
+import { GradedAnswer, GradingRecord, SubjectiveAnswer } from '../types/exam';
 import { toGray } from './omr/grayImage';
 import { detectSheet } from './omr/sheetDetector';
 import { readBubbles } from './omr/bubbleReader';
@@ -633,6 +633,21 @@ export function gradeCanvasWithPayloadDebug(
     );
   }
 
+  const subjectiveAnswers: SubjectiveAnswer[] = [];
+  if (payload.subjectivePoints) {
+    const sortedSubj = Object.entries(payload.subjectivePoints)
+      .map(([q, pts]) => ({ qNum: Number(q), pts }))
+      .sort((a, b) => a.qNum - b.qNum);
+
+    for (const item of sortedSubj) {
+      subjectiveAnswers.push({
+        questionNumber: item.qNum,
+        maxPoints: item.pts,
+        pointsEarned: null,
+      });
+    }
+  }
+
   const initialRecord: GradingRecord = {
     id: `rec-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
     timestamp: Date.now(),
@@ -643,6 +658,7 @@ export function gradeCanvasWithPayloadDebug(
     maxScore: 0,
     percentage: 0,
     answers,
+    subjectiveAnswers: subjectiveAnswers.length > 0 ? subjectiveAnswers : undefined,
   };
 
   const record = recomputeTotals(initialRecord);

@@ -3,6 +3,7 @@ import { Html5Qrcode } from 'html5-qrcode';
 import { ExamVersion, GradingRecord } from '../../types/exam';
 import { DecryptedQrPayload, OmrDebugInfo, GradingEvidence } from '../../types/omr';
 import { decryptAnswerKey } from '../../utils/crypto';
+import { buildPayload } from '../../utils/payload';
 import { gradeCanvasWithPayloadDebug, detectOmrGrid, GridConfig } from '../../utils/omrProcessor';
 import {
   AlertTriangle,
@@ -180,25 +181,12 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
           const defaultVer = availableVersions.find((v) => v.questions && v.questions.length > 0);
           if (defaultVer) {
             // Aplica a primeira versão com questões disponíveis para permitir inspeção da grade
-            const pointsMap: Record<number, number> = {};
-            const subjectiveQuestions: number[] = [];
-            defaultVer.questions.forEach((q, idx) => {
-              const qNum = idx + 1;
-              if (q.type === 'subjective') {
-                subjectiveQuestions.push(qNum);
-              } else {
-                pointsMap[qNum] = q.points;
-              }
-            });
-
-            targetPayload = {
+            targetPayload = buildPayload({
               examId: 'auto-exam',
-              version: defaultVer.versionLetter,
-              key: defaultVer.objectiveAnswerKey,
-              points: pointsMap,
-              totalQuestions: defaultVer.questions.length,
-              subjectiveQuestions,
-            };
+              versionLetter: defaultVer.versionLetter,
+              questions: defaultVer.questions,
+              objectiveAnswerKey: defaultVer.objectiveAnswerKey,
+            });
             onLockPayload?.(targetPayload);
             setSuccessMessage(
               `Foto da grade de respostas detectada. Aplicando gabarito da Versão ${defaultVer.versionLetter}.`

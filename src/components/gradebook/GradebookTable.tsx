@@ -1,8 +1,17 @@
 import React, { useState } from 'react';
 import { GradingRecord, OptionLabel } from '../../types/exam';
 import { exportGradebookToCsv, loadLastBackupDate } from '../../utils/storage';
-import { applyManualOverride, revertOverride, recomputeTotals, ManualChoice } from '../../utils/grading';
+import {
+  applyManualOverride,
+  revertOverride,
+  recomputeTotals,
+  setSubjectiveScore,
+  isPartial,
+  computeAverages,
+  ManualChoice,
+} from '../../utils/grading';
 import { AnswerChoiceGroup } from '../scanner/AnswerChoiceGroup';
+import { SubjectiveScoreInput } from '../scanner/SubjectiveScoreInput';
 import {
   Download,
   Trash2,
@@ -15,6 +24,7 @@ import {
   RotateCcw,
   Database,
   ShieldAlert,
+  Filter,
 } from 'lucide-react';
 
 interface GradebookTableProps {
@@ -33,6 +43,7 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
   onOpenBackupPanel,
 }) => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [filterOnlyPending, setFilterOnlyPending] = useState<boolean>(false);
   const lastBackupDate = loadLastBackupDate();
   const daysSince = lastBackupDate
     ? Math.floor((Date.now() - lastBackupDate.getTime()) / (1000 * 60 * 60 * 24))
@@ -43,15 +54,11 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
     setExpandedId(expandedId === id ? null : id);
   };
 
-  const averageScore =
-    records.length > 0
-      ? records.reduce((sum, r) => sum + r.totalScore, 0) / records.length
-      : 0;
+  const { averageScore, averagePercentage, totalEvaluated, excludedPartialCount } =
+    computeAverages(records);
 
-  const averagePercentage =
-    records.length > 0
-      ? records.reduce((sum, r) => sum + r.percentage, 0) / records.length
-      : 0;
+  const partialRecordsCount = records.filter(isPartial).length;
+  const displayedRecords = filterOnlyPending ? records.filter(isPartial) : records;
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
@@ -64,7 +71,22 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {partialRecordsCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setFilterOnlyPending(!filterOnlyPending)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
+                filterOnlyPending
+                  ? 'bg-amber-100 dark:bg-amber-950/80 border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200'
+                  : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+              }`}
+            >
+              <Filter className="w-3.5 h-3.5" />
+              <span>Só com pendências ({partialRecordsCount})</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={() => exportGradebookToCsv(records)}
@@ -125,17 +147,27 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
 
       {records.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-          <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+          <div className="p-4 bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-xl">
             <span className="text-xs font-semibold text-slate-500 uppercase block">Total de Alunos</span>
-            <span className="text-2xl font-bold text-slate-800">{records.length}</span>
+            <span className="text-2xl font-bold text-slate-800 dark:text-slate-100">{records.length}</span>
           </div>
-          <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+          <div className="p-4 bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-xl">
             <span className="text-xs font-semibold text-slate-500 uppercase block">Média da Turma (Pontos)</span>
-            <span className="text-2xl font-bold text-slate-800">{averageScore.toFixed(2)} pts</span>
+            <span className="text-2xl font-bold text-slate-800 dark:text-slate-100">{averageScore.toFixed(2)} pts</span>
+            {excludedPartialCount > 0 && (
+              <span className="text-[11px] text-amber-600 dark:text-amber-400 block mt-0.5 font-medium">
+                ({excludedPartialCount} {excludedPartialCount === 1 ? 'parcial fora da média' : 'parciais fora da média'})
+              </span>
+            )}
           </div>
-          <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+          <div className="p-4 bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-xl">
             <span className="text-xs font-semibold text-slate-500 uppercase block">Aproveitamento Médio</span>
             <span className="text-2xl font-bold text-indigo-700 dark:text-indigo-300">{averagePercentage.toFixed(1)}%</span>
+            {excludedPartialCount > 0 && (
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5 font-medium">
+                ({totalEvaluated} {totalEvaluated === 1 ? 'prova completa' : 'provas completas'})
+              </span>
+            )}
           </div>
         </div>
       )}
@@ -147,6 +179,19 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
           <p className="text-xs text-slate-400 mt-1">
             Utilize a aba &quot;Corretor OMR&quot; para escanear os cartões-resposta dos alunos.
           </p>
+        </div>
+      ) : displayedRecords.length === 0 ? (
+        <div className="text-center py-12 text-slate-400">
+          <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
+            Nenhuma prova com pendências de correção encontrada.
+          </p>
+          <button
+            type="button"
+            onClick={() => setFilterOnlyPending(false)}
+            className="mt-2 text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-semibold"
+          >
+            Limpar filtro
+          </button>
         </div>
       ) : (
         <div className="overflow-x-auto">
@@ -162,7 +207,7 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {records.map((r) => (
+              {displayedRecords.map((r) => (
                 <React.Fragment key={r.id}>
                   <tr className="hover:bg-slate-50 transition cursor-pointer" onClick={() => toggleExpand(r.id)}>
                     <td className="py-3 px-3 font-semibold text-slate-800">
@@ -180,17 +225,27 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
                       {r.totalScore.toFixed(2)} / {r.maxScore.toFixed(2)}
                     </td>
                     <td className="py-3 px-3 text-center">
-                      <span
-                        className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                          r.percentage >= 70
-                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300'
-                            : r.percentage >= 50
-                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300'
-                            : 'bg-rose-100 text-rose-800 dark:bg-rose-950/70 dark:text-rose-300'
-                        }`}
-                      >
-                        {r.percentage.toFixed(1)}%
-                      </span>
+                      <div className="inline-flex items-center justify-center gap-1.5">
+                        <span
+                          className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                            r.percentage >= 70
+                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300'
+                              : r.percentage >= 50
+                              ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300'
+                              : 'bg-rose-100 text-rose-800 dark:bg-rose-950/70 dark:text-rose-300'
+                          }`}
+                        >
+                          {r.percentage.toFixed(1)}%
+                        </span>
+                        {isPartial(r) && (
+                          <span
+                            className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800"
+                            title="Contém questões dissertativas pendentes de nota"
+                          >
+                            Parcial
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="py-3 px-3 text-right">
                       <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
@@ -317,6 +372,38 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
                               );
                             })}
                           </div>
+
+                          {/* Questões Dissertativas */}
+                          {r.subjectiveAnswers && r.subjectiveAnswers.length > 0 && (
+                            <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800">
+                              <div className="flex items-center justify-between mb-2 flex-wrap gap-1">
+                                <span className="font-semibold text-slate-700 dark:text-slate-300 block">
+                                  Questões Dissertativas:
+                                </span>
+                                {onUpdateRecord && (
+                                  <span className="text-[11px] text-slate-500">
+                                    Ajuste a pontuação de cada dissertativa abaixo.
+                                  </span>
+                                )}
+                              </div>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                                {r.subjectiveAnswers.map((s) => (
+                                  <SubjectiveScoreInput
+                                    key={s.questionNumber}
+                                    questionNumber={s.questionNumber}
+                                    maxPoints={s.maxPoints}
+                                    pointsEarned={s.pointsEarned}
+                                    disabled={!onUpdateRecord}
+                                    onChange={(newScore) => {
+                                      if (!onUpdateRecord) return;
+                                      const updated = setSubjectiveScore(r, s.questionNumber, newScore);
+                                      onUpdateRecord(updated);
+                                    }}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </td>
                     </tr>

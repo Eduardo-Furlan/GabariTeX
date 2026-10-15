@@ -7,6 +7,7 @@ import {
   isQuotaExceededError,
   saveLastBackupDate,
   loadLastBackupDate,
+  generateGradebookCsv,
   EXAM_STORAGE_KEY,
   GRADEBOOK_STORAGE_KEY,
 } from '../src/utils/storage';
@@ -118,6 +119,87 @@ describe('Armazenamento Local Seguro (storage.ts)', () => {
     const loaded = loadLastBackupDate();
     expect(loaded).not.toBeNull();
     expect(loaded?.toISOString()).toBe(now.toISOString());
+  });
+
+  describe('generateGradebookCsv (Plano 02)', () => {
+    it('retorna string vazia para lista vazia de registros', () => {
+      expect(generateGradebookCsv([])).toBe('');
+    });
+
+    it('gera colunas de Objetivas, Dissertativas, Pendências e Dn antes de Data com vírgula decimal e escape de aspas', () => {
+      const records: GradingRecord[] = [
+        {
+          id: 'rec-csv-1',
+          timestamp: new Date('2026-10-15T15:30:00Z').getTime(),
+          studentName: 'Lucas "Doutor" Almeida',
+          studentId: 'RA12345',
+          versionLetter: 'B',
+          totalScore: 7.5,
+          maxScore: 10.0,
+          percentage: 75.0,
+          answers: [
+            {
+              questionNumber: 1,
+              markedOption: 'A',
+              correctOption: 'A',
+              isCorrect: true,
+              status: 'correct',
+              pointsEarned: 2.5,
+              maxPoints: 2.5,
+              needsReview: false,
+              manualOverride: true,
+            },
+            {
+              questionNumber: 2,
+              markedOption: 'C',
+              correctOption: 'C',
+              isCorrect: true,
+              status: 'correct',
+              pointsEarned: 2.5,
+              maxPoints: 2.5,
+              needsReview: false,
+            },
+          ],
+          subjectiveAnswers: [
+            {
+              questionNumber: 3,
+              maxPoints: 2.5,
+              pointsEarned: 2.5,
+            },
+            {
+              questionNumber: 4,
+              maxPoints: 2.5,
+              pointsEarned: null, // pendente
+            },
+          ],
+        },
+      ];
+
+      const csv = generateGradebookCsv(records);
+      const lines = csv.trim().split('\n');
+      expect(lines.length).toBe(2);
+
+      const header = lines[0];
+      expect(header).toBe(
+        'Aluno;Matrícula;Versão;Nota;Nota Máxima;Porcentagem (%);Q1;Q2;Revisões manuais;Objetivas;Dissertativas;Pendências;D3;D4;Data'
+      );
+
+      const row = lines[1];
+      // Verifica o escape de aspas duplas no nome: "Lucas ""Doutor"" Almeida"
+      expect(row).toContain('"Lucas ""Doutor"" Almeida"');
+      expect(row).toContain('"RA12345"');
+      expect(row).toContain('"B"');
+      // Verifica vírgula decimal pt-BR
+      expect(row).toContain('7,50;10,00;75,0%');
+      // Verifica respostas objetivas Q1 e Q2
+      expect(row).toContain('A(C);C(C)');
+      // Verifica revisões manuais: 1
+      expect(row).toContain(';1;');
+      // Objetivas: 5,00; Dissertativas: 2,50; Pendências: 1
+      expect(row).toContain(';5,00;2,50;1;');
+      // D3 = 2,50; D4 = vazio (pois pendente)
+      expect(row).toContain(';2,50;;');
+    });
   });
 });
 

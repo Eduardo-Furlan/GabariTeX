@@ -5,9 +5,13 @@ import {
   applyManualOverride,
   revertOverride,
   recomputeTotals,
+  setSubjectiveScore,
+  countPendingSubjective,
+  isPartial,
   ManualChoice,
 } from '../../utils/grading';
 import { AnswerChoiceGroup } from './AnswerChoiceGroup';
+import { SubjectiveScoreInput } from './SubjectiveScoreInput';
 import {
   CheckCircle2,
   XCircle,
@@ -59,6 +63,10 @@ export const GradingModal: React.FC<GradingModalProps> = ({
     setRecord(recomputeTotals({ ...record, answers: updatedAnswers }));
   };
 
+  const handleSubjectiveChange = (questionNumber: number, score: number | null) => {
+    setRecord((prev) => setSubjectiveScore(prev, questionNumber, score));
+  };
+
   const getScoreColor = (percentage: number) => {
     if (percentage >= 70) {
       return 'text-emerald-600 bg-emerald-50 border-emerald-200 dark:text-emerald-300 dark:bg-emerald-950/50 dark:border-emerald-800/60';
@@ -77,6 +85,12 @@ export const GradingModal: React.FC<GradingModalProps> = ({
   // Suspeita global: >= 50% em branco com >= 4 questões
   const blankCount = record.answers.filter((a) => a.status === 'blank').length;
   const isSuspiciousBlank = record.answers.length >= 4 && blankCount / record.answers.length >= 0.5;
+
+  const hasSubjective = !!(record.subjectiveAnswers && record.subjectiveAnswers.length > 0);
+  const pendingSubjectiveCount = countPendingSubjective(record);
+  const recordIsPartial = isPartial(record);
+  const objectiveEarned = record.answers.reduce((acc, a) => acc + a.pointsEarned, 0);
+  const objectiveMax = record.answers.reduce((acc, a) => acc + a.maxPoints, 0);
 
   const displayedAnswers = filterOnlyNeedsReview
     ? record.answers.filter((a) => a.needsReview || a.manualOverride)
@@ -142,26 +156,44 @@ export const GradingModal: React.FC<GradingModalProps> = ({
         )}
 
         {/* Painel de Pontuação */}
-        <div className="my-5 flex items-center justify-between p-4 rounded-xl border border-slate-200 bg-slate-50">
-          <div>
-            <span className="text-xs font-semibold text-slate-500 uppercase block">Nota Final</span>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-3xl font-extrabold text-slate-900">
-                {record.totalScore.toFixed(2)}
-              </span>
-              <span className="text-sm font-medium text-slate-500">
-                / {record.maxScore.toFixed(2)} pts
-              </span>
+        <div className="my-5 p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <span className="text-xs font-semibold text-slate-500 uppercase block">Nota Final</span>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-3xl font-extrabold text-slate-900">
+                  {record.totalScore.toFixed(2)}
+                </span>
+                <span className="text-sm font-medium text-slate-500">
+                  / {record.maxScore.toFixed(2)} pts
+                </span>
+              </div>
+            </div>
+
+            <div
+              className={`px-4 py-2 rounded-xl border font-bold text-base sm:text-lg ${getScoreColor(
+                record.percentage
+              )}`}
+            >
+              {recordIsPartial
+                ? `${record.percentage.toFixed(1)}% (Parcial)`
+                : `${record.percentage.toFixed(1)}% de aproveitamento`}
             </div>
           </div>
 
-          <div
-            className={`px-4 py-2 rounded-xl border font-bold text-base sm:text-lg ${getScoreColor(
-              record.percentage
-            )}`}
-          >
-            {record.percentage.toFixed(1)}% de aproveitamento
-          </div>
+          {recordIsPartial && (
+            <div className="mt-3 pt-3 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between flex-wrap gap-2 text-xs">
+              <span className="text-amber-800 dark:text-amber-300 font-semibold flex items-center gap-1.5">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                {pendingSubjectiveCount}{' '}
+                {pendingSubjectiveCount === 1 ? 'dissertativa pendente' : 'dissertativas pendentes'}{' '}
+                — nota parcial
+              </span>
+              <span className="text-slate-600 dark:text-slate-400 font-mono text-[11px]">
+                Subtotal Objetivas: {objectiveEarned.toFixed(2)} / {objectiveMax.toFixed(2)} pts
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Dados do Aluno */}
@@ -314,6 +346,32 @@ export const GradingModal: React.FC<GradingModalProps> = ({
             })}
           </div>
         </div>
+
+        {/* Questões Dissertativas */}
+        {hasSubjective && (
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-2 flex-wrap gap-1">
+              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase">
+                Questões Dissertativas:
+              </label>
+              <span className="text-[11px] text-slate-500">
+                Lance a pontuação agora ou salve para lançar posteriormente no Livro de Notas.
+              </span>
+            </div>
+
+            <div className="space-y-2 border border-slate-200 dark:border-slate-800 rounded-lg p-3 bg-slate-50/50 dark:bg-slate-900/30">
+              {record.subjectiveAnswers!.map((subj) => (
+                <SubjectiveScoreInput
+                  key={subj.questionNumber}
+                  questionNumber={subj.questionNumber}
+                  maxPoints={subj.maxPoints}
+                  pointsEarned={subj.pointsEarned}
+                  onChange={(score) => handleSubjectiveChange(subj.questionNumber, score)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Ações */}
         <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 flex-wrap">

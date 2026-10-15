@@ -62,6 +62,12 @@ export interface GradedAnswer {
   manualOverride?: boolean;
 }
 
+export interface SubjectiveAnswer {
+  questionNumber: number;
+  maxPoints: number;
+  pointsEarned: number | null; // null = ainda não corrigida
+}
+
 export interface GradingRecord {
   id: string;
   timestamp: number;
@@ -72,4 +78,5 @@ export interface GradingRecord {
   maxScore: number;
   percentage: number;
   answers: GradedAnswer[];
+  subjectiveAnswers?: SubjectiveAnswer[];
 }

@@ -124,32 +124,102 @@ export function exportExamToJson(exam: Exam): void {
   downloadAnchor.remove();
 }
 
-export function exportGradebookToCsv(records: GradingRecord[]): void {
-  if (records.length === 0) return;
+function escapeCsvField(val: unknown): string {
+  if (val === null || val === undefined) return '""';
+  const str = String(val).replace(/"/g, '""');
+  return `"${str}"`;
+}
+
+function formatCsvDecimal(val: number, decimals = 2): string {
+  return val.toFixed(decimals).replace('.', ',');
+}
+
+/**
+ * Gera a string CSV formatada do livro de notas com compatibilidade pt-BR (separador ';', vírgula decimal,
+ * escape seguro de aspas duplas e colunas detalhadas de objetivas, dissertativas e pendências).
+ */
+export function generateGradebookCsv(records: GradingRecord[]): string {
+  if (records.length === 0) return '';
 
   const allQuestionNumbers = Array.from(
     new Set(records.flatMap((r) => r.answers.map((a) => a.questionNumber)))
   ).sort((a, b) => a - b);
 
-  const qHeaders = allQuestionNumbers.map((qNum) => `Q${qNum}`).join(';');
+  const allSubjectiveNumbers = Array.from(
+    new Set(records.flatMap((r) => (r.subjectiveAnswers || []).map((s) => s.questionNumber)))
+  ).sort((a, b) => a - b);
 
-  const header = `Aluno;Matrícula;Versão;Nota;Nota Máxima;Porcentagem (%);${qHeaders};Revisões manuais;Data\n`;
+  const qHeaders = allQuestionNumbers.map((qNum) => `Q${qNum}`);
+  const dHeaders = allSubjectiveNumbers.map((qNum) => `D${qNum}`);
+
+  const headerParts = [
+    'Aluno',
+    'Matrícula',
+    'Versão',
+    'Nota',
+    'Nota Máxima',
+    'Porcentagem (%)',
+    ...qHeaders,
+    'Revisões manuais',
+    'Objetivas',
+    'Dissertativas',
+    'Pendências',
+    ...dHeaders,
+    'Data',
+  ];
+
+  const header = headerParts.join(';') + '\n';
 
   const rows = records.map((r) => {
-    const qAnswers = allQuestionNumbers
-      .map((qNum) => {
-        const a = r.answers.find((ans) => ans.questionNumber === qNum);
-        if (!a) return '-';
-        return `${a.markedOption || 'BRANCO'}(${a.isCorrect ? 'C' : 'E'})`;
-      })
-      .join(';');
+    const qAnswers = allQuestionNumbers.map((qNum) => {
+      const a = r.answers.find((ans) => ans.questionNumber === qNum);
+      if (!a) return '-';
+      return `${a.markedOption || 'BRANCO'}(${a.isCorrect ? 'C' : 'E'})`;
+    });
 
     const manualOverridesCount = r.answers.filter((a) => a.manualOverride).length;
+    const objectiveScore = r.answers.reduce((acc, a) => acc + a.pointsEarned, 0);
+    const subjectiveScore = (r.subjectiveAnswers || []).reduce(
+      (acc, s) => acc + (s.pointsEarned ?? 0),
+      0
+    );
+    const pendingCount = (r.subjectiveAnswers || []).filter((s) => s.pointsEarned === null).length;
+
+    const dAnswers = allSubjectiveNumbers.map((qNum) => {
+      const s = (r.subjectiveAnswers || []).find((subj) => subj.questionNumber === qNum);
+      if (!s || s.pointsEarned === null) return '';
+      return formatCsvDecimal(s.pointsEarned);
+    });
+
     const dateStr = new Date(r.timestamp).toLocaleString('pt-BR');
-    return `"${r.studentName}";"${r.studentId}";"${r.versionLetter}";${r.totalScore.toFixed(2)};${r.maxScore.toFixed(2)};${r.percentage.toFixed(1)}%;${qAnswers};${manualOverridesCount};"${dateStr}"`;
+
+    const rowParts = [
+      escapeCsvField(r.studentName),
+      escapeCsvField(r.studentId),
+      escapeCsvField(r.versionLetter),
+      formatCsvDecimal(r.totalScore),
+      formatCsvDecimal(r.maxScore),
+      `${formatCsvDecimal(r.percentage, 1)}%`,
+      ...qAnswers,
+      manualOverridesCount,
+      formatCsvDecimal(objectiveScore),
+      formatCsvDecimal(subjectiveScore),
+      pendingCount,
+      ...dAnswers,
+      escapeCsvField(dateStr),
+    ];
+
+    return rowParts.join(';');
   });
 
-  const csvContent = '\uFEFF' + header + rows.join('\n');
+  return header + rows.join('\n');
+}
+
+export function exportGradebookToCsv(records: GradingRecord[]): void {
+  const csvBody = generateGradebookCsv(records);
+  if (!csvBody) return;
+
+  const csvContent = '\uFEFF' + csvBody;
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');

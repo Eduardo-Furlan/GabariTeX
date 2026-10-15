@@ -1,5 +1,6 @@
 import { Exam, ExamVersion, Question } from '../types/exam';
 import { encryptAnswerKey } from './crypto';
+import { buildPayload } from './payload';
 
 // PRNG determinístico Mulberry32
 function mulberry32(a: number) {
@@ -41,7 +42,6 @@ export async function generateExamVersions(exam: Exam): Promise<ExamVersion[]> {
     }
 
     const answerKey: Record<number, string> = {};
-    const pointsMap: Record<number, number> = {};
 
     processedQuestions = processedQuestions.map((q, idx) => {
       const qNum = idx + 1;
@@ -60,7 +60,6 @@ export async function generateExamVersions(exam: Exam): Promise<ExamVersion[]> {
         const correctOpt = options.find((opt) => opt.isCorrect);
         if (correctOpt) {
           answerKey[qNum] = correctOpt.label;
-          pointsMap[qNum] = q.points;
         }
 
         return { ...q, options };
@@ -68,23 +67,14 @@ export async function generateExamVersions(exam: Exam): Promise<ExamVersion[]> {
       return q;
     });
 
-    const totalQuestions = processedQuestions.length;
-    const subjectiveQuestions = processedQuestions
-      .map((q, idx) => ({ qNum: idx + 1, type: q.type }))
-      .filter((item) => item.type === 'subjective')
-      .map((item) => item.qNum);
+    const payload = buildPayload({
+      examId: exam.id,
+      versionLetter,
+      questions: processedQuestions,
+      objectiveAnswerKey: answerKey,
+    });
 
-    const qrPayload = await encryptAnswerKey(
-      {
-        examId: exam.id,
-        version: versionLetter,
-        key: answerKey,
-        points: pointsMap,
-        totalQuestions,
-        subjectiveQuestions,
-      },
-      exam.password || 'senha123'
-    );
+    const qrPayload = await encryptAnswerKey(payload, exam.password || 'senha123');
 
     versions.push({
       versionLetter,

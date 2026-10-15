@@ -153,18 +153,65 @@ export function revertOverride(a: GradedAnswer): GradedAnswer {
 
 /**
  * Recalcula totais (totalScore, maxScore, percentage) de um GradingRecord sem mutar o objeto.
+ * Inclui pontuação máxima de todas as dissertativas e soma pontos das dissertativas já lançadas.
  */
 export function recomputeTotals(r: GradingRecord): GradingRecord {
-  const totalScore = r.answers.reduce((acc, a) => acc + a.pointsEarned, 0);
-  const maxScore = r.answers.reduce((acc, a) => acc + a.maxPoints, 0);
+  const objectiveScore = r.answers.reduce((acc, a) => acc + a.pointsEarned, 0);
+  const objectiveMax = r.answers.reduce((acc, a) => acc + a.maxPoints, 0);
+
+  const subjectiveScore = (r.subjectiveAnswers || []).reduce(
+    (acc, s) => acc + (s.pointsEarned ?? 0),
+    0
+  );
+  const subjectiveMax = (r.subjectiveAnswers || []).reduce(
+    (acc, s) => acc + s.maxPoints,
+    0
+  );
+
+  const totalScore = Number((objectiveScore + subjectiveScore).toFixed(2));
+  const maxScore = Number((objectiveMax + subjectiveMax).toFixed(2));
   const percentage = maxScore > 0 ? Number(((totalScore / maxScore) * 100).toFixed(2)) : 0;
 
   return {
     ...r,
-    totalScore: Number(totalScore.toFixed(2)),
-    maxScore: Number(maxScore.toFixed(2)),
+    totalScore,
+    maxScore,
     percentage,
   };
+}
+
+/**
+ * Atualiza ou lança a nota de uma questão dissertativa, aplicando clamp no intervalo [0, maxPoints]
+ * e arredondando para duas casas decimais. Retorna um novo objeto com os totais recalculados.
+ */
+export function setSubjectiveScore(
+  r: GradingRecord,
+  questionNumber: number,
+  score: number | null
+): GradingRecord {
+  if (!r.subjectiveAnswers || r.subjectiveAnswers.length === 0) {
+    return r;
+  }
+
+  const updatedSubjectiveAnswers = r.subjectiveAnswers.map((s) => {
+    if (s.questionNumber !== questionNumber) return s;
+
+    let pointsEarned: number | null = null;
+    if (score !== null && !isNaN(score)) {
+      const clamped = Math.min(s.maxPoints, Math.max(0, score));
+      pointsEarned = Number(clamped.toFixed(2));
+    }
+
+    return {
+      ...s,
+      pointsEarned,
+    };
+  });
+
+  return recomputeTotals({
+    ...r,
+    subjectiveAnswers: updatedSubjectiveAnswers,
+  });
 }
 
 /**
@@ -175,13 +222,52 @@ export function countNeedsReview(r: GradingRecord): number {
 }
 
 /**
- * Auxiliar para suporte a questões dissertativas (Plano 02).
+ * Conta quantas questões dissertativas de um registro ainda estão pendentes de nota (null).
  */
-export function countPendingSubjective(_r: GradingRecord): number {
-  return 0;
+export function countPendingSubjective(r: GradingRecord): number {
+  if (!r.subjectiveAnswers) return 0;
+  return r.subjectiveAnswers.filter((s) => s.pointsEarned === null).length;
 }
 
-export function isPartial(_r: GradingRecord): boolean {
-  return false;
+/**
+ * Indica se o registro é parcial (ou seja, possui ao menos uma dissertativa pendente de correção).
+ */
+export function isPartial(r: GradingRecord): boolean {
+  return countPendingSubjective(r) > 0;
+}
+
+export interface GradebookAverages {
+  averageScore: number;
+  averagePercentage: number;
+  totalEvaluated: number;
+  excludedPartialCount: number;
+}
+
+/**
+ * Calcula as médias da turma considerando apenas os registros completos (não parciais),
+ * e contabiliza quantos registros parciais ficaram fora da média.
+ */
+export function computeAverages(records: GradingRecord[]): GradebookAverages {
+  const completeRecords = records.filter((r) => !isPartial(r));
+  const excludedPartialCount = records.length - completeRecords.length;
+
+  if (completeRecords.length === 0) {
+    return {
+      averageScore: 0,
+      averagePercentage: 0,
+      totalEvaluated: 0,
+      excludedPartialCount,
+    };
+  }
+
+  const sumScore = completeRecords.reduce((sum, r) => sum + r.totalScore, 0);
+  const sumPercentage = completeRecords.reduce((sum, r) => sum + r.percentage, 0);
+
+  return {
+    averageScore: Number((sumScore / completeRecords.length).toFixed(2)),
+    averagePercentage: Number((sumPercentage / completeRecords.length).toFixed(2)),
+    totalEvaluated: completeRecords.length,
+    excludedPartialCount,
+  };
 }
 

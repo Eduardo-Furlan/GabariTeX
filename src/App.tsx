@@ -22,6 +22,7 @@ import { BackupPanel } from './components/BackupPanel';
 import { BackupFile } from './utils/backup';
 import { useAutosave } from './hooks/useAutosave';
 import { DecryptedQrPayload, GradingEvidence } from './types/omr';
+import { buildPayload } from './utils/payload';
 import { Printer, Shuffle, Eye, ShieldCheck, BookOpen, KeyRound, CheckCircle2, RefreshCw, AlertTriangle } from 'lucide-react';
 import './styles/print.css';
 
@@ -152,26 +153,14 @@ export const App: React.FC = () => {
   };
 
   const handleSelectExamVersion = (v: ExamVersion) => {
-    const pointsMap: Record<number, number> = {};
-    const subjectiveQuestions: number[] = [];
-
-    v.questions.forEach((q, idx) => {
-      const qNum = idx + 1;
-      if (q.type === 'subjective') {
-        subjectiveQuestions.push(qNum);
-      } else {
-        pointsMap[qNum] = q.points;
-      }
-    });
-
-    setActivePayload({
-      examId: exam.id,
-      version: v.versionLetter,
-      key: v.objectiveAnswerKey,
-      points: pointsMap,
-      totalQuestions: v.questions.length,
-      subjectiveQuestions,
-    });
+    setActivePayload(
+      buildPayload({
+        examId: exam.id,
+        versionLetter: v.versionLetter,
+        questions: v.questions,
+        objectiveAnswerKey: v.objectiveAnswerKey,
+      })
+    );
   };
 
   const handleGradeSaved = (newRecord: GradingRecord) => {
