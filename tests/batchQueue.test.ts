@@ -263,7 +263,7 @@ describe('batchQueue logic', () => {
       expect(state.items[0].reason).toBeUndefined();
     });
 
-    it('atualiza nome e matrícula do aluno inline e no record', () => {
+    it('atualiza nome, matrícula, studentRef e classId do aluno inline e no record', () => {
       const f1 = makeMockFile('f1.jpg');
       let state = batchReducer(initialBatchState, {
         type: 'ADD_FILES',
@@ -286,12 +286,18 @@ describe('batchQueue logic', () => {
         id,
         studentName: 'Ana Clara',
         studentId: '20261099',
+        studentRef: 'st-001',
+        classId: 'cls-3a',
       });
 
       expect(state.items[0].studentName).toBe('Ana Clara');
       expect(state.items[0].studentId).toBe('20261099');
+      expect(state.items[0].studentRef).toBe('st-001');
+      expect(state.items[0].classId).toBe('cls-3a');
       expect(state.items[0].result?.record?.studentName).toBe('Ana Clara');
       expect(state.items[0].result?.record?.studentId).toBe('20261099');
+      expect(state.items[0].result?.record?.studentRef).toBe('st-001');
+      expect(state.items[0].result?.record?.classId).toBe('cls-3a');
     });
 
     it('clearCompleted remove apenas itens salvos e descartados', () => {

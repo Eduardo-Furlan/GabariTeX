@@ -237,7 +237,11 @@ export const App: React.FC = () => {
     newRecord: GradingRecord,
     options?: { newStudentToClass?: { classId: string; name: string; registration?: string } }
   ) => {
-    setRecords((prev) => [newRecord, ...prev.filter((r) => r.id !== newRecord.id)]);
+    setRecords((prev) => {
+      const exists = prev.some((r) => r.id === newRecord.id);
+      const recordToStore = exists ? { ...newRecord, timestamp: Date.now() } : newRecord;
+      return [recordToStore, ...prev.filter((r) => r.id !== newRecord.id)];
+    });
     if (options?.newStudentToClass) {
       handleAddStudentToClass(options.newStudentToClass.classId, {
         name: options.newStudentToClass.name,
@@ -253,7 +257,8 @@ export const App: React.FC = () => {
   };
 
   const handleUpdateRecord = (updatedRecord: GradingRecord) => {
-    setRecords((prev) => prev.map((r) => (r.id === updatedRecord.id ? updatedRecord : r)));
+    const stamped = { ...updatedRecord, timestamp: Date.now() };
+    setRecords((prev) => prev.map((r) => (r.id === stamped.id ? stamped : r)));
   };
 
   const currentVersion = versions.find((v) => v.versionLetter === selectedVersionLetter) || versions[0];

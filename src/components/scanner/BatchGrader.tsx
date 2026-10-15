@@ -77,6 +77,7 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
   const onLockPayloadRef = useRef(onLockPayload);
   onLockPayloadRef.current = onLockPayload;
 
+  const currentClass = classes.find((c) => c.id === activeClassId) || null;
   const summary = getBatchSummary(state.items);
 
   const runQueue = useCallback(async () => {
@@ -169,7 +170,8 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
       const rec = it.result!.record!;
       return {
         ...rec,
-        classId: rec.classId || activeClassId || undefined,
+        classId: it.classId || rec.classId || activeClassId || undefined,
+        studentRef: it.studentRef ?? rec.studentRef,
         studentName: it.studentName?.trim() || rec.studentName,
         studentId: it.studentId?.trim() || rec.studentId,
       };
@@ -189,7 +191,8 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
       const rec = it.result!.record!;
       return {
         ...rec,
-        classId: rec.classId || activeClassId || undefined,
+        classId: it.classId || rec.classId || activeClassId || undefined,
+        studentRef: it.studentRef ?? rec.studentRef,
         studentName: it.studentName?.trim() || rec.studentName,
         studentId: it.studentId?.trim() || rec.studentId,
       };
@@ -205,6 +208,8 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
     const rec = item.result.record;
     const finalized = {
       ...rec,
+      classId: item.classId || rec.classId || activeClassId || undefined,
+      studentRef: item.studentRef ?? rec.studentRef,
       studentName: item.studentName?.trim() || rec.studentName,
       studentId: item.studentId?.trim() || rec.studentId,
     };
@@ -439,37 +444,102 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
                     </div>
                   </div>
 
-                  {/* Identificação do Aluno (Nome / Matrícula) */}
+                  {/* Identificação do Aluno (Turma / Nome / Matrícula) */}
                   {item.status !== 'error' && item.status !== 'queued' && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 flex-1 max-w-sm">
-                      <input
-                        type="text"
-                        placeholder="Nome do aluno"
-                        disabled={item.status === 'saved' || item.status === 'discarded'}
-                        value={item.studentName ?? item.result?.record?.studentName ?? ''}
-                        onChange={(e) =>
-                          dispatch({
-                            type: 'UPDATE_STUDENT_INFO',
-                            id: item.id,
-                            studentName: e.target.value,
-                          })
-                        }
-                        className="px-2.5 py-1 text-xs border border-slate-300 rounded bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50"
-                      />
-                      <input
-                        type="text"
-                        placeholder="Matrícula"
-                        disabled={item.status === 'saved' || item.status === 'discarded'}
-                        value={item.studentId ?? item.result?.record?.studentId ?? ''}
-                        onChange={(e) =>
-                          dispatch({
-                            type: 'UPDATE_STUDENT_INFO',
-                            id: item.id,
-                            studentId: e.target.value,
-                          })
-                        }
-                        className="px-2.5 py-1 text-xs font-mono border border-slate-300 rounded bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50"
-                      />
+                    <div className="flex flex-col gap-1.5 flex-1 max-w-sm">
+                      {currentClass && currentClass.students.length > 0 && (
+                        <select
+                          aria-label="Selecionar aluno da turma"
+                          disabled={item.status === 'saved' || item.status === 'discarded'}
+                          value={item.studentRef ?? item.result?.record?.studentRef ?? ''}
+                          onChange={(e) => {
+                            const selectedId = e.target.value;
+                            if (!selectedId) {
+                              dispatch({
+                                type: 'UPDATE_STUDENT_INFO',
+                                id: item.id,
+                                studentRef: undefined,
+                              });
+                              return;
+                            }
+                            const st = currentClass.students.find((s) => s.id === selectedId);
+                            if (st) {
+                              dispatch({
+                                type: 'UPDATE_STUDENT_INFO',
+                                id: item.id,
+                                studentRef: st.id,
+                                classId: currentClass.id,
+                                studentName: st.name,
+                                studentId: st.registration || '',
+                              });
+                            }
+                          }}
+                          className="px-2 py-1 text-xs border border-slate-300 rounded bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50"
+                        >
+                          <option value="">
+                            -- Selecionar de {currentClass.name} (ou digite abaixo) --
+                          </option>
+                          {currentClass.students.map((st) => {
+                            const alreadyGradedInBook = records.some(
+                              (r) =>
+                                r.studentRef === st.id ||
+                                (st.registration &&
+                                  r.studentId &&
+                                  r.studentId.trim().toLowerCase() ===
+                                    st.registration.trim().toLowerCase())
+                            );
+                            const assignedInBatch = state.items.some(
+                              (other) =>
+                                other.id !== item.id &&
+                                other.status !== 'discarded' &&
+                                (other.studentRef ?? other.result?.record?.studentRef) === st.id
+                            );
+                            return (
+                              <option key={st.id} value={st.id}>
+                                {st.name}
+                                {st.registration ? ` (${st.registration})` : ''}
+                                {alreadyGradedInBook
+                                  ? ' [Já corrigido]'
+                                  : assignedInBatch
+                                  ? ' [No lote]'
+                                  : ''}
+                              </option>
+                            );
+                          })}
+                        </select>
+                      )}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <input
+                          type="text"
+                          placeholder="Nome do aluno"
+                          disabled={item.status === 'saved' || item.status === 'discarded'}
+                          value={item.studentName ?? item.result?.record?.studentName ?? ''}
+                          onChange={(e) =>
+                            dispatch({
+                              type: 'UPDATE_STUDENT_INFO',
+                              id: item.id,
+                              studentName: e.target.value,
+                              studentRef: undefined,
+                            })
+                          }
+                          className="px-2.5 py-1 text-xs border border-slate-300 rounded bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Matrícula"
+                          disabled={item.status === 'saved' || item.status === 'discarded'}
+                          value={item.studentId ?? item.result?.record?.studentId ?? ''}
+                          onChange={(e) =>
+                            dispatch({
+                              type: 'UPDATE_STUDENT_INFO',
+                              id: item.id,
+                              studentId: e.target.value,
+                              studentRef: undefined,
+                            })
+                          }
+                          className="px-2.5 py-1 text-xs font-mono border border-slate-300 rounded bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50"
+                        />
+                      </div>
                     </div>
                   )}
 

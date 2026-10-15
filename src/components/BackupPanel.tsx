@@ -160,16 +160,16 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-card text-body rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-border flex flex-col max-h-[90vh] overflow-y-auto">
+      <div className="bg-white text-slate-700 rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 flex flex-col max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-border">
+        <div className="flex items-center justify-between pb-4 border-b border-slate-200">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
               <Database className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-heading">Dados, Backup & Sincronização</h3>
-              <p className="text-xs text-muted">
+              <h3 className="text-base font-bold text-slate-900">Dados, Backup & Sincronização</h3>
+              <p className="text-xs text-slate-500">
                 Gerencie cópias de segurança da prova, notas e sincronize entre celular e computador.
               </p>
             </div>
@@ -177,7 +177,7 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded-lg text-muted hover:text-heading hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+            className="p-1 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition"
           >
             <X className="w-5 h-5" />
           </button>
@@ -199,18 +199,18 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({
         )}
 
         {/* Status de Armazenamento e Lembrete de Backup */}
-        <div className="mt-4 p-4 rounded-xl border border-border bg-slate-50 space-y-3">
+        <div className="mt-4 p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-3">
           <div className="flex items-center justify-between flex-wrap gap-2 text-xs">
-            <div className="flex items-center gap-2 font-medium text-heading">
+            <div className="flex items-center gap-2 font-medium text-slate-900">
               <HardDrive className="w-4 h-4 text-indigo-500" />
               <span>Armazenamento local do navegador:</span>
             </div>
             {storageEstimate ? (
-              <span className="font-mono text-muted text-[11px]">
+              <span className="font-mono text-slate-500 text-[11px]">
                 {storageEstimate.usageMB} MB / {storageEstimate.quotaMB} MB ({storageEstimate.percent}%)
               </span>
             ) : (
-              <span className="text-muted text-[11px]">Armazenamento padrão ativo</span>
+              <span className="text-slate-500 text-[11px]">Armazenamento padrão ativo</span>
             )}
           </div>
 
@@ -236,13 +236,13 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({
             </div>
           )}
 
-          <div className="flex items-center justify-between pt-1 border-t border-border/50 text-[11px] text-muted">
+          <div className="flex items-center justify-between pt-1 border-t border-slate-200/50 text-[11px] text-slate-500">
             <div className="flex items-center gap-1.5">
               <Calendar className="w-3.5 h-3.5" />
               <span>
                 Último backup completo:{' '}
                 {lastBackup ? (
-                  <strong className="text-heading font-medium">
+                  <strong className="text-slate-900 font-medium">
                     {lastBackup.toLocaleDateString('pt-BR')} às{' '}
                     {lastBackup.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                   </strong>
@@ -265,7 +265,7 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({
 
         {/* Bloco 1: Backup Completo */}
         <div className="mt-5 space-y-3">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-muted flex items-center gap-1.5">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
             <Database className="w-3.5 h-3.5 text-indigo-500" /> Backup Completo (Prova + Notas + Senha)
           </h4>
 
@@ -277,8 +277,8 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({
             >
               <Download className="w-5 h-5 shrink-0 text-indigo-600 dark:text-indigo-400 mt-0.5" />
               <div>
-                <div className="text-xs font-bold text-heading">Exportar Backup Completo</div>
-                <div className="text-[11px] text-muted mt-0.5">
+                <div className="text-xs font-bold text-slate-900">Exportar Backup Completo</div>
+                <div className="text-[11px] text-slate-500 mt-0.5">
                   Gera arquivo JSON com toda a estrutura da prova, banco de questões e notas.
                 </div>
               </div>
@@ -287,12 +287,12 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({
             <button
               type="button"
               onClick={() => backupInputRef.current?.click()}
-              className="p-4 rounded-xl border border-border hover:border-indigo-300 dark:hover:border-indigo-500/40 hover:bg-slate-50 text-left transition flex items-start gap-3"
+              className="p-4 rounded-xl border border-slate-200 hover:border-indigo-300 dark:hover:border-indigo-500/40 hover:bg-slate-50 text-left transition flex items-start gap-3"
             >
               <Upload className="w-5 h-5 shrink-0 text-slate-500 mt-0.5" />
               <div>
-                <div className="text-xs font-bold text-heading">Restaurar Backup Completo</div>
-                <div className="text-[11px] text-muted mt-0.5">
+                <div className="text-xs font-bold text-slate-900">Restaurar Backup Completo</div>
+                <div className="text-[11px] text-slate-500 mt-0.5">
                   Substitui prova, notas e configurações atuais a partir de um backup prévio.
                 </div>
               </div>
@@ -311,7 +311,7 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({
             />
           </div>
 
-          <p className="text-[11px] text-muted flex items-center gap-1.5">
+          <p className="text-[11px] text-slate-500 flex items-center gap-1.5">
             <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             <span>
               <strong>Aviso de segurança:</strong> O arquivo de backup completo contém a senha mestra e dados de
@@ -321,11 +321,11 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({
         </div>
 
         {/* Bloco 2: Sincronização de Notas Entre Aparelhos */}
-        <div className="mt-6 pt-5 border-t border-border space-y-3">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-muted flex items-center gap-1.5">
+        <div className="mt-6 pt-5 border-t border-slate-200 space-y-3">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
             <ArrowRightLeft className="w-3.5 h-3.5 text-emerald-500" /> Sincronizar Notas Entre Aparelhos
           </h4>
-          <p className="text-xs text-muted leading-relaxed">
+          <p className="text-xs text-slate-500 leading-relaxed">
             Corrija folhas usando a câmera do seu celular e transfira as notas para consolidar no computador sem
             duplicações.
           </p>
@@ -335,12 +335,12 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({
               type="button"
               onClick={handleExportGradebook}
               disabled={gradebook.length === 0}
-              className="p-3.5 rounded-xl border border-border hover:border-emerald-300 dark:hover:border-emerald-500/40 hover:bg-slate-50 text-left transition flex items-start gap-3 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="p-3.5 rounded-xl border border-slate-200 hover:border-emerald-300 dark:hover:border-emerald-500/40 hover:bg-slate-50 text-left transition flex items-start gap-3 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <FileSpreadsheet className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400 mt-0.5" />
               <div>
-                <div className="text-xs font-bold text-heading">Exportar Notas (JSON)</div>
-                <div className="text-[11px] text-muted mt-0.5">
+                <div className="text-xs font-bold text-slate-900">Exportar Notas (JSON)</div>
+                <div className="text-[11px] text-slate-500 mt-0.5">
                   Baixa apenas as {gradebook.length} notas corrigidas para transferir.
                 </div>
               </div>
@@ -349,12 +349,12 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({
             <button
               type="button"
               onClick={() => gradebookInputRef.current?.click()}
-              className="p-3.5 rounded-xl border border-border hover:border-emerald-300 dark:hover:border-emerald-500/40 hover:bg-slate-50 text-left transition flex items-start gap-3"
+              className="p-3.5 rounded-xl border border-slate-200 hover:border-emerald-300 dark:hover:border-emerald-500/40 hover:bg-slate-50 text-left transition flex items-start gap-3"
             >
               <Upload className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400 mt-0.5" />
               <div>
-                <div className="text-xs font-bold text-heading">Importar e Mesclar Notas</div>
-                <div className="text-[11px] text-muted mt-0.5">
+                <div className="text-xs font-bold text-slate-900">Importar e Mesclar Notas</div>
+                <div className="text-[11px] text-slate-500 mt-0.5">
                   Acrescenta novos registros e atualiza notas sem apagar as existentes.
                 </div>
               </div>
@@ -377,49 +377,49 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({
         {/* Modal de Confirmação de Restauração Completa */}
         {restoreCandidate && (
           <div className="fixed inset-0 z-60 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-card text-body rounded-2xl max-w-md w-full p-6 shadow-2xl border border-border space-y-4 animate-in fade-in duration-200">
+            <div className="bg-white text-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-in fade-in duration-200">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
                   <ShieldAlert className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-heading">Confirmar Restauração Completa</h4>
-                  <p className="text-xs text-muted">Esta ação substituirá os dados atuais em edição.</p>
+                  <h4 className="text-sm font-bold text-slate-900">Confirmar Restauração Completa</h4>
+                  <p className="text-xs text-slate-500">Esta ação substituirá os dados atuais em edição.</p>
                 </div>
               </div>
 
-              <div className="p-3.5 bg-slate-50 rounded-xl border border-border text-xs space-y-1.5">
+              <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1.5">
                 <div className="flex justify-between">
-                  <span className="text-muted">Data do backup:</span>
-                  <span className="font-semibold text-heading">
+                  <span className="text-slate-500">Data do backup:</span>
+                  <span className="font-semibold text-slate-900">
                     {new Date(restoreCandidate.exportedAt).toLocaleString('pt-BR')}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted">Título da prova:</span>
-                  <span className="font-semibold text-heading truncate max-w-[200px]">
+                  <span className="text-slate-500">Título da prova:</span>
+                  <span className="font-semibold text-slate-900 truncate max-w-[200px]">
                     {restoreCandidate.exam.header.examTitle || 'Sem título'}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted">Questões cadastradas:</span>
-                  <span className="font-semibold text-heading">{restoreCandidate.exam.questions.length} questões</span>
+                  <span className="text-slate-500">Questões cadastradas:</span>
+                  <span className="font-semibold text-slate-900">{restoreCandidate.exam.questions.length} questões</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted">Notas no livro de notas:</span>
-                  <span className="font-semibold text-heading">{restoreCandidate.gradebook.length} notas</span>
+                  <span className="text-slate-500">Notas no livro de notas:</span>
+                  <span className="font-semibold text-slate-900">{restoreCandidate.gradebook.length} notas</span>
                 </div>
                 {restoreCandidate.classes && restoreCandidate.classes.length > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-muted">Turmas cadastradas:</span>
-                    <span className="font-semibold text-heading">
+                    <span className="text-slate-500">Turmas cadastradas:</span>
+                    <span className="font-semibold text-slate-900">
                       {restoreCandidate.classes.length} {restoreCandidate.classes.length === 1 ? 'turma' : 'turmas'} ({restoreCandidate.classes.reduce((acc, c) => acc + c.students.length, 0)} alunos)
                     </span>
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <span className="text-muted">Senha mestra inclusa:</span>
-                  <span className="font-semibold text-heading">
+                  <span className="text-slate-500">Senha mestra inclusa:</span>
+                  <span className="font-semibold text-slate-900">
                     {restoreCandidate.teacherPassword ? 'Sim (criptografia ativa)' : 'Não'}
                   </span>
                 </div>
@@ -429,7 +429,7 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({
                 <button
                   type="button"
                   onClick={() => setRestoreCandidate(null)}
-                  className="px-3.5 py-2 border border-border rounded-xl text-xs font-semibold text-muted hover:text-heading hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                  className="px-3.5 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition"
                 >
                   Cancelar
                 </button>
@@ -448,14 +448,14 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({
         {/* Modal de Confirmação de Mesclagem de Notas */}
         {mergeCandidate && (
           <div className="fixed inset-0 z-60 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-card text-body rounded-2xl max-w-md w-full p-6 shadow-2xl border border-border space-y-4 animate-in fade-in duration-200">
+            <div className="bg-white text-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-in fade-in duration-200">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
                   <ArrowRightLeft className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-heading">Mesclar Livro de Notas</h4>
-                  <p className="text-xs text-muted">Resumo da sincronização de registros:</p>
+                  <h4 className="text-sm font-bold text-slate-900">Mesclar Livro de Notas</h4>
+                  <p className="text-xs text-slate-500">Resumo da sincronização de registros:</p>
                 </div>
               </div>
 
@@ -474,15 +474,15 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({
                     Atualizadas
                   </span>
                 </div>
-                <div className="p-3 bg-slate-100 border border-border rounded-xl">
-                  <span className="block text-lg font-black text-heading">
+                <div className="p-3 bg-slate-100 border border-slate-200 rounded-xl">
+                  <span className="block text-lg font-black text-slate-900">
                     {mergeCandidate.summary.unchanged}
                   </span>
-                  <span className="text-[10px] uppercase font-bold text-muted">Inalteradas</span>
+                  <span className="text-[10px] uppercase font-bold text-slate-500">Inalteradas</span>
                 </div>
               </div>
 
-              <div className="text-xs text-muted">
+              <div className="text-xs text-slate-500">
                 Total consolidado após a mesclagem: <strong>{mergeCandidate.merged.length} notas</strong>.
               </div>
 
@@ -490,7 +490,7 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({
                 <button
                   type="button"
                   onClick={() => setMergeCandidate(null)}
-                  className="px-3.5 py-2 border border-border rounded-xl text-xs font-semibold text-muted hover:text-heading hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                  className="px-3.5 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition"
                 >
                   Cancelar
                 </button>

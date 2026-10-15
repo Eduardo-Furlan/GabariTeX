@@ -18,6 +18,8 @@ export interface BatchItem {
   reason?: string;
   studentName?: string;
   studentId?: string;
+  studentRef?: string;
+  classId?: string;
 }
 
 export interface BatchState {
@@ -162,7 +164,14 @@ export type BatchAction =
   | { type: 'MARK_SAVED'; id: string }
   | { type: 'MARK_ITEMS_SAVED'; ids: string[] }
   | { type: 'RETRY_ITEM'; id: string }
-  | { type: 'UPDATE_STUDENT_INFO'; id: string; studentName?: string; studentId?: string }
+  | {
+      type: 'UPDATE_STUDENT_INFO';
+      id: string;
+      studentName?: string;
+      studentId?: string;
+      studentRef?: string;
+      classId?: string;
+    }
   | { type: 'CLEAR_COMPLETED' }
   | { type: 'RESET' };
 
@@ -291,6 +300,9 @@ export function batchReducer(state: BatchState, action: BatchAction): BatchState
             ...it,
             studentName: action.studentName !== undefined ? action.studentName : it.studentName,
             studentId: action.studentId !== undefined ? action.studentId : it.studentId,
+            studentRef:
+              'studentRef' in action ? action.studentRef : it.studentRef,
+            classId: 'classId' in action ? action.classId : it.classId,
           };
           if (updated.result?.record) {
             updated.result = {
@@ -299,6 +311,8 @@ export function batchReducer(state: BatchState, action: BatchAction): BatchState
                 ...updated.result.record,
                 studentName: updated.studentName ?? updated.result.record.studentName,
                 studentId: updated.studentId ?? updated.result.record.studentId,
+                studentRef: updated.studentRef,
+                classId: updated.classId ?? updated.result.record.classId,
               },
             };
           }
