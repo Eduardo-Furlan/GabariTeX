@@ -68,6 +68,20 @@ export interface SubjectiveAnswer {
   pointsEarned: number | null; // null = ainda não corrigida
 }
 
+export interface Student {
+  id: string; // identificador interno estável
+  name: string;
+  registration?: string; // matrícula/RA, opcional, sempre como texto (preserva zeros à esquerda)
+}
+
+export interface Classroom {
+  id: string;
+  name: string; // ex.: "2º B — Física 2026"
+  students: Student[];
+  createdAt: string; // ISO
+  updatedAt: string; // ISO
+}
+
 export interface GradingRecord {
   id: string;
   timestamp: number;
@@ -79,4 +93,6 @@ export interface GradingRecord {
   percentage: number;
   answers: GradedAnswer[];
   subjectiveAnswers?: SubjectiveAnswer[];
+  classId?: string; // turma no momento do salvamento
+  studentRef?: string; // Student.id quando escolhido na turma; ausente se digitado à mão
 }

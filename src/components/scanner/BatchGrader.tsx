@@ -1,5 +1,5 @@
 import React, { useReducer, useRef, useState, useEffect, useCallback } from 'react';
-import { ExamVersion, GradingRecord } from '../../types/exam';
+import { ExamVersion, GradingRecord, Classroom } from '../../types/exam';
 import { DecryptedQrPayload } from '../../types/omr';
 import { gradePhotoFile } from '../../utils/photoPipeline';
 import {
@@ -31,6 +31,12 @@ export interface BatchGraderProps {
   availableVersions?: ExamVersion[];
   onSaveRecords: (records: GradingRecord[]) => void;
   onLockPayload?: (payload: DecryptedQrPayload) => void;
+  classes?: Classroom[];
+  activeClassId?: string | null;
+  onSelectActiveClass?: (id: string | null) => void;
+  records?: GradingRecord[];
+  onOpenClassManager?: () => void;
+  onAddStudentToClass?: (classId: string, student: { name: string; registration?: string }) => void;
 }
 
 export const BatchGrader: React.FC<BatchGraderProps> = ({
@@ -39,6 +45,12 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
   availableVersions = [],
   onSaveRecords,
   onLockPayload,
+  classes = [],
+  activeClassId = null,
+  onSelectActiveClass,
+  records = [],
+  onOpenClassManager,
+  onAddStudentToClass,
 }) => {
   const [state, dispatch] = useReducer(batchReducer, initialBatchState);
   const [reviewingItem, setReviewingItem] = useState<BatchItem | null>(null);
@@ -157,6 +169,7 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
       const rec = it.result!.record!;
       return {
         ...rec,
+        classId: rec.classId || activeClassId || undefined,
         studentName: it.studentName?.trim() || rec.studentName,
         studentId: it.studentId?.trim() || rec.studentId,
       };
@@ -176,6 +189,7 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
       const rec = it.result!.record!;
       return {
         ...rec,
+        classId: rec.classId || activeClassId || undefined,
         studentName: it.studentName?.trim() || rec.studentName,
         studentId: it.studentId?.trim() || rec.studentId,
       };
@@ -627,7 +641,18 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
         <GradingModal
           initialRecord={reviewingItem.result.record}
           evidence={reviewingItem.result.evidence}
-          onSave={(updatedRecord) => {
+          classes={classes}
+          activeClassId={activeClassId}
+          onSelectActiveClass={onSelectActiveClass}
+          records={records}
+          onOpenClassManager={onOpenClassManager}
+          onSave={(updatedRecord, options) => {
+            if (options?.newStudentToClass && onAddStudentToClass) {
+              onAddStudentToClass(options.newStudentToClass.classId, {
+                name: options.newStudentToClass.name,
+                registration: options.newStudentToClass.registration,
+              });
+            }
             onSaveRecords([updatedRecord]);
             dispatch({ type: 'MARK_SAVED', id: reviewingItem.id });
             setReviewingItem(null);

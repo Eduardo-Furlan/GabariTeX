@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Exam, GradingRecord } from '../types/exam';
+import { Exam, GradingRecord, Classroom } from '../types/exam';
 import {
   buildBackup,
   parseBackup,
@@ -29,6 +29,7 @@ import {
 interface BackupPanelProps {
   exam: Exam;
   gradebook: GradingRecord[];
+  classes?: Classroom[];
   teacherPassword?: string;
   onRestoreBackup: (backup: BackupFile) => void;
   onMergeGradebook: (mergedRecords: GradingRecord[], summary: MergeSummary) => void;
@@ -38,6 +39,7 @@ interface BackupPanelProps {
 export const BackupPanel: React.FC<BackupPanelProps> = ({
   exam,
   gradebook,
+  classes,
   teacherPassword,
   onRestoreBackup,
   onMergeGradebook,
@@ -81,7 +83,7 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({
 
   const handleExportFullBackup = () => {
     try {
-      const backup = buildBackup(exam, gradebook, teacherPassword);
+      const backup = buildBackup(exam, gradebook, teacherPassword, classes);
       downloadBackupFile(backup);
       setLastBackup(new Date());
       setSuccessMessage('Backup completo exportado com sucesso! Guarde o arquivo em local seguro.');
@@ -253,6 +255,14 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({
           </div>
         </div>
 
+        {/* Aviso de Privacidade de Dados de Alunos */}
+        <div className="mt-4 p-3 rounded-xl border border-indigo-200/80 dark:border-indigo-900/50 bg-indigo-50/60 dark:bg-indigo-950/30 text-xs text-indigo-900 dark:text-indigo-200 flex items-start gap-2.5">
+          <Lock className="w-4 h-4 shrink-0 text-indigo-600 dark:text-indigo-400 mt-0.5" />
+          <p className="leading-relaxed">
+            <strong>Privacidade dos dados:</strong> os nomes, turmas e registros de notas ficam salvos exclusivamente no seu navegador. Os arquivos de backup contêm dados pessoais dos alunos — armazene-os em local seguro e de acesso restrito.
+          </p>
+        </div>
+
         {/* Bloco 1: Backup Completo */}
         <div className="mt-5 space-y-3">
           <h4 className="text-xs font-bold uppercase tracking-wider text-muted flex items-center gap-1.5">
@@ -399,6 +409,14 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({
                   <span className="text-muted">Notas no livro de notas:</span>
                   <span className="font-semibold text-heading">{restoreCandidate.gradebook.length} notas</span>
                 </div>
+                {restoreCandidate.classes && restoreCandidate.classes.length > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-muted">Turmas cadastradas:</span>
+                    <span className="font-semibold text-heading">
+                      {restoreCandidate.classes.length} {restoreCandidate.classes.length === 1 ? 'turma' : 'turmas'} ({restoreCandidate.classes.reduce((acc, c) => acc + c.students.length, 0)} alunos)
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-muted">Senha mestra inclusa:</span>
                   <span className="font-semibold text-heading">

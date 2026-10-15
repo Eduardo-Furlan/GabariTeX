@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Exam, ExamVersion, GradingRecord } from './types/exam';
+import { Exam, ExamVersion, GradingRecord, Classroom } from './types/exam';
 import { initialSampleExam, emptyExam } from './utils/sampleExam';
 import { generateExamVersions } from './utils/randomizer';
 import {
@@ -7,8 +7,13 @@ import {
   saveExamToStorage,
   loadGradebookFromStorage,
   saveGradebookToStorage,
+  loadClassroomsFromStorage,
+  saveClassroomsToStorage,
+  loadActiveClassIdFromStorage,
+  saveActiveClassIdToStorage,
   exportExamToJson,
 } from './utils/storage';
+import { addStudent } from './utils/classrooms';
 import { Navbar, ActiveTab } from './components/Navbar';
 import { ExamHeaderEditor } from './components/editor/ExamHeaderEditor';
 import { QuestionList } from './components/editor/QuestionList';
@@ -19,6 +24,7 @@ import { BatchGrader } from './components/scanner/BatchGrader';
 import { PasswordModal } from './components/scanner/PasswordModal';
 import { GradingModal } from './components/scanner/GradingModal';
 import { GradebookTable } from './components/gradebook/GradebookTable';
+import { ClassroomManager } from './components/classrooms/ClassroomManager';
 import { BackupPanel } from './components/BackupPanel';
 import { BackupFile } from './utils/backup';
 import { useAutosave } from './hooks/useAutosave';
@@ -36,6 +42,7 @@ import {
   AlertTriangle,
   Camera,
   Files,
+  GraduationCap,
 } from 'lucide-react';
 import './styles/print.css';
 
@@ -71,19 +78,65 @@ export const App: React.FC = () => {
     return loadGradebookFromStorage();
   });
 
+  const [classes, setClasses] = useState<Classroom[]>(() => {
+    return loadClassroomsFromStorage();
+  });
+
+  const [activeClassId, setActiveClassId] = useState<string | null>(() => {
+    return loadActiveClassIdFromStorage();
+  });
+
+  const [isClassManagerOpen, setIsClassManagerOpen] = useState<boolean>(false);
   const [isBackupPanelOpen, setIsBackupPanelOpen] = useState<boolean>(false);
   const [scannerMode, setScannerMode] = useState<'single' | 'batch'>('single');
 
-  // Autosave com debounce (400ms para a prova, 300ms para notas) e flush automático em pagehide/visibilitychange
+  // Autosave com debounce (400ms para a prova/turmas, 300ms para notas) e flush automático
   const examAutosave = useAutosave(exam, saveExamToStorage, 400);
   const gradebookAutosave = useAutosave(records, saveGradebookToStorage, 300);
+  const classroomsAutosave = useAutosave(classes, saveClassroomsToStorage, 400);
+
   const hasStorageError =
-    examAutosave.status === 'error' || gradebookAutosave.status === 'error';
+    examAutosave.status === 'error' ||
+    gradebookAutosave.status === 'error' ||
+    classroomsAutosave.status === 'error';
 
   const updateTeacherPassword = (newPass: string) => {
     setTeacherPassword(newPass);
     localStorage.setItem('mcorr_teacher_password', newPass);
     setExam((prev) => ({ ...prev, password: newPass }));
+  };
+
+  const handleSelectActiveClass = (id: string | null) => {
+    setActiveClassId(id);
+    saveActiveClassIdToStorage(id);
+  };
+
+  const handleDisassociateRecordsFromClass = (classId: string) => {
+    setRecords((prev) =>
+      prev.map((r) => {
+        if (r.classId === classId) {
+          const { classId: _, studentRef: __, ...rest } = r;
+          return rest as GradingRecord;
+        }
+        return r;
+      })
+    );
+  };
+
+  const handleAddStudentToClass = (
+    classId: string,
+    student: { name: string; registration?: string }
+  ) => {
+    setClasses((prev) =>
+      prev.map((c) => {
+        if (c.id !== classId) return c;
+        try {
+          return addStudent(c, student);
+        } catch {
+          return c;
+        }
+      })
+    );
   };
 
   // Atualiza as versões da prova sempre que as questões ou configurações mudarem
@@ -106,6 +159,9 @@ export const App: React.FC = () => {
   const handleRestoreBackup = (backup: BackupFile) => {
     setExam(backup.exam);
     setRecords(backup.gradebook);
+    if (backup.classes) {
+      setClasses(backup.classes);
+    }
     if (backup.teacherPassword) {
       updateTeacherPassword(backup.teacherPassword);
     }
@@ -177,8 +233,17 @@ export const App: React.FC = () => {
     );
   };
 
-  const handleGradeSaved = (newRecord: GradingRecord) => {
+  const handleGradeSaved = (
+    newRecord: GradingRecord,
+    options?: { newStudentToClass?: { classId: string; name: string; registration?: string } }
+  ) => {
     setRecords((prev) => [newRecord, ...prev.filter((r) => r.id !== newRecord.id)]);
+    if (options?.newStudentToClass) {
+      handleAddStudentToClass(options.newStudentToClass.classId, {
+        name: options.newStudentToClass.name,
+        registration: options.newStudentToClass.registration,
+      });
+    }
     setGradingSession(null);
   };
 
@@ -622,6 +687,57 @@ export const App: React.FC = () => {
               </div>
             </div>
 
+            {/* Seletor de Turma Ativa para Correção */}
+            <div className="flex items-center justify-between flex-wrap gap-3 bg-white p-3.5 rounded-xl border border-slate-200">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                  <GraduationCap className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-slate-800 block">
+                    Turma Ativa para Correção:
+                  </span>
+                  <span className="text-[11px] text-slate-500">
+                    Notas corrigidas serão vinculadas automaticamente a esta turma.
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                {classes.length === 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => setIsClassManagerOpen(true)}
+                    className="px-3 py-1.5 text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/60 rounded-lg transition"
+                  >
+                    + Criar Primeira Turma
+                  </button>
+                ) : (
+                  <>
+                    <select
+                      value={activeClassId || ''}
+                      onChange={(e) => handleSelectActiveClass(e.target.value || null)}
+                      className="text-xs px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-800 font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    >
+                      <option value="">Sem turma fixa (escolher na folha)</option>
+                      {classes.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name} ({c.students.length} alunos)
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => setIsClassManagerOpen(true)}
+                      className="px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 border border-slate-300 rounded-lg hover:bg-slate-50 transition"
+                    >
+                      Gerenciar Turmas
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
             {/* Seletor de Modo: Individual vs Em Lote */}
             <div className="flex items-center justify-center">
               <div className="inline-flex p-1 bg-slate-100 rounded-lg border border-slate-200 text-xs font-semibold">
@@ -669,6 +785,12 @@ export const App: React.FC = () => {
                   availableVersions={versions}
                   onSaveRecords={handleBatchSaveRecords}
                   onLockPayload={(payload) => setActivePayload(payload)}
+                  classes={classes}
+                  activeClassId={activeClassId}
+                  onSelectActiveClass={handleSelectActiveClass}
+                  records={records}
+                  onOpenClassManager={() => setIsClassManagerOpen(true)}
+                  onAddStudentToClass={handleAddStudentToClass}
                 />
               )}
             </div>
@@ -679,6 +801,10 @@ export const App: React.FC = () => {
         {activeTab === 'gradebook' && (
           <GradebookTable
             records={records}
+            classes={classes}
+            activeClassId={activeClassId}
+            onSelectActiveClass={handleSelectActiveClass}
+            onOpenClassManager={() => setIsClassManagerOpen(true)}
             onUpdateRecord={handleUpdateRecord}
             onDeleteRecord={(id) => setRecords((prev) => prev.filter((r) => r.id !== id))}
             onClearAll={() => {
@@ -705,6 +831,11 @@ export const App: React.FC = () => {
         <GradingModal
           initialRecord={gradingSession.record}
           evidence={gradingSession.evidence}
+          classes={classes}
+          activeClassId={activeClassId}
+          onSelectActiveClass={handleSelectActiveClass}
+          records={records}
+          onOpenClassManager={() => setIsClassManagerOpen(true)}
           onSave={handleGradeSaved}
           onCancel={() => setGradingSession(null)}
         />
@@ -715,12 +846,25 @@ export const App: React.FC = () => {
         <BackupPanel
           exam={exam}
           gradebook={records}
+          classes={classes}
           teacherPassword={teacherPassword}
           onRestoreBackup={handleRestoreBackup}
           onMergeGradebook={handleMergeGradebook}
           onClose={() => setIsBackupPanelOpen(false)}
         />
       )}
+
+      {/* MODAL DE GERENCIAMENTO DE TURMAS E ALUNOS */}
+      <ClassroomManager
+        isOpen={isClassManagerOpen}
+        onClose={() => setIsClassManagerOpen(false)}
+        classes={classes}
+        activeClassId={activeClassId}
+        onSelectActiveClass={handleSelectActiveClass}
+        onUpdateClasses={setClasses}
+        records={records}
+        onDisassociateRecordsFromClass={handleDisassociateRecordsFromClass}
+      />
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import { Exam, GradingRecord } from '../types/exam';
+import { Exam, GradingRecord, Classroom, Student } from '../types/exam';
 
 export type SaveResult = { ok: true } | { ok: false; reason: 'quota' | 'unknown' };
 
@@ -6,6 +6,8 @@ export const EXAM_STORAGE_KEY = 'mcorr_exam_data';
 export const GRADEBOOK_STORAGE_KEY = 'mcorr_gradebook_data';
 export const TEACHER_PASSWORD_KEY = 'mcorr_teacher_password';
 export const LAST_BACKUP_KEY = 'mcorr_last_backup_at';
+export const CLASSES_STORAGE_KEY = 'mcorr_classes';
+export const ACTIVE_CLASS_STORAGE_KEY = 'mcorr_active_class';
 
 export function isQuotaExceededError(err: unknown): boolean {
   if (err instanceof DOMException) {
@@ -113,6 +115,47 @@ export function loadLastBackupDate(): Date | null {
   }
 }
 
+export function saveClassroomsToStorage(classes: Classroom[]): SaveResult {
+  try {
+    localStorage.setItem(CLASSES_STORAGE_KEY, JSON.stringify(classes));
+    tryRequestPersistence();
+    return { ok: true };
+  } catch (e) {
+    console.error('Falha ao salvar turmas no localStorage', e);
+    return { ok: false, reason: isQuotaExceededError(e) ? 'quota' : 'unknown' };
+  }
+}
+
+export function loadClassroomsFromStorage(): Classroom[] {
+  try {
+    const raw = localStorage.getItem(CLASSES_STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as Classroom[]) : [];
+  } catch (e) {
+    console.error('Falha ao carregar turmas do localStorage', e);
+    return [];
+  }
+}
+
+export function saveActiveClassIdToStorage(classId: string | null): void {
+  try {
+    if (classId) {
+      localStorage.setItem(ACTIVE_CLASS_STORAGE_KEY, classId);
+    } else {
+      localStorage.removeItem(ACTIVE_CLASS_STORAGE_KEY);
+    }
+  } catch {
+    // Silencioso se indisponível
+  }
+}
+
+export function loadActiveClassIdFromStorage(): string | null {
+  try {
+    return localStorage.getItem(ACTIVE_CLASS_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
 export function exportExamToJson(exam: Exam): void {
   const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(exam, null, 2));
   const downloadAnchor = document.createElement('a');
@@ -134,12 +177,23 @@ function formatCsvDecimal(val: number, decimals = 2): string {
   return val.toFixed(decimals).replace('.', ',');
 }
 
+export interface GenerateGradebookCsvOptions {
+  classrooms?: Classroom[];
+  missingStudents?: Student[];
+  filteredClassId?: string;
+}
+
 /**
  * Gera a string CSV formatada do livro de notas com compatibilidade pt-BR (separador ';', vírgula decimal,
- * escape seguro de aspas duplas e colunas detalhadas de objetivas, dissertativas e pendências).
+ * escape seguro de aspas duplas, coluna Turma e colunas detalhadas de objetivas, dissertativas e pendências).
  */
-export function generateGradebookCsv(records: GradingRecord[]): string {
-  if (records.length === 0) return '';
+export function generateGradebookCsv(
+  records: GradingRecord[],
+  options?: GenerateGradebookCsvOptions
+): string {
+  if (records.length === 0 && (!options?.missingStudents || options.missingStudents.length === 0)) {
+    return '';
+  }
 
   const allQuestionNumbers = Array.from(
     new Set(records.flatMap((r) => r.answers.map((a) => a.questionNumber)))
@@ -165,6 +219,7 @@ export function generateGradebookCsv(records: GradingRecord[]): string {
     'Dissertativas',
     'Pendências',
     ...dHeaders,
+    'Turma',
     'Data',
   ];
 
@@ -191,6 +246,10 @@ export function generateGradebookCsv(records: GradingRecord[]): string {
       return formatCsvDecimal(s.pointsEarned);
     });
 
+    const className =
+      options?.classrooms?.find((c) => c.id === r.classId)?.name ||
+      (r.classId ? r.classId : 'Sem turma');
+
     const dateStr = new Date(r.timestamp).toLocaleString('pt-BR');
 
     const rowParts = [
@@ -206,17 +265,50 @@ export function generateGradebookCsv(records: GradingRecord[]): string {
       formatCsvDecimal(subjectiveScore),
       pendingCount,
       ...dAnswers,
+      escapeCsvField(className),
       escapeCsvField(dateStr),
     ];
 
     return rowParts.join(';');
   });
 
+  if (options?.missingStudents && options.missingStudents.length > 0) {
+    const missingClassName =
+      options.classrooms?.find((c) => c.id === options.filteredClassId)?.name ||
+      (options.filteredClassId ? options.filteredClassId : 'Sem turma');
+
+    const missingRows = options.missingStudents.map((st) => {
+      const emptyAnswers = allQuestionNumbers.map(() => '-');
+      const emptySubj = allSubjectiveNumbers.map(() => '');
+      const parts = [
+        escapeCsvField(st.name),
+        escapeCsvField(st.registration || ''),
+        '-',
+        '0,00',
+        '0,00',
+        'Sem nota',
+        ...emptyAnswers,
+        '0',
+        '0,00',
+        '0,00',
+        '0',
+        ...emptySubj,
+        escapeCsvField(missingClassName),
+        '-',
+      ];
+      return parts.join(';');
+    });
+    rows.push(...missingRows);
+  }
+
   return header + rows.join('\n');
 }
 
-export function exportGradebookToCsv(records: GradingRecord[]): void {
-  const csvBody = generateGradebookCsv(records);
+export function exportGradebookToCsv(
+  records: GradingRecord[],
+  options?: GenerateGradebookCsvOptions
+): void {
+  const csvBody = generateGradebookCsv(records, options);
   if (!csvBody) return;
 
   const csvContent = '\uFEFF' + csvBody;

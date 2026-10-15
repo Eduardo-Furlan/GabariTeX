@@ -181,7 +181,7 @@ describe('Armazenamento Local Seguro (storage.ts)', () => {
 
       const header = lines[0];
       expect(header).toBe(
-        'Aluno;Matrícula;Versão;Nota;Nota Máxima;Porcentagem (%);Q1;Q2;Revisões manuais;Objetivas;Dissertativas;Pendências;D3;D4;Data'
+        'Aluno;Matrícula;Versão;Nota;Nota Máxima;Porcentagem (%);Q1;Q2;Revisões manuais;Objetivas;Dissertativas;Pendências;D3;D4;Turma;Data'
       );
 
       const row = lines[1];
@@ -199,6 +199,41 @@ describe('Armazenamento Local Seguro (storage.ts)', () => {
       expect(row).toContain(';5,00;2,50;1;');
       // D3 = 2,50; D4 = vazio (pois pendente)
       expect(row).toContain(';2,50;;');
+      // Turma padrão
+      expect(row).toContain('"Sem turma"');
+    });
+
+    it('deve incluir alunos faltantes no final do CSV quando options.missingStudents for fornecido', () => {
+      const records: GradingRecord[] = [];
+      const csv = generateGradebookCsv(records, {
+        missingStudents: [{ id: 'st-1', name: 'Zezinho', registration: '999' }],
+        filteredClassId: 'c1',
+        classrooms: [{ id: 'c1', name: 'Turma Alpha', students: [], createdAt: '', updatedAt: '' }],
+      });
+
+      expect(csv).toContain('"Zezinho";"999";-;0,00;0,00;Sem nota');
+      expect(csv).toContain('"Turma Alpha"');
+    });
+  });
+
+  describe('Armazenamento de Turmas (Plano 06)', () => {
+    it('deve salvar e carregar turmas do localStorage', async () => {
+      const { saveClassroomsToStorage, loadClassroomsFromStorage, saveActiveClassIdToStorage, loadActiveClassIdFromStorage } = await import('../src/utils/storage');
+      const classes = [
+        { id: 'c1', name: 'Física I', students: [{ id: 's1', name: 'Fulano' }], createdAt: '', updatedAt: '' },
+      ];
+
+      const saveRes = saveClassroomsToStorage(classes);
+      expect(saveRes).toEqual({ ok: true });
+
+      const loaded = loadClassroomsFromStorage();
+      expect(loaded.length).toBe(1);
+      expect(loaded[0].name).toBe('Física I');
+
+      saveActiveClassIdToStorage('c1');
+      expect(loadActiveClassIdFromStorage()).toBe('c1');
+      saveActiveClassIdToStorage(null);
+      expect(loadActiveClassIdFromStorage()).toBeNull();
     });
   });
 });

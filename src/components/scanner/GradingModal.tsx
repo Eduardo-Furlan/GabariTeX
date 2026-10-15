@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { GradingRecord, OptionLabel } from '../../types/exam';
+import { GradingRecord, OptionLabel, Classroom } from '../../types/exam';
 import { GradingEvidence } from '../../types/omr';
 import {
   applyManualOverride,
@@ -12,8 +12,10 @@ import {
   isPartial,
   ManualChoice,
 } from '../../utils/grading';
+import { findDuplicateRecord } from '../../utils/classrooms';
 import { AnswerChoiceGroup } from './AnswerChoiceGroup';
 import { SubjectiveScoreInput } from './SubjectiveScoreInput';
+import { StudentPicker } from './StudentPicker';
 import {
   CheckCircle2,
   XCircle,
@@ -31,8 +33,16 @@ import {
 interface GradingModalProps {
   initialRecord: GradingRecord;
   evidence?: GradingEvidence;
-  onSave: (record: GradingRecord) => void;
+  onSave: (
+    record: GradingRecord,
+    options?: { newStudentToClass?: { classId: string; name: string; registration?: string } }
+  ) => void;
   onCancel: () => void;
+  classes?: Classroom[];
+  activeClassId?: string | null;
+  onSelectActiveClass?: (id: string | null) => void;
+  records?: GradingRecord[];
+  onOpenClassManager?: () => void;
 }
 
 export const GradingModal: React.FC<GradingModalProps> = ({
@@ -40,13 +50,61 @@ export const GradingModal: React.FC<GradingModalProps> = ({
   evidence,
   onSave,
   onCancel,
+  classes = [],
+  activeClassId = null,
+  onSelectActiveClass,
+  records = [],
+  onOpenClassManager,
 }) => {
   const [record, setRecord] = useState<GradingRecord>(initialRecord);
   const [filterOnlyNeedsReview, setFilterOnlyNeedsReview] = useState<boolean>(false);
   const [showFullSheetModal, setShowFullSheetModal] = useState<boolean>(false);
 
-  const handleSave = () => {
-    onSave(record);
+  const [selectedClassId, setSelectedClassId] = useState<string | null>(
+    initialRecord.classId || activeClassId || null
+  );
+  const [studentRef, setStudentRef] = useState<string | undefined>(initialRecord.studentRef);
+  const [addToClass, setAddToClass] = useState<boolean>(true);
+  const [duplicateCandidate, setDuplicateCandidate] = useState<GradingRecord | null>(null);
+
+  const proceedSave = (targetRecord: GradingRecord) => {
+    const finalRecord: GradingRecord = {
+      ...targetRecord,
+      classId: selectedClassId || undefined,
+      studentRef: studentRef || undefined,
+    };
+
+    let newStudentOption: { classId: string; name: string; registration?: string } | undefined = undefined;
+    if (
+      addToClass &&
+      selectedClassId &&
+      finalRecord.studentName.trim() &&
+      !finalRecord.studentRef
+    ) {
+      newStudentOption = {
+        classId: selectedClassId,
+        name: finalRecord.studentName.trim(),
+        registration: finalRecord.studentId.trim() || undefined,
+      };
+    }
+
+    onSave(finalRecord, newStudentOption ? { newStudentToClass: newStudentOption } : undefined);
+  };
+
+  const handleSaveClick = () => {
+    const candidate = {
+      classId: selectedClassId || undefined,
+      studentRef: studentRef || undefined,
+      registration: record.studentId.trim() || undefined,
+    };
+
+    const duplicate = findDuplicateRecord(records, candidate);
+    if (duplicate && duplicate.id !== record.id) {
+      setDuplicateCandidate(duplicate);
+      return;
+    }
+
+    proceedSave(record);
   };
 
   const handleOptionChange = (questionNumber: number, choice: ManualChoice) => {
@@ -204,33 +262,25 @@ export const GradingModal: React.FC<GradingModalProps> = ({
             )}
           </div>
 
-          {/* Dados do Aluno */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            <div>
-              <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-                Nome do Aluno(a)
-              </label>
-              <input
-                type="text"
-                placeholder="Digite o nome do aluno"
-                className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:outline-none"
-                value={record.studentName}
-                onChange={(e) => setRecord({ ...record, studentName: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-                Matrícula / RA
-              </label>
-              <input
-                type="text"
-                placeholder="Ex: 20261045"
-                className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs font-mono focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:outline-none"
-                value={record.studentId}
-                onChange={(e) => setRecord({ ...record, studentId: e.target.value })}
-              />
-            </div>
-          </div>
+          {/* Seletor / Dados do Aluno */}
+          <StudentPicker
+            classes={classes}
+            selectedClassId={selectedClassId}
+            onSelectClassId={(newId) => {
+              setSelectedClassId(newId);
+              onSelectActiveClass?.(newId);
+            }}
+            studentName={record.studentName}
+            onStudentNameChange={(newName) => setRecord((prev) => ({ ...prev, studentName: newName }))}
+            studentId={record.studentId}
+            onStudentIdChange={(newId) => setRecord((prev) => ({ ...prev, studentId: newId }))}
+            studentRef={studentRef}
+            onStudentRefChange={(newRef) => setStudentRef(newRef)}
+            addToClass={addToClass}
+            onAddToClassChange={(val) => setAddToClass(val)}
+            records={records}
+            onOpenClassManager={() => onOpenClassManager?.()}
+          />
 
           {/* Detalhamento Questão a Questão com Ajuste Manual */}
           <div>
@@ -394,13 +444,86 @@ export const GradingModal: React.FC<GradingModalProps> = ({
           </button>
           <button
             type="button"
-            onClick={handleSave}
+            onClick={handleSaveClick}
             className="flex items-center gap-1.5 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-on-accent rounded-lg text-xs font-bold shadow-sm transition"
           >
             <Save className="w-3.5 h-3.5" /> Salvar Nota no Livro
           </button>
         </div>
       </div>
+
+      {/* Modal de Conflito de Duplicidade */}
+      {duplicateCandidate && (
+        <div className="fixed inset-0 z-60 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded-xl">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">
+                  Nota já lançada para este aluno
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Já existe uma correção para este aluno nesta turma.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1.5">
+              <div>
+                <span className="text-slate-500">Aluno:</span>{' '}
+                <strong className="text-slate-800">
+                  {duplicateCandidate.studentName || record.studentName}
+                </strong>
+              </div>
+              <div>
+                <span className="text-slate-500">Nota já gravada:</span>{' '}
+                <span className="font-mono font-bold text-slate-800">
+                  Versão {duplicateCandidate.versionLetter}, {duplicateCandidate.totalScore.toFixed(1)} / {duplicateCandidate.maxScore.toFixed(1)} pts ({duplicateCandidate.percentage.toFixed(0)}%)
+                </span>
+              </div>
+              <div>
+                <span className="text-slate-500">Nova nota atual:</span>{' '}
+                <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                  Versão {record.versionLetter}, {record.totalScore.toFixed(1)} / {record.maxScore.toFixed(1)} pts ({record.percentage.toFixed(0)}%)
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setDuplicateCandidate(null)}
+                className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDuplicateCandidate(null);
+                  proceedSave(record);
+                }}
+                className="px-3 py-1.5 text-xs font-semibold border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
+              >
+                Manter as duas
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const dupId = duplicateCandidate.id;
+                  setDuplicateCandidate(null);
+                  proceedSave({ ...record, id: dupId });
+                }}
+                className="px-3.5 py-1.5 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-on-accent rounded-lg shadow-sm transition"
+              >
+                Substituir nota anterior
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal Overlay da Folha Inteira */}
       {showFullSheetModal && evidence?.sheetThumbUrl && (

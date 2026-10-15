@@ -1,4 +1,4 @@
-import { Exam, GradingRecord } from '../types/exam';
+import { Exam, GradingRecord, Classroom } from '../types/exam';
 import { saveLastBackupDate } from './storage';
 
 export interface BackupFile {
@@ -7,6 +7,7 @@ export interface BackupFile {
   exportedAt: string; // ISO 8601
   exam: Exam;
   gradebook: GradingRecord[];
+  classes?: Classroom[];
   teacherPassword?: string;
 }
 
@@ -29,7 +30,8 @@ export interface MergeSummary {
 export function buildBackup(
   exam: Exam,
   gradebook: GradingRecord[],
-  teacherPassword?: string
+  teacherPassword?: string,
+  classes?: Classroom[]
 ): BackupFile {
   return {
     app: 'gabaritex',
@@ -37,6 +39,7 @@ export function buildBackup(
     exportedAt: new Date().toISOString(),
     exam,
     gradebook,
+    classes,
     teacherPassword,
   };
 }
@@ -107,6 +110,7 @@ export function parseBackup(
       exportedAt: obj.exportedAt,
       exam: obj.exam as Exam,
       gradebook: obj.gradebook as GradingRecord[],
+      classes: Array.isArray(obj.classes) ? (obj.classes as Classroom[]) : undefined,
       teacherPassword:
         typeof obj.teacherPassword === 'string' ? obj.teacherPassword : undefined,
     },
