@@ -3,7 +3,7 @@ import { ExamVersion, GradingRecord } from '../types/exam';
 import { DecryptedQrPayload, OmrDebugInfo, GradingEvidence } from '../types/omr';
 import { decryptAnswerKey } from './crypto';
 import { buildPayload } from './payload';
-import { gradeCanvasWithPayloadDebug, detectOmrGrid, GridConfig } from './omrProcessor';
+import { gradeCanvasWithPayloadDebug } from './omrProcessor';
 
 export interface PhotoResult {
   status: 'graded' | 'qr_only' | 'error';
@@ -255,35 +255,23 @@ export async function gradePhotoFile(
       }
     }
 
-    // 2. Verifica se a foto é apenas um close-up do QR Code
-    const totalQuestions =
-      targetPayload.totalQuestions ??
-      Math.max(...Object.keys(targetPayload.key).map(Number), 0);
-    const subjectiveQuestions = targetPayload.subjectiveQuestions ?? [];
-    const columnsCount = totalQuestions <= 12 ? 1 : 2;
+    // 2. Executa OMR e extrai evidências
+    const { record, debugInfo, debugCanvasUrl, evidence } = gradeCanvasWithPayloadDebug(
+      canvas,
+      targetPayload
+    );
 
-    const gridConfig: GridConfig = {
-      totalQuestions,
-      optionsPerQuestion: 5,
-      columnsCount,
-      subjectiveQuestions,
-    };
-
-    const detected = detectOmrGrid(canvas, gridConfig);
-    if (!detected || detected.length === 0) {
+    // 3. Se a foto teve QR Code lido, mas não contém a grade de respostas com fiduciais (apenas close-up do QR Code)
+    if (payloadSource === 'qr' && debugInfo.method !== 'fiducials_timing_marks') {
       return {
         status: 'qr_only',
         payload: targetPayload,
         payloadSource,
         versionMismatch,
+        debugInfo,
+        debugCanvasUrl,
       };
     }
-
-    // 3. Executa OMR e extrai evidências
-    const { record, debugInfo, debugCanvasUrl, evidence } = gradeCanvasWithPayloadDebug(
-      canvas,
-      targetPayload
-    );
 
     return {
       status: 'graded',
@@ -314,3 +302,4 @@ export async function gradePhotoFile(
     canvas.height = 0;
   }
 }
+

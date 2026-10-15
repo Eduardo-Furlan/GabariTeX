@@ -48,73 +48,103 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cancelRequestedRef = useRef<boolean>(false);
   const isRunningRef = useRef<boolean>(false);
+  const inFlightIdsRef = useRef<Set<string>>(new Set());
+
+  const itemsRef = useRef(state.items);
+  itemsRef.current = state.items;
+
+  const teacherPasswordRef = useRef(teacherPassword);
+  teacherPasswordRef.current = teacherPassword;
+
+  const activePayloadRef = useRef(activePayload);
+  activePayloadRef.current = activePayload;
+
+  const availableVersionsRef = useRef(availableVersions);
+  availableVersionsRef.current = availableVersions;
+
+  const onLockPayloadRef = useRef(onLockPayload);
+  onLockPayloadRef.current = onLockPayload;
 
   const summary = getBatchSummary(state.items);
 
-  const processNextItem = useCallback(async () => {
-    if (cancelRequestedRef.current) {
-      dispatch({ type: 'CANCEL_PROCESSING' });
+  const runQueue = useCallback(async () => {
+    if (isRunningRef.current) return;
+    isRunningRef.current = true;
+
+    try {
+      while (!cancelRequestedRef.current) {
+        const nextItem = itemsRef.current.find(
+          (it) => it.status === 'queued' && !inFlightIdsRef.current.has(it.id)
+        );
+
+        if (!nextItem) {
+          dispatch({ type: 'CANCEL_PROCESSING' });
+          inFlightIdsRef.current.clear();
+          break;
+        }
+
+        inFlightIdsRef.current.add(nextItem.id);
+        dispatch({ type: 'SET_ITEM_PROCESSING', id: nextItem.id });
+
+        // Cede controle para o navegador renderizar o status 'processing'
+        await new Promise((resolve) => setTimeout(resolve, 30));
+
+        if (cancelRequestedRef.current) break;
+
+        const result = await gradePhotoFile(nextItem.file, {
+          teacherPassword: teacherPasswordRef.current,
+          lockedPayload: activePayloadRef.current,
+          alwaysReadQr: true,
+          availableVersions: availableVersionsRef.current,
+        });
+
+        if (result.payload && result.payloadSource === 'qr' && !activePayloadRef.current) {
+          activePayloadRef.current = result.payload;
+          onLockPayloadRef.current?.(result.payload);
+        }
+
+        dispatch({ type: 'FINISH_ITEM', id: nextItem.id, result });
+
+        // Pequeno intervalo entre fotos para manter responsividade
+        await new Promise((resolve) => setTimeout(resolve, 40));
+      }
+    } finally {
       isRunningRef.current = false;
-      return;
     }
-
-    const nextItem = state.items.find((it) => it.status === 'queued');
-    if (!nextItem) {
-      dispatch({ type: 'CANCEL_PROCESSING' });
-      isRunningRef.current = false;
-      return;
-    }
-
-    dispatch({ type: 'SET_ITEM_PROCESSING', id: nextItem.id });
-
-    // Cede controle para o navegador renderizar o status 'processing'
-    await new Promise((resolve) => setTimeout(resolve, 10));
-
-    const result = await gradePhotoFile(nextItem.file, {
-      teacherPassword,
-      lockedPayload: activePayload,
-      alwaysReadQr: true,
-      availableVersions,
-    });
-
-    if (result.payload && result.payloadSource === 'qr' && !activePayload) {
-      onLockPayload?.(result.payload);
-    }
-
-    dispatch({ type: 'FINISH_ITEM', id: nextItem.id, result });
-
-    // Pequeno intervalo entre fotos para manter responsividade
-    await new Promise((resolve) => setTimeout(resolve, 20));
-  }, [state.items, teacherPassword, activePayload, availableVersions, onLockPayload]);
+  }, []);
 
   useEffect(() => {
     if (state.isProcessing && !isRunningRef.current) {
-      const hasQueued = state.items.some((it) => it.status === 'queued');
-      if (hasQueued && !cancelRequestedRef.current) {
-        isRunningRef.current = true;
-        processNextItem().finally(() => {
-          isRunningRef.current = false;
-        });
-      } else if (!hasQueued) {
-        dispatch({ type: 'CANCEL_PROCESSING' });
-      }
+      runQueue();
     }
-  }, [state.isProcessing, state.items, processNextItem]);
+  }, [state.isProcessing, runQueue]);
 
   const handleAddFiles = (fileList: FileList | null) => {
     if (!fileList || fileList.length === 0) return;
-    const filesArray = Array.from(fileList);
+    const filesArray = Array.from(fileList).sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
+    );
     dispatch({ type: 'ADD_FILES', files: filesArray });
     cancelRequestedRef.current = false;
+    inFlightIdsRef.current.clear();
     dispatch({ type: 'START_PROCESSING' });
   };
 
   const handleCancel = () => {
     cancelRequestedRef.current = true;
+    inFlightIdsRef.current.clear();
     dispatch({ type: 'CANCEL_PROCESSING' });
   };
 
   const handleStart = () => {
+    cancelRequestedRef.current = false;
+    inFlightIdsRef.current.clear();
+    dispatch({ type: 'START_PROCESSING' });
+  };
+
+  const handleRetryItem = (id: string) => {
+    inFlightIdsRef.current.delete(id);
+    dispatch({ type: 'RETRY_ITEM', id });
     cancelRequestedRef.current = false;
     dispatch({ type: 'START_PROCESSING' });
   };
@@ -501,7 +531,7 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
                     {item.status === 'error' && (
                       <button
                         type="button"
-                        onClick={() => dispatch({ type: 'RETRY_ITEM', id: item.id })}
+                        onClick={() => handleRetryItem(item.id)}
                         className="px-2.5 py-1 rounded text-xs font-semibold bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 flex items-center gap-1 transition"
                         title="Tentar ler novamente esta foto"
                       >
@@ -559,7 +589,7 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
 
       {/* Modal de Confirmação para Salvar com Itens Pendentes de Revisão */}
       {confirmSaveAllOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl border border-slate-200 space-y-4">
             <div className="flex items-center gap-2.5 text-amber-600">
               <AlertTriangle className="w-6 h-6 shrink-0" />

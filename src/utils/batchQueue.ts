@@ -319,3 +319,4 @@ export function batchReducer(state: BatchState, action: BatchAction): BatchState
       return state;
   }
 }
+

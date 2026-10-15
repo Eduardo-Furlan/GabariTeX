@@ -110,12 +110,88 @@ describe('Detecção OMR pura em TypeScript (Fiduciais + Sincronizadores)', () =
     expect(record.subjectiveAnswers?.length).toBe(2);
   });
 
-  it('deve detectar linhas dinamicamente sem erro quando expectedRows for 0 ou undefined', () => {
-    const gray2 = loadJpgAsGray('tests/2.jpg');
-    const detZero = detectSheet(gray2, 1, 0);
-    expect(detZero.columns[0].length).toBe(10);
+  it('deve executar gradeCanvasWithPayloadDebug com 100% de acerto em tests/3.jpg (inclinada)', () => {
+    const gray3 = loadJpgAsGray('tests/3.jpg');
+    const rgba = new Uint8ClampedArray(gray3.width * gray3.height * 4);
+    for (let i = 0; i < gray3.width * gray3.height; i++) {
+      const g = gray3.data[i];
+      const idx = i * 4;
+      rgba[idx] = g;
+      rgba[idx + 1] = g;
+      rgba[idx + 2] = g;
+      rgba[idx + 3] = 255;
+    }
 
-    const detUndef = detectSheet(gray2, 1, undefined);
-    expect(detUndef.columns[0].length).toBe(10);
+    const mockCanvas = {
+      width: gray3.width,
+      height: gray3.height,
+      getContext: () => ({
+        getImageData: () => ({
+          width: gray3.width,
+          height: gray3.height,
+          data: rgba,
+        }),
+      }),
+    } as unknown as HTMLCanvasElement;
+
+    const payload = {
+      examId: 'test-123',
+      version: 'A',
+      key: { 1: 'A', 2: 'B', 4: 'C', 5: 'D', 7: 'E', 8: 'A', 9: 'B', 10: 'C' },
+      points: { 1: 1, 2: 1, 4: 1, 5: 1, 7: 1, 8: 1, 9: 1, 10: 1 },
+      totalQuestions: 10,
+      subjectiveQuestions: [3, 6],
+    };
+
+    const { record, debugInfo } = gradeCanvasWithPayloadDebug(mockCanvas, payload);
+
+    expect(debugInfo.method).toBe('fiducials_timing_marks');
+    expect(record.totalScore).toBe(8);
+    expect(record.maxScore).toBe(10);
+    expect(record.percentage).toBe(80);
+    expect(record.subjectiveAnswers?.length).toBe(2);
+  });
+
+  it('deve permitir gradeCanvasWithPayloadDebug quando a prova tem menos questões que as linhas da folha (ex: prova de 6 questões na folha de 10)', () => {
+    const gray2 = loadJpgAsGray('tests/2.jpg');
+    const rgba = new Uint8ClampedArray(gray2.width * gray2.height * 4);
+    for (let i = 0; i < gray2.width * gray2.height; i++) {
+      const g = gray2.data[i];
+      const idx = i * 4;
+      rgba[idx] = g;
+      rgba[idx + 1] = g;
+      rgba[idx + 2] = g;
+      rgba[idx + 3] = 255;
+    }
+
+    const mockCanvas = {
+      width: gray2.width,
+      height: gray2.height,
+      getContext: () => ({
+        getImageData: () => ({
+          width: gray2.width,
+          height: gray2.height,
+          data: rgba,
+        }),
+      }),
+    } as unknown as HTMLCanvasElement;
+
+    const payload6 = {
+      examId: 'test-6',
+      version: 'A',
+      key: { 1: 'A', 2: 'B', 4: 'C', 5: 'D' },
+      points: { 1: 1, 2: 1, 4: 1, 5: 1 },
+      totalQuestions: 6,
+      subjectiveQuestions: [3, 6],
+      subjectivePoints: { 3: 1, 6: 2 },
+    };
+
+    const { record, debugInfo } = gradeCanvasWithPayloadDebug(mockCanvas, payload6);
+
+    expect(debugInfo.method).toBe('fiducials_timing_marks');
+    expect(record.answers.length).toBe(4);
+    expect(record.subjectiveAnswers?.length).toBe(2);
   });
 });
+
+
