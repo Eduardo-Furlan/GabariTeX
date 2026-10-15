@@ -634,18 +634,34 @@ export function gradeCanvasWithPayloadDebug(
   }
 
   const subjectiveAnswers: SubjectiveAnswer[] = [];
-  if (payload.subjectivePoints) {
-    const sortedSubj = Object.entries(payload.subjectivePoints)
-      .map(([q, pts]) => ({ qNum: Number(q), pts }))
-      .sort((a, b) => a.qNum - b.qNum);
+  const subjMap: Record<number, number> = {};
 
-    for (const item of sortedSubj) {
-      subjectiveAnswers.push({
-        questionNumber: item.qNum,
-        maxPoints: item.pts,
-        pointsEarned: null,
-      });
+  if (payload.subjectivePoints) {
+    Object.entries(payload.subjectivePoints).forEach(([q, pts]) => {
+      subjMap[Number(q)] = pts;
+    });
+  }
+
+  // Suporte a folhas impressas ou QR codes legados que possuem subjectiveQuestions mas não a chave 'sp'
+  if (payload.subjectiveQuestions && Array.isArray(payload.subjectiveQuestions)) {
+    for (const qNum of payload.subjectiveQuestions) {
+      if (subjMap[qNum] === undefined) {
+        const fallbackPts = payload.points?.[qNum];
+        subjMap[qNum] = typeof fallbackPts === 'number' && fallbackPts > 0 ? fallbackPts : 1.0;
+      }
     }
+  }
+
+  const sortedSubj = Object.entries(subjMap)
+    .map(([q, pts]) => ({ qNum: Number(q), pts }))
+    .sort((a, b) => a.qNum - b.qNum);
+
+  for (const item of sortedSubj) {
+    subjectiveAnswers.push({
+      questionNumber: item.qNum,
+      maxPoints: item.pts > 0 ? item.pts : 1.0,
+      pointsEarned: null,
+    });
   }
 
   const initialRecord: GradingRecord = {

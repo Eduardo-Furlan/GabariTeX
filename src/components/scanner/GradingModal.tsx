@@ -6,6 +6,7 @@ import {
   revertOverride,
   recomputeTotals,
   setSubjectiveScore,
+  setSubjectiveMaxPoints,
   countPendingSubjective,
   isPartial,
   ManualChoice,
@@ -65,6 +66,10 @@ export const GradingModal: React.FC<GradingModalProps> = ({
 
   const handleSubjectiveChange = (questionNumber: number, score: number | null) => {
     setRecord((prev) => setSubjectiveScore(prev, questionNumber, score));
+  };
+
+  const handleSubjectiveMaxChange = (questionNumber: number, newMax: number) => {
+    setRecord((prev) => setSubjectiveMaxPoints(prev, questionNumber, newMax));
   };
 
   const getScoreColor = (percentage: number) => {
@@ -367,6 +372,7 @@ export const GradingModal: React.FC<GradingModalProps> = ({
                   maxPoints={subj.maxPoints}
                   pointsEarned={subj.pointsEarned}
                   onChange={(score) => handleSubjectiveChange(subj.questionNumber, score)}
+                  onMaxPointsChange={(newMax) => handleSubjectiveMaxChange(subj.questionNumber, newMax)}
                 />
               ))}
             </div>

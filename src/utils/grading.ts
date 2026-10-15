@@ -215,6 +215,35 @@ export function setSubjectiveScore(
 }
 
 /**
+ * Atualiza a pontuação máxima de uma questão dissertativa e recalcula os totais da prova.
+ */
+export function setSubjectiveMaxPoints(
+  r: GradingRecord,
+  questionNumber: number,
+  newMax: number
+): GradingRecord {
+  if (!r.subjectiveAnswers || r.subjectiveAnswers.length === 0) {
+    return r;
+  }
+
+  const clampedMax = Math.max(0.1, Number(newMax.toFixed(2)));
+  const updatedSubjectiveAnswers = r.subjectiveAnswers.map((s) => {
+    if (s.questionNumber !== questionNumber) return s;
+    const pointsEarned = s.pointsEarned !== null ? Math.min(clampedMax, s.pointsEarned) : null;
+    return {
+      ...s,
+      maxPoints: clampedMax,
+      pointsEarned,
+    };
+  });
+
+  return recomputeTotals({
+    ...r,
+    subjectiveAnswers: updatedSubjectiveAnswers,
+  });
+}
+
+/**
  * Conta quantas questões de um registro precisam de revisão humana.
  */
 export function countNeedsReview(r: GradingRecord): number {

@@ -157,6 +157,31 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
             if (teacherPassword && teacherPassword.trim()) {
               try {
                 targetPayload = await decryptAnswerKey(decodedText, teacherPassword);
+
+                // Se o QR Code lido não contiver a chave 'sp' (gerado antes do Plano 02),
+                // enriquece os pontos das dissertativas a partir da versão carregada no app
+                if (
+                  (!targetPayload.subjectivePoints || Object.keys(targetPayload.subjectivePoints).length === 0) &&
+                  availableVersions &&
+                  availableVersions.length > 0
+                ) {
+                  const matchingVer =
+                    availableVersions.find((v) => v.versionLetter === targetPayload!.version) ||
+                    (availableVersions.length === 1 ? availableVersions[0] : undefined);
+
+                  if (matchingVer) {
+                    const enrichedSubjPoints: Record<number, number> = {};
+                    matchingVer.questions.forEach((q, idx) => {
+                      if (q.type === 'subjective' && q.points > 0) {
+                        enrichedSubjPoints[idx + 1] = q.points;
+                      }
+                    });
+                    if (Object.keys(enrichedSubjPoints).length > 0) {
+                      targetPayload.subjectivePoints = enrichedSubjPoints;
+                    }
+                  }
+                }
+
                 onLockPayload?.(targetPayload);
                 setSuccessMessage(
                   `QR Code identificado! Gabarito da Versão ${targetPayload.version} carregado com sucesso.`
@@ -200,6 +225,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
               points: { 1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1, 9: 1, 10: 1 },
               totalQuestions: 10,
               subjectiveQuestions: [1, 2, 4],
+              subjectivePoints: { 1: 1, 2: 1, 4: 1 },
             };
           }
         }

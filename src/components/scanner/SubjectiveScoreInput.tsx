@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { Pencil } from 'lucide-react';
 
 export interface SubjectiveScoreInputProps {
   questionNumber: number;
   maxPoints: number;
   pointsEarned: number | null;
   onChange: (score: number | null) => void;
+  onMaxPointsChange?: (newMax: number) => void;
   disabled?: boolean;
 }
 
@@ -13,6 +15,7 @@ export const SubjectiveScoreInput: React.FC<SubjectiveScoreInputProps> = ({
   maxPoints,
   pointsEarned,
   onChange,
+  onMaxPointsChange,
   disabled = false,
 }) => {
   const formatValue = (val: number | null): string => {
@@ -21,10 +24,16 @@ export const SubjectiveScoreInput: React.FC<SubjectiveScoreInputProps> = ({
   };
 
   const [textValue, setTextValue] = useState<string>(() => formatValue(pointsEarned));
+  const [isEditingMax, setIsEditingMax] = useState<boolean>(false);
+  const [maxTextValue, setMaxTextValue] = useState<string>(() => formatValue(maxPoints));
 
   useEffect(() => {
     setTextValue(formatValue(pointsEarned));
   }, [pointsEarned]);
+
+  useEffect(() => {
+    setMaxTextValue(formatValue(maxPoints));
+  }, [maxPoints]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value;
@@ -46,8 +55,18 @@ export const SubjectiveScoreInput: React.FC<SubjectiveScoreInputProps> = ({
   };
 
   const handleBlur = () => {
-    // Ao perder o foco, normaliza o valor exibido
     setTextValue(formatValue(pointsEarned));
+  };
+
+  const handleMaxBlur = () => {
+    setIsEditingMax(false);
+    const parsed = parseFloat(maxTextValue.trim().replace(',', '.'));
+    if (!isNaN(parsed) && parsed > 0 && onMaxPointsChange) {
+      const rounded = Number(parsed.toFixed(2));
+      onMaxPointsChange(rounded);
+    } else {
+      setMaxTextValue(formatValue(maxPoints));
+    }
   };
 
   const handleSetZero = () => {
@@ -75,9 +94,39 @@ export const SubjectiveScoreInput: React.FC<SubjectiveScoreInputProps> = ({
         <span className="font-bold text-slate-800 dark:text-slate-100 text-sm">
           Q{questionNumber}
         </span>
-        <span className="text-slate-500 dark:text-slate-400 font-medium text-[11px]">
-          (máx {formattedMax})
-        </span>
+
+        {isEditingMax ? (
+          <div className="flex items-center gap-1">
+            <span className="text-slate-500 text-[11px]">(máx:</span>
+            <input
+              type="text"
+              inputMode="decimal"
+              autoFocus
+              className="w-12 px-1 py-0.5 font-mono text-[11px] text-center border border-indigo-400 rounded bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+              value={maxTextValue}
+              onChange={(e) => setMaxTextValue(e.target.value)}
+              onBlur={handleMaxBlur}
+              onKeyDown={(e) => e.key === 'Enter' && handleMaxBlur()}
+            />
+            <span className="text-slate-500 text-[11px]">)</span>
+          </div>
+        ) : (
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => onMaxPointsChange && setIsEditingMax(true)}
+            className={`flex items-center gap-1 font-medium text-[11px] transition ${
+              onMaxPointsChange
+                ? 'text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer'
+                : 'text-slate-500 dark:text-slate-400 cursor-default'
+            }`}
+            title={onMaxPointsChange ? 'Clique para ajustar a pontuação máxima desta dissertativa' : undefined}
+          >
+            <span>(máx {formattedMax})</span>
+            {onMaxPointsChange && <Pencil className="w-2.5 h-2.5 opacity-60" />}
+          </button>
+        )}
+
         {isPending ? (
           <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
             Pendente

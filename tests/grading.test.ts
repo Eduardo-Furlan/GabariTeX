@@ -6,6 +6,7 @@ import {
   recomputeTotals,
   countNeedsReview,
   setSubjectiveScore,
+  setSubjectiveMaxPoints,
   countPendingSubjective,
   isPartial,
   computeAverages,
@@ -401,6 +402,25 @@ describe('grading utilities', () => {
 
       // Teste imutabilidade
       expect(baseRecord.subjectiveAnswers?.[0].pointsEarned).toBeNull();
+    });
+
+    it('setSubjectiveMaxPoints atualiza a nota máxima, recalcula maxScore e ajusta pontos lançados se necessário', () => {
+      const updatedMax = setSubjectiveMaxPoints(baseRecord, 4, 3.0);
+      const q4 = updatedMax.subjectiveAnswers?.find((s) => s.questionNumber === 4);
+      expect(q4?.maxPoints).toBe(3.0);
+      expect(updatedMax.maxScore).toBe(11.0); // 6 obj + 3 + 2
+
+      // Se aluno já tinha 2.5 pontos lançados e reduzimos a nota máxima para 1.5, pointsEarned sofre clamp
+      const scored = setSubjectiveScore(updatedMax, 4, 2.5);
+      expect(scored.subjectiveAnswers?.find((s) => s.questionNumber === 4)?.pointsEarned).toBe(2.5);
+      expect(scored.totalScore).toBe(6.5); // 4 obj + 2.5 diss
+
+      const reducedMax = setSubjectiveMaxPoints(scored, 4, 1.5);
+      const q4Reduced = reducedMax.subjectiveAnswers?.find((s) => s.questionNumber === 4);
+      expect(q4Reduced?.maxPoints).toBe(1.5);
+      expect(q4Reduced?.pointsEarned).toBe(1.5);
+      expect(reducedMax.maxScore).toBe(9.5); // 6 obj + 1.5 + 2
+      expect(reducedMax.totalScore).toBe(5.5); // 4 obj + 1.5
     });
 
     it('lançar notas dissertativas fecha o total e desmarca status parcial', () => {

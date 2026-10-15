@@ -105,8 +105,9 @@ describe('Detecção OMR pura em TypeScript (Fiduciais + Sincronizadores)', () =
 
     expect(debugInfo.method).toBe('fiducials_timing_marks');
     expect(record.totalScore).toBe(8);
-    expect(record.maxScore).toBe(8);
-    expect(record.percentage).toBe(100);
+    expect(record.maxScore).toBe(10);
+    expect(record.percentage).toBe(80);
+    expect(record.subjectiveAnswers?.length).toBe(2);
   });
 
   it('deve detectar linhas dinamicamente sem erro quando expectedRows for 0 ou undefined', () => {

@@ -6,6 +6,7 @@ import {
   revertOverride,
   recomputeTotals,
   setSubjectiveScore,
+  setSubjectiveMaxPoints,
   isPartial,
   computeAverages,
   ManualChoice,
@@ -397,6 +398,11 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
                                     onChange={(newScore) => {
                                       if (!onUpdateRecord) return;
                                       const updated = setSubjectiveScore(r, s.questionNumber, newScore);
+                                      onUpdateRecord(updated);
+                                    }}
+                                    onMaxPointsChange={(newMax) => {
+                                      if (!onUpdateRecord) return;
+                                      const updated = setSubjectiveMaxPoints(r, s.questionNumber, newMax);
                                       onUpdateRecord(updated);
                                     }}
                                   />

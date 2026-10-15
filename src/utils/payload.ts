@@ -42,3 +42,4 @@ export function buildPayload(params: BuildPayloadParams): DecryptedQrPayload {
     subjectivePoints: hasSubjPoints ? subjectivePoints : undefined,
   };
 }
+
