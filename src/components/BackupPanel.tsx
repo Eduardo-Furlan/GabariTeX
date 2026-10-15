@@ -197,7 +197,7 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({
         )}
 
         {/* Status de Armazenamento e Lembrete de Backup */}
-        <div className="mt-4 p-4 rounded-xl border border-border bg-slate-50 dark:bg-slate-900/60 space-y-3">
+        <div className="mt-4 p-4 rounded-xl border border-border bg-slate-50 space-y-3">
           <div className="flex items-center justify-between flex-wrap gap-2 text-xs">
             <div className="flex items-center gap-2 font-medium text-heading">
               <HardDrive className="w-4 h-4 text-indigo-500" />
@@ -213,7 +213,7 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({
           </div>
 
           {storageEstimate && (
-            <div className="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+            <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
               <div
                 className={`h-full transition-all ${
                   storageEstimate.percent > 80
@@ -277,9 +277,9 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({
             <button
               type="button"
               onClick={() => backupInputRef.current?.click()}
-              className="p-4 rounded-xl border border-border hover:border-indigo-300 dark:hover:border-indigo-500/40 hover:bg-slate-50 dark:hover:bg-slate-800/50 text-left transition flex items-start gap-3"
+              className="p-4 rounded-xl border border-border hover:border-indigo-300 dark:hover:border-indigo-500/40 hover:bg-slate-50 text-left transition flex items-start gap-3"
             >
-              <Upload className="w-5 h-5 shrink-0 text-slate-500 dark:text-slate-400 mt-0.5" />
+              <Upload className="w-5 h-5 shrink-0 text-slate-500 mt-0.5" />
               <div>
                 <div className="text-xs font-bold text-heading">Restaurar Backup Completo</div>
                 <div className="text-[11px] text-muted mt-0.5">
@@ -325,7 +325,7 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({
               type="button"
               onClick={handleExportGradebook}
               disabled={gradebook.length === 0}
-              className="p-3.5 rounded-xl border border-border hover:border-emerald-300 dark:hover:border-emerald-500/40 hover:bg-slate-50 dark:hover:bg-slate-800/50 text-left transition flex items-start gap-3 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="p-3.5 rounded-xl border border-border hover:border-emerald-300 dark:hover:border-emerald-500/40 hover:bg-slate-50 text-left transition flex items-start gap-3 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <FileSpreadsheet className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400 mt-0.5" />
               <div>
@@ -339,7 +339,7 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({
             <button
               type="button"
               onClick={() => gradebookInputRef.current?.click()}
-              className="p-3.5 rounded-xl border border-border hover:border-emerald-300 dark:hover:border-emerald-500/40 hover:bg-slate-50 dark:hover:bg-slate-800/50 text-left transition flex items-start gap-3"
+              className="p-3.5 rounded-xl border border-border hover:border-emerald-300 dark:hover:border-emerald-500/40 hover:bg-slate-50 text-left transition flex items-start gap-3"
             >
               <Upload className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400 mt-0.5" />
               <div>
@@ -378,7 +378,7 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({
                 </div>
               </div>
 
-              <div className="p-3.5 bg-slate-50 dark:bg-slate-900 rounded-xl border border-border text-xs space-y-1.5">
+              <div className="p-3.5 bg-slate-50 rounded-xl border border-border text-xs space-y-1.5">
                 <div className="flex justify-between">
                   <span className="text-muted">Data do backup:</span>
                   <span className="font-semibold text-heading">
@@ -456,7 +456,7 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({
                     Atualizadas
                   </span>
                 </div>
-                <div className="p-3 bg-slate-100 dark:bg-slate-800 border border-border rounded-xl">
+                <div className="p-3 bg-slate-100 border border-border rounded-xl">
                   <span className="block text-lg font-black text-heading">
                     {mergeCandidate.summary.unchanged}
                   </span>

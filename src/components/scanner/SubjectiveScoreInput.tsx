@@ -89,9 +89,9 @@ export const SubjectiveScoreInput: React.FC<SubjectiveScoreInputProps> = ({
   const isPending = pointsEarned === null;
 
   return (
-    <div className="flex items-center justify-between gap-2 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/40 text-xs">
+    <div className="flex items-center justify-between gap-2 p-2.5 rounded-lg border border-slate-200 bg-white text-xs">
       <div className="flex items-center gap-2">
-        <span className="font-bold text-slate-800 dark:text-slate-100 text-sm">
+        <span className="font-bold text-slate-800 text-sm">
           Q{questionNumber}
         </span>
 
@@ -102,7 +102,7 @@ export const SubjectiveScoreInput: React.FC<SubjectiveScoreInputProps> = ({
               type="text"
               inputMode="decimal"
               autoFocus
-              className="w-12 px-1 py-0.5 font-mono text-[11px] text-center border border-indigo-400 rounded bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+              className="w-12 px-1 py-0.5 font-mono text-[11px] text-center border border-indigo-400 rounded bg-slate-50 text-slate-800"
               value={maxTextValue}
               onChange={(e) => setMaxTextValue(e.target.value)}
               onBlur={handleMaxBlur}
@@ -117,8 +117,8 @@ export const SubjectiveScoreInput: React.FC<SubjectiveScoreInputProps> = ({
             onClick={() => onMaxPointsChange && setIsEditingMax(true)}
             className={`flex items-center gap-1 font-medium text-[11px] transition ${
               onMaxPointsChange
-                ? 'text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer'
-                : 'text-slate-500 dark:text-slate-400 cursor-default'
+                ? 'text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer'
+                : 'text-slate-500 cursor-default'
             }`}
             title={onMaxPointsChange ? 'Clique para ajustar a pontuação máxima desta dissertativa' : undefined}
           >
@@ -128,11 +128,11 @@ export const SubjectiveScoreInput: React.FC<SubjectiveScoreInputProps> = ({
         )}
 
         {isPending ? (
-          <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+          <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/70">
             Pendente
           </span>
         ) : (
-          <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+          <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/70">
             Lançada
           </span>
         )}
@@ -147,7 +147,7 @@ export const SubjectiveScoreInput: React.FC<SubjectiveScoreInputProps> = ({
           value={textValue}
           onChange={handleInputChange}
           onBlur={handleBlur}
-          className="w-16 px-2 py-1 text-center font-mono font-bold text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 disabled:opacity-50"
+          className="w-16 px-2 py-1 text-center font-mono font-bold text-xs bg-slate-50 border border-slate-300 rounded-md text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 disabled:opacity-50"
         />
 
         <div className="flex items-center gap-1">
@@ -156,7 +156,7 @@ export const SubjectiveScoreInput: React.FC<SubjectiveScoreInputProps> = ({
             disabled={disabled}
             onClick={handleSetZero}
             title="Atribuir nota 0"
-            className="px-2 py-1 text-[11px] font-semibold rounded bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition disabled:opacity-50"
+            className="px-2 py-1 text-[11px] font-semibold rounded bg-slate-100 hover:bg-slate-200 text-slate-700 transition disabled:opacity-50"
           >
             0
           </button>
@@ -165,7 +165,7 @@ export const SubjectiveScoreInput: React.FC<SubjectiveScoreInputProps> = ({
             disabled={disabled}
             onClick={handleSetMax}
             title={`Atribuir nota máxima (${formattedMax})`}
-            className="px-2 py-1 text-[11px] font-semibold rounded bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-950 dark:hover:bg-indigo-900 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 transition disabled:opacity-50"
+            className="px-2 py-1 text-[11px] font-semibold rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 dark:bg-indigo-950/70 dark:hover:bg-indigo-900/80 dark:text-indigo-300 dark:border-indigo-800/70 transition disabled:opacity-50"
           >
             Máx
           </button>
@@ -175,7 +175,7 @@ export const SubjectiveScoreInput: React.FC<SubjectiveScoreInputProps> = ({
               disabled={disabled}
               onClick={handleClear}
               title="Deixar pendente (em branco)"
-              className="px-1.5 py-1 text-[10px] font-medium rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition disabled:opacity-50"
+              className="px-1.5 py-1 text-[10px] font-medium rounded text-slate-400 hover:text-slate-600 transition disabled:opacity-50"
             >
               Limpar
             </button>

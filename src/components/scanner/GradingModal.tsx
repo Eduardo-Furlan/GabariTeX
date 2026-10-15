@@ -115,7 +115,7 @@ export const GradingModal: React.FC<GradingModalProps> = ({
               <button
                 type="button"
                 onClick={() => setShowFullSheetModal(true)}
-                className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-lg transition"
+                className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition"
               >
                 <Eye className="w-3.5 h-3.5" /> Ver folha inteira
               </button>
@@ -153,7 +153,7 @@ export const GradingModal: React.FC<GradingModalProps> = ({
             <button
               type="button"
               onClick={() => setFilterOnlyNeedsReview(!filterOnlyNeedsReview)}
-              className="px-2.5 py-1 bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700/60 rounded-lg font-semibold text-amber-900 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-slate-700 transition"
+              className="px-2.5 py-1 bg-white border border-amber-300 dark:border-amber-700/60 rounded-lg font-semibold text-amber-900 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-slate-100 transition"
             >
               {filterOnlyNeedsReview ? 'Mostrar todas as questões' : 'Mostrar só as que geram dúvida'}
             </button>
@@ -161,7 +161,7 @@ export const GradingModal: React.FC<GradingModalProps> = ({
         )}
 
         {/* Painel de Pontuação */}
-        <div className="my-5 p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40">
+        <div className="my-5 p-4 rounded-xl border border-slate-200 bg-slate-50">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
               <span className="text-xs font-semibold text-slate-500 uppercase block">Nota Final</span>
@@ -187,14 +187,14 @@ export const GradingModal: React.FC<GradingModalProps> = ({
           </div>
 
           {recordIsPartial && (
-            <div className="mt-3 pt-3 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between flex-wrap gap-2 text-xs">
+            <div className="mt-3 pt-3 border-t border-slate-200 flex items-center justify-between flex-wrap gap-2 text-xs">
               <span className="text-amber-800 dark:text-amber-300 font-semibold flex items-center gap-1.5">
                 <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
                 {pendingSubjectiveCount}{' '}
                 {pendingSubjectiveCount === 1 ? 'dissertativa pendente' : 'dissertativas pendentes'}{' '}
                 — nota parcial
               </span>
-              <span className="text-slate-600 dark:text-slate-400 font-mono text-[11px]">
+              <span className="text-slate-600 font-mono text-[11px]">
                 Subtotal Objetivas: {objectiveEarned.toFixed(2)} / {objectiveMax.toFixed(2)} pts
               </span>
             </div>
@@ -337,7 +337,7 @@ export const GradingModal: React.FC<GradingModalProps> = ({
                       <img
                         src={evidence!.rowCrops[a.questionNumber]}
                         alt={`Recorte questão ${a.questionNumber}`}
-                        className="max-h-12 rounded border border-slate-300 dark:border-slate-700 bg-white object-contain"
+                        className="max-h-12 rounded border border-slate-300 bg-white object-contain"
                       />
                       {a.fillRatios && (
                         <span className="text-[10px] font-mono text-slate-400">
@@ -356,7 +356,7 @@ export const GradingModal: React.FC<GradingModalProps> = ({
         {hasSubjective && (
           <div className="mb-6">
             <div className="flex items-center justify-between mb-2 flex-wrap gap-1">
-              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase">
+              <label className="block text-xs font-semibold text-slate-600 uppercase">
                 Questões Dissertativas:
               </label>
               <span className="text-[11px] text-slate-500">
@@ -364,7 +364,7 @@ export const GradingModal: React.FC<GradingModalProps> = ({
               </span>
             </div>
 
-            <div className="space-y-2 border border-slate-200 dark:border-slate-800 rounded-lg p-3 bg-slate-50/50 dark:bg-slate-900/30">
+            <div className="space-y-2 border border-slate-200 rounded-lg p-3 bg-slate-50/50">
               {record.subjectiveAnswers!.map((subj) => (
                 <SubjectiveScoreInput
                   key={subj.questionNumber}

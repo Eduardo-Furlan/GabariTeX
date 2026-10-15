@@ -26,7 +26,7 @@ export const AnswerChoiceGroup: React.FC<AnswerChoiceGroupProps> = ({
     if (isSelected) {
       return 'bg-indigo-600 text-on-accent font-bold shadow-sm';
     }
-    return 'bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 font-semibold';
+    return 'bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900 font-semibold';
   };
 
   const blankBtnClass = () => {
@@ -34,7 +34,7 @@ export const AnswerChoiceGroup: React.FC<AnswerChoiceGroupProps> = ({
     if (isSelected) {
       return 'bg-amber-600 text-on-accent font-bold shadow-sm';
     }
-    return 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700';
+    return 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900';
   };
 
   const invalidBtnClass = () => {
@@ -42,7 +42,7 @@ export const AnswerChoiceGroup: React.FC<AnswerChoiceGroupProps> = ({
     if (isSelected) {
       return 'bg-purple-600 text-on-accent font-bold shadow-sm';
     }
-    return 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700';
+    return 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900';
   };
 
   return (

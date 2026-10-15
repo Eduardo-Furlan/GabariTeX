@@ -111,9 +111,9 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="hidden lg:flex items-center gap-2">
             {/* Indicador de Salvamento Automático */}
             {autosaveState && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium rounded-lg bg-slate-50 border border-slate-200">
                 {autosaveState.status === 'saving' && (
-                  <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+                  <span className="flex items-center gap-1.5 text-slate-500">
                     <Loader2 className="w-3 h-3 text-indigo-500 animate-spin" />
                     <span>Salvando...</span>
                   </span>
@@ -183,7 +183,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               type="button"
               onClick={onLoadSample}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-medium transition"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-lg text-xs font-medium transition"
               title="Carregar exemplo completo de prova de cálculo/matemática com questões objetivas e dissertativa"
             >
               <BookOpen className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
