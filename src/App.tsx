@@ -34,6 +34,7 @@ import {
   Printer,
   Shuffle,
   Eye,
+  EyeOff,
   ShieldCheck,
   BookOpen,
   KeyRound,
@@ -68,6 +69,7 @@ export const App: React.FC = () => {
   });
 
   const [showPasswordModal, setShowPasswordModal] = useState<boolean>(false);
+  const [showTeacherPassword, setShowTeacherPassword] = useState<boolean>(false);
   const [gradingSession, setGradingSession] = useState<{
     record: GradingRecord;
     evidence?: GradingEvidence;
@@ -632,13 +634,24 @@ export const App: React.FC = () => {
                     <label className="block text-[10px] font-bold text-amber-900 dark:text-amber-200 uppercase">
                       Senha Mestra para Descriptografia:
                     </label>
-                    <input
-                      type="text"
-                      placeholder="Senha da prova"
-                      value={teacherPassword}
-                      onChange={(e) => updateTeacherPassword(e.target.value)}
-                      className="px-2.5 py-1 text-xs border border-amber-300 dark:border-amber-500/40 rounded font-mono font-bold bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-amber-500 mt-0.5"
-                    />
+                    <div className="relative flex items-center mt-0.5">
+                      <input
+                        type={showTeacherPassword ? 'text' : 'password'}
+                        placeholder="Senha da prova"
+                        value={teacherPassword}
+                        onChange={(e) => updateTeacherPassword(e.target.value)}
+                        className="px-2.5 pr-8 py-1 text-xs border border-amber-300 dark:border-amber-500/40 rounded font-mono font-bold bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-amber-500 w-full sm:w-44"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowTeacherPassword((prev) => !prev)}
+                        className="absolute right-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"
+                        title={showTeacherPassword ? 'Ocultar senha' : 'Exibir senha'}
+                        aria-label={showTeacherPassword ? 'Ocultar senha' : 'Exibir senha'}
+                      >
+                        {showTeacherPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

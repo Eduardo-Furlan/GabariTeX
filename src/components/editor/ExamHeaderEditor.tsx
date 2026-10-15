@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Exam } from '../../types/exam';
-import { Shield, FileText, Shuffle, Columns } from 'lucide-react';
+import { Shield, FileText, Shuffle, Columns, Eye, EyeOff } from 'lucide-react';
 
 interface ExamHeaderEditorProps {
   exam: Exam;
@@ -8,6 +8,7 @@ interface ExamHeaderEditorProps {
 }
 
 export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChange }) => {
+  const [showPassword, setShowPassword] = useState(false);
   const updateHeader = (field: keyof Exam['header'], value: string) => {
     onChange({
       ...exam,
@@ -93,14 +94,25 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
           <label className="block text-xs font-semibold text-slate-600 uppercase mb-1 flex items-center gap-1 text-amber-700 dark:text-amber-400">
             <Shield className="w-3.5 h-3.5" /> Senha do Gabarito (QR Code)
           </label>
-          <input
-            type="text"
-            className="w-full px-3 py-2 border border-amber-300 bg-amber-50/40 dark:border-amber-700/60 dark:bg-amber-950/30 rounded-lg text-sm font-mono focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400 focus:outline-none"
-            placeholder="Senha para proteger o gabarito"
-            value={exam.password}
-            onChange={(e) => onChange({ ...exam, password: e.target.value })}
-            title="Esta senha protege o QR code impresso na folha de respostas para que os alunos não possam ver o gabarito."
-          />
+          <div className="relative flex items-center">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              className="w-full pl-3 pr-10 py-2 border border-amber-300 bg-amber-50/40 dark:border-amber-700/60 dark:bg-amber-950/30 rounded-lg text-sm font-mono focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400 focus:outline-none"
+              placeholder="Senha para proteger o gabarito"
+              value={exam.password}
+              onChange={(e) => onChange({ ...exam, password: e.target.value })}
+              title="Esta senha protege o QR code impresso na folha de respostas para que os alunos não possam ver o gabarito."
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              className="absolute right-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition p-1"
+              title={showPassword ? 'Ocultar senha' : 'Exibir senha'}
+              aria-label={showPassword ? 'Ocultar senha' : 'Exibir senha'}
+            >
+              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
         </div>
       </div>
 

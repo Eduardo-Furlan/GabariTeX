@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, KeyRound } from 'lucide-react';
+import { Lock, KeyRound, Eye, EyeOff } from 'lucide-react';
 
 interface PasswordModalProps {
   currentPassword: string;
@@ -13,6 +13,7 @@ export const PasswordModal: React.FC<PasswordModalProps> = ({
   onClose,
 }) => {
   const [inputVal, setInputVal] = useState(currentPassword);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,16 +45,25 @@ export const PasswordModal: React.FC<PasswordModalProps> = ({
             <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
               Senha Mestra da Prova
             </label>
-            <div className="relative">
+            <div className="relative flex items-center">
               <KeyRound className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
               <input
-                type="text"
-                className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:outline-none"
+                type={showPassword ? 'text' : 'password'}
+                className="w-full pl-9 pr-10 py-2 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:outline-none"
                 placeholder="Ex: senha123"
                 value={inputVal}
                 onChange={(e) => setInputVal(e.target.value)}
                 autoFocus
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition p-1"
+                title={showPassword ? 'Ocultar senha' : 'Exibir senha'}
+                aria-label={showPassword ? 'Ocultar senha' : 'Exibir senha'}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
             <p className="text-[11px] text-slate-400 mt-1">
               Esta é a mesma senha definida nas configurações do cabeçalho ao gerar a prova.
