@@ -1,10 +1,7 @@
 import React, { useRef, useState } from 'react';
-import { Html5Qrcode } from 'html5-qrcode';
 import { ExamVersion, GradingRecord } from '../../types/exam';
 import { DecryptedQrPayload, OmrDebugInfo, GradingEvidence } from '../../types/omr';
-import { decryptAnswerKey } from '../../utils/crypto';
-import { buildPayload } from '../../utils/payload';
-import { gradeCanvasWithPayloadDebug, detectOmrGrid, GridConfig } from '../../utils/omrProcessor';
+import { gradePhotoFile } from '../../utils/photoPipeline';
 import {
   AlertTriangle,
   Image as ImageIcon,
@@ -66,212 +63,46 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
     setErrorMessage(null);
     setSuccessMessage(null);
 
-    try {
-      // 1. Carrega imagem em um canvas para processamento
-      const img = new Image();
-      const imgUrl = URL.createObjectURL(file);
-      await new Promise<void>((resolve, reject) => {
-        img.onload = () => resolve();
-        img.onerror = () => reject(new Error('Falha ao carregar arquivo de imagem.'));
-        img.src = imgUrl;
-      });
+    const result = await gradePhotoFile(file, {
+      teacherPassword,
+      lockedPayload: activePayload,
+      alwaysReadQr: false,
+      availableVersions,
+    });
 
-      const canvas = document.createElement('canvas');
-      canvas.width = img.naturalWidth || 800;
-      canvas.height = img.naturalHeight || 1100;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    setIsProcessing(false);
+
+    if (result.status === 'error') {
+      setErrorMessage(result.error || 'Não foi possível ler o gabarito na foto.');
+      return;
+    }
+
+    if (result.status === 'qr_only') {
+      if (result.payload) {
+        onLockPayload?.(result.payload);
+        setSuccessMessage(
+          `Versão ${result.payload.version} detectada e travada com sucesso! Agora fotografe a folha de respostas.`
+        );
       }
-      URL.revokeObjectURL(imgUrl);
+      return;
+    }
 
-      let targetPayload = activePayload;
-
-      // 2. Se a versão ainda não estiver travada, busca QR Code na imagem
-      if (!targetPayload) {
-        let decodedText: string | null = null;
-
-        try {
-          const qrScanner = new Html5Qrcode('hidden-qr-reader');
-          try {
-            decodedText = await qrScanner.scanFile(file, false);
-          } catch {
-            // Continua para tentativas com recorte
-          }
-
-          const scanCanvas = async (subCanvas: HTMLCanvasElement): Promise<string> => {
-            const blob = await new Promise<Blob | null>((resolve) =>
-              subCanvas.toBlob(resolve, 'image/png')
-            );
-            if (!blob) throw new Error('Falha ao gerar blob do canvas');
-            const cropFile = new File([blob], 'qr-crop.png', { type: 'image/png' });
-            return await qrScanner.scanFile(cropFile, false);
-          };
-
-          // Tentativa 1: Quadrante superior direito (onde fica o QR Code da folha do GabariTeX)
-          if (!decodedText) {
-            const cropX = Math.floor(canvas.width * 0.45);
-            const cropY = 0;
-            const cropW = canvas.width - cropX;
-            const cropH = Math.floor(canvas.height * 0.32);
-            const maxDim = Math.max(cropW, cropH);
-            const scale = Math.min(1, 1400 / maxDim);
-            const cropCanvas = document.createElement('canvas');
-            cropCanvas.width = Math.max(300, Math.round(cropW * scale));
-            cropCanvas.height = Math.max(300, Math.round(cropH * scale));
-            const cropCtx = cropCanvas.getContext('2d');
-            if (cropCtx) {
-              cropCtx.imageSmoothingEnabled = true;
-              cropCtx.imageSmoothingQuality = 'high';
-              cropCtx.drawImage(canvas, cropX, cropY, cropW, cropH, 0, 0, cropCanvas.width, cropCanvas.height);
-              try {
-                decodedText = await scanCanvas(cropCanvas);
-              } catch {
-                // Falha
-              }
-            }
-          }
-
-          // Tentativa 2: Metade superior inteira (para enquadramento inclinado ou deslocado)
-          if (!decodedText) {
-            const topH = Math.floor(canvas.height * 0.42);
-            const maxDim = Math.max(canvas.width, topH);
-            const scale = Math.min(1, 1400 / maxDim);
-            const topCanvas = document.createElement('canvas');
-            topCanvas.width = Math.max(300, Math.round(canvas.width * scale));
-            topCanvas.height = Math.max(300, Math.round(topH * scale));
-            const topCtx = topCanvas.getContext('2d');
-            if (topCtx) {
-              topCtx.imageSmoothingEnabled = true;
-              topCtx.imageSmoothingQuality = 'high';
-              topCtx.drawImage(canvas, 0, 0, canvas.width, topH, 0, 0, topCanvas.width, topCanvas.height);
-              try {
-                decodedText = await scanCanvas(topCanvas);
-              } catch {
-                // Falha
-              }
-            }
-          }
-
-          if (decodedText) {
-            if (teacherPassword && teacherPassword.trim()) {
-              try {
-                targetPayload = await decryptAnswerKey(decodedText, teacherPassword);
-
-                // Se o QR Code lido não contiver a chave 'sp' (gerado antes do Plano 02),
-                // enriquece os pontos das dissertativas a partir da versão carregada no app
-                if (
-                  (!targetPayload.subjectivePoints || Object.keys(targetPayload.subjectivePoints).length === 0) &&
-                  availableVersions &&
-                  availableVersions.length > 0
-                ) {
-                  const matchingVer =
-                    availableVersions.find((v) => v.versionLetter === targetPayload!.version) ||
-                    (availableVersions.length === 1 ? availableVersions[0] : undefined);
-
-                  if (matchingVer) {
-                    const enrichedSubjPoints: Record<number, number> = {};
-                    matchingVer.questions.forEach((q, idx) => {
-                      if (q.type === 'subjective' && q.points > 0) {
-                        enrichedSubjPoints[idx + 1] = q.points;
-                      }
-                    });
-                    if (Object.keys(enrichedSubjPoints).length > 0) {
-                      targetPayload.subjectivePoints = enrichedSubjPoints;
-                    }
-                  }
-                }
-
-                onLockPayload?.(targetPayload);
-                setSuccessMessage(
-                  `QR Code identificado! Gabarito da Versão ${targetPayload.version} carregado com sucesso.`
-                );
-              } catch {
-                setErrorMessage(
-                  'QR Code detectado na folha, porém a senha informada não confere com a senha da prova. Verifique a senha do professor.'
-                );
-              }
-            } else {
-              setErrorMessage(
-                'QR Code detectado na folha! Por favor, informe a senha da prova para desbloquear a correção.'
-              );
-            }
-          }
-        } catch {
-          // Falha silenciosa no leitor de QR
-        }
-
-        // Se o QR Code não foi encontrado ou não pôde ser descriptografado
-        if (!targetPayload) {
-          const defaultVer = availableVersions.find((v) => v.questions && v.questions.length > 0);
-          if (defaultVer) {
-            // Aplica a primeira versão com questões disponíveis para permitir inspeção da grade
-            targetPayload = buildPayload({
-              examId: 'auto-exam',
-              versionLetter: defaultVer.versionLetter,
-              questions: defaultVer.questions,
-              objectiveAnswerKey: defaultVer.objectiveAnswerKey,
-            });
-            onLockPayload?.(targetPayload);
-            setSuccessMessage(
-              `Foto da grade de respostas detectada. Aplicando gabarito da Versão ${defaultVer.versionLetter}.`
-            );
-          } else {
-            // Mock gabarito de 10 questões para teste visual em modo diagnóstico quando não há prova
-            targetPayload = {
-              examId: 'debug-exam',
-              version: 'A',
-              key: { 1: 'A', 2: 'B', 3: 'C', 4: 'C', 5: 'D', 6: 'A', 7: 'E', 8: 'A', 9: 'B', 10: 'C' },
-              points: { 1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1, 9: 1, 10: 1 },
-              totalQuestions: 10,
-              subjectiveQuestions: [1, 2, 4],
-              subjectivePoints: { 1: 1, 2: 1, 4: 1 },
-            };
-          }
-        }
-
-        // Se a foto foi apenas um close-up do QR Code (sem a grade de respostas),
-        // salva a versão e orienta o usuário a fotografar a folha de respostas
-        const totalQuestions =
-          targetPayload.totalQuestions ??
-          Math.max(...Object.keys(targetPayload.key).map(Number), 0);
-        const subjectiveQuestions = targetPayload.subjectiveQuestions ?? [];
-        const columnsCount = totalQuestions <= 12 ? 1 : 2;
-
-        const gridConfig: GridConfig = {
-          totalQuestions,
-          optionsPerQuestion: 5,
-          columnsCount,
-          subjectiveQuestions,
-        };
-
-        const detected = detectOmrGrid(canvas, gridConfig);
-        if (!detected || detected.length === 0) {
-          setIsProcessing(false);
-          setSuccessMessage(
-            `Versão ${targetPayload.version} detectada e travada com sucesso! Agora fotografe a folha de respostas.`
-          );
-          return;
-        }
-      }
-
-      // 3. Analisa e gera diagnóstico completo do OMR
-      const { record, debugInfo, debugCanvasUrl, evidence } = gradeCanvasWithPayloadDebug(
-        canvas,
-        targetPayload
+    if (result.payload && result.payloadSource === 'qr') {
+      onLockPayload?.(result.payload);
+      setSuccessMessage(
+        `QR Code identificado! Gabarito da Versão ${result.payload.version} carregado com sucesso.`
       );
+    }
 
-      setIsProcessing(false);
-
-      if (isDebugAllowed && isDebugMode) {
-        setDebugResult({ record, debugInfo, debugCanvasUrl, evidence });
-      } else {
-        onGraded(record, evidence);
-      }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Não foi possível ler o gabarito na foto.';
-      setErrorMessage(msg);
-      setIsProcessing(false);
+    if (isDebugAllowed && isDebugMode && result.record && result.debugInfo && result.debugCanvasUrl) {
+      setDebugResult({
+        record: result.record,
+        debugInfo: result.debugInfo,
+        debugCanvasUrl: result.debugCanvasUrl,
+        evidence: result.evidence,
+      });
+    } else if (result.record) {
+      onGraded(result.record, result.evidence);
     }
   };
 

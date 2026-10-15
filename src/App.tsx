@@ -15,6 +15,7 @@ import { QuestionList } from './components/editor/QuestionList';
 import { ExamPrintView } from './components/preview/ExamPrintView';
 import { AnswerSheetView } from './components/preview/AnswerSheetView';
 import { PhotoUploader } from './components/scanner/PhotoUploader';
+import { BatchGrader } from './components/scanner/BatchGrader';
 import { PasswordModal } from './components/scanner/PasswordModal';
 import { GradingModal } from './components/scanner/GradingModal';
 import { GradebookTable } from './components/gradebook/GradebookTable';
@@ -23,7 +24,19 @@ import { BackupFile } from './utils/backup';
 import { useAutosave } from './hooks/useAutosave';
 import { DecryptedQrPayload, GradingEvidence } from './types/omr';
 import { buildPayload } from './utils/payload';
-import { Printer, Shuffle, Eye, ShieldCheck, BookOpen, KeyRound, CheckCircle2, RefreshCw, AlertTriangle } from 'lucide-react';
+import {
+  Printer,
+  Shuffle,
+  Eye,
+  ShieldCheck,
+  BookOpen,
+  KeyRound,
+  CheckCircle2,
+  RefreshCw,
+  AlertTriangle,
+  Camera,
+  Files,
+} from 'lucide-react';
 import './styles/print.css';
 
 type PrintMode = 'complete' | 'exam_only' | 'answersheet_only' | 'all_versions';
@@ -59,6 +72,7 @@ export const App: React.FC = () => {
   });
 
   const [isBackupPanelOpen, setIsBackupPanelOpen] = useState<boolean>(false);
+  const [scannerMode, setScannerMode] = useState<'single' | 'batch'>('single');
 
   // Autosave com debounce (400ms para a prova, 300ms para notas) e flush automático em pagehide/visibilitychange
   const examAutosave = useAutosave(exam, saveExamToStorage, 400);
@@ -166,6 +180,11 @@ export const App: React.FC = () => {
   const handleGradeSaved = (newRecord: GradingRecord) => {
     setRecords((prev) => [newRecord, ...prev.filter((r) => r.id !== newRecord.id)]);
     setGradingSession(null);
+  };
+
+  const handleBatchSaveRecords = (newRecords: GradingRecord[]) => {
+    const newIds = new Set(newRecords.map((r) => r.id));
+    setRecords((prev) => [...newRecords, ...prev.filter((r) => !newIds.has(r.id))]);
   };
 
   const handleUpdateRecord = (updatedRecord: GradingRecord) => {
@@ -603,15 +622,55 @@ export const App: React.FC = () => {
               </div>
             </div>
 
+            {/* Seletor de Modo: Individual vs Em Lote */}
+            <div className="flex items-center justify-center">
+              <div className="inline-flex p-1 bg-slate-100 rounded-lg border border-slate-200 text-xs font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setScannerMode('single')}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition ${
+                    scannerMode === 'single'
+                      ? 'bg-white text-indigo-700 dark:text-indigo-300 shadow-sm font-bold'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <Camera className="w-4 h-4" />
+                  Foto Individual
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setScannerMode('batch')}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition ${
+                    scannerMode === 'batch'
+                      ? 'bg-white text-indigo-700 dark:text-indigo-300 shadow-sm font-bold'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <Files className="w-4 h-4" />
+                  Em Lote (Várias Fotos)
+                </button>
+              </div>
+            </div>
+
             <div className="max-w-4xl mx-auto">
-              <PhotoUploader
-                teacherPassword={teacherPassword}
-                activePayload={activePayload}
-                onLockPayload={(payload) => setActivePayload(payload)}
-                onGraded={(record, evidence) => setGradingSession({ record, evidence })}
-                availableVersions={versions}
-                onSelectExamVersion={handleSelectExamVersion}
-              />
+              {scannerMode === 'single' ? (
+                <PhotoUploader
+                  teacherPassword={teacherPassword}
+                  activePayload={activePayload}
+                  onLockPayload={(payload) => setActivePayload(payload)}
+                  onGraded={(record, evidence) => setGradingSession({ record, evidence })}
+                  availableVersions={versions}
+                  onSelectExamVersion={handleSelectExamVersion}
+                />
+              ) : (
+                <BatchGrader
+                  teacherPassword={teacherPassword}
+                  activePayload={activePayload}
+                  availableVersions={versions}
+                  onSaveRecords={handleBatchSaveRecords}
+                  onLockPayload={(payload) => setActivePayload(payload)}
+                />
+              )}
             </div>
           </div>
         )}
