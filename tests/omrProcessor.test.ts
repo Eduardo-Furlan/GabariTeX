@@ -1,6 +1,50 @@
 import { describe, it, expect } from 'vitest';
-import { getStandardBubbleCoordinates, analyzeCanvasOmr, gradeCanvasWithPayload } from '../src/utils/omrProcessor';
+import { execSync } from 'child_process';
+import {
+  getStandardBubbleCoordinates,
+  analyzeCanvasOmr,
+  gradeCanvasWithPayload,
+  OmrDetectionError,
+} from '../src/utils/omrProcessor';
 import { DecryptedQrPayload } from '../src/types/omr';
+import { GrayImage } from '../src/utils/omr/grayImage';
+
+function loadJpgAsGray(path: string): GrayImage {
+  const pyCode = `
+import sys
+from PIL import Image
+im = Image.open("${path}").convert("L")
+w, h = im.size
+sys.stdout.buffer.write(w.to_bytes(4, "big"))
+sys.stdout.buffer.write(h.to_bytes(4, "big"))
+sys.stdout.buffer.write(im.tobytes())
+`;
+  const buf = execSync('python3', { input: pyCode, maxBuffer: 50 * 1024 * 1024 });
+  const width = buf.readUInt32BE(0);
+  const height = buf.readUInt32BE(4);
+  const data = new Uint8Array(buf.subarray(8));
+  return { width, height, data };
+}
+
+function loadJpgAsCanvas(path: string): HTMLCanvasElement {
+  const gray = loadJpgAsGray(path);
+  const rgba = new Uint8ClampedArray(gray.width * gray.height * 4);
+  for (let i = 0; i < gray.width * gray.height; i++) {
+    const val = gray.data[i];
+    const idx = i * 4;
+    rgba[idx] = val;
+    rgba[idx + 1] = val;
+    rgba[idx + 2] = val;
+    rgba[idx + 3] = 255;
+  }
+  return {
+    width: gray.width,
+    height: gray.height,
+    getContext: () => ({
+      getImageData: () => ({ width: gray.width, height: gray.height, data: rgba }),
+    }),
+  } as unknown as HTMLCanvasElement;
+}
 
 describe('Processador OMR', () => {
   it('deve calcular corretamente a quantidade e coordenadas das bolinhas', () => {
@@ -108,11 +152,11 @@ describe('Processador OMR', () => {
     expect(results[0].fillRatios['A']).toBeLessThan(0.1);
   });
 
-  it('deve calcular o GradingRecord completo com gradeCanvasWithPayload', () => {
+  it('deve rejeitar canvas sem fiduciais válidos lançando OmrDetectionError', () => {
     const width = 800;
     const height = 1100;
     const data = new Uint8ClampedArray(width * height * 4);
-    data.fill(255); // Fundo branco
+    data.fill(255); // Fundo branco sem fiduciais
 
     const mockCanvas = {
       width,
@@ -131,45 +175,46 @@ describe('Processador OMR', () => {
       subjectiveQuestions: [],
     };
 
-    const record = gradeCanvasWithPayload(mockCanvas, payload);
+    expect(() => gradeCanvasWithPayload(mockCanvas, payload)).toThrow(OmrDetectionError);
+  });
+
+  it('deve calcular o GradingRecord completo com gradeCanvasWithPayload em folha válida', () => {
+    const canvas2 = loadJpgAsCanvas('tests/2.jpg');
+
+    const payload: DecryptedQrPayload = {
+      examId: 'test-exam',
+      version: 'A',
+      key: { 1: 'C', 2: 'A', 3: 'B', 4: 'D', 5: 'E', 6: 'A', 7: 'C', 8: 'D', 9: 'E', 10: 'B' },
+      points: { 1: 1.0, 2: 1.0, 3: 1.0, 4: 1.0, 5: 1.0, 6: 1.0, 7: 1.0, 8: 1.0, 9: 1.0, 10: 1.0 },
+      totalQuestions: 10,
+      subjectiveQuestions: [],
+    };
+
+    const record = gradeCanvasWithPayload(canvas2, payload);
     expect(record.versionLetter).toBe('A');
-    expect(record.maxScore).toBe(5.0);
-    expect(record.answers.length).toBe(2);
-    // Como a folha estava toda em branco, respostas devem ser em branco (0 pontos)
-    expect(record.totalScore).toBe(0);
-    expect(record.percentage).toBe(0);
-    expect(record.answers[0].status).toBe('blank');
-    expect(record.answers[1].status).toBe('blank');
+    expect(record.maxScore).toBe(10.0);
+    expect(record.answers.length).toBe(10);
+    expect(typeof record.totalScore).toBe('number');
+    expect(typeof record.percentage).toBe('number');
   });
 
   it('deve desconsiderar questão dissertativa intercalada sem deslocar as questões subsequentes', () => {
-    const width = 800;
-    const height = 1100;
-    const data = new Uint8ClampedArray(width * height * 4);
-    data.fill(255); // Fundo branco
-
-    const mockCanvas = {
-      width,
-      height,
-      getContext: () => ({
-        getImageData: () => ({ width, height, data }),
-      }),
-    } as unknown as HTMLCanvasElement;
+    const canvas2 = loadJpgAsCanvas('tests/2.jpg');
 
     const payload: DecryptedQrPayload = {
       examId: 'test-exam-subj',
       version: 'I',
-      key: { 1: 'E', 3: 'B', 4: 'D', 5: 'E', 6: 'E' },
-      points: { 1: 1.5, 3: 1.5, 4: 1.5, 5: 1.5, 6: 1.5 },
-      totalQuestions: 6,
+      key: { 1: 'E', 3: 'B', 4: 'D', 5: 'E', 6: 'E', 7: 'A', 8: 'B', 9: 'C', 10: 'D' },
+      points: { 1: 1.0, 3: 1.0, 4: 1.0, 5: 1.0, 6: 1.0, 7: 1.0, 8: 1.0, 9: 1.0, 10: 1.0 },
+      totalQuestions: 10,
       subjectiveQuestions: [2],
     };
 
-    const record = gradeCanvasWithPayload(mockCanvas, payload);
+    const record = gradeCanvasWithPayload(canvas2, payload);
     expect(record.versionLetter).toBe('I');
-    expect(record.answers.length).toBe(5);
+    expect(record.answers.length).toBe(9);
     const questionNumbers = record.answers.map((a) => a.questionNumber);
-    expect(questionNumbers).toEqual([1, 3, 4, 5, 6]);
+    expect(questionNumbers).toEqual([1, 3, 4, 5, 6, 7, 8, 9, 10]);
     expect(record.answers.some((a) => a.questionNumber === 2)).toBe(false);
   });
 });

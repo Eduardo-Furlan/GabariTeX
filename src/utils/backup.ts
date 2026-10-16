@@ -1,5 +1,6 @@
 import { Exam, GradingRecord, Classroom } from '../types/exam';
 import { saveLastBackupDate } from './storage';
+import { isWithinLimit, MAX_QUESTIONS } from './examLimits';
 
 export interface BackupFile {
   app: 'gabaritex';
@@ -91,6 +92,13 @@ export function parseBackup(
     return {
       ok: false,
       error: 'Estrutura da prova corrompida: cabeçalho ou lista de questões ausentes.',
+    };
+  }
+
+  if (!isWithinLimit(examObj.questions.length)) {
+    return {
+      ok: false,
+      error: `A prova tem ${examObj.questions.length} questões; o máximo é ${MAX_QUESTIONS}. Remova ${examObj.questions.length - MAX_QUESTIONS} e tente novamente.`,
     };
   }
 

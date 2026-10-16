@@ -18,6 +18,17 @@
     flex-shrink: 0;
   }
 
+  .a4-sheet.answer-sheet-print {
+    width: 190mm !important;
+    min-width: 190mm !important;
+    max-width: 190mm !important;
+    height: 260mm !important;
+    max-height: 260mm !important;
+    min-height: 260mm !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
   .a4-page-separator {
     width: 210mm;
     min-width: 210mm;

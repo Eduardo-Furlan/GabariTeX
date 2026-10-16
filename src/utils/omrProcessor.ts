@@ -10,8 +10,12 @@ import { GradedAnswer, GradingRecord, SubjectiveAnswer } from '../types/exam';
 import { toGray } from './omr/grayImage';
 import { detectSheet } from './omr/sheetDetector';
 import { readBubbles } from './omr/bubbleReader';
+import { OmrDetectionError } from './omr/errors';
 import { buildObjectiveAnswer, recomputeTotals } from './grading';
 import { buildEvidence } from './omrEvidence';
+import { getColumnLayout } from './sheetLayout';
+
+export { OmrDetectionError };
 
 export interface GridConfig {
   totalQuestions: number;
@@ -33,7 +37,9 @@ export function getStandardBubbleCoordinates(config: GridConfig): BubbleCoordina
   const bubbles: BubbleCoordinates[] = [];
   const { totalQuestions, optionsPerQuestion = 5, columnsCount, subjectiveQuestions = [] } = config;
   const subjectiveSet = new Set(subjectiveQuestions);
-  const questionsPerColumn = totalQuestions <= 12 ? totalQuestions : Math.ceil(totalQuestions / columnsCount);
+  const layout = getColumnLayout(totalQuestions);
+  const effectiveColumns = columnsCount || layout.columns;
+  const questionsPerColumn = layout.perColumn;
   const optionLabels: ('A' | 'B' | 'C' | 'D' | 'E')[] = ['A', 'B', 'C', 'D', 'E'];
 
   const startY = 36.5;
@@ -49,7 +55,7 @@ export function getStandardBubbleCoordinates(config: GridConfig): BubbleCoordina
 
     const rowCenterY = startY + (rowIndex + 0.5) * rowHeight;
 
-    if (columnsCount === 1) {
+    if (effectiveColumns === 1) {
       const optionsStartX = 35.6;
       const optionSpacing = 8.4;
 
@@ -98,14 +104,16 @@ export function detectOmrGrid(
   try {
     const imgData = ctx.getImageData(0, 0, width, height);
     const gray = toGray(imgData);
+    const layout = getColumnLayout(config.totalQuestions);
+    const cols = config.columnsCount || layout.columns;
     const questionsPerColumn =
       config.totalQuestions > 0
-        ? config.totalQuestions <= 12
+        ? cols === 1
           ? config.totalQuestions
-          : Math.ceil(config.totalQuestions / Math.max(1, config.columnsCount))
+          : [layout.perColumn, config.totalQuestions - layout.perColumn]
         : undefined;
 
-    const det = detectSheet(gray, config.columnsCount, questionsPerColumn);
+    const det = detectSheet(gray, cols, questionsPerColumn);
     const detectedTotalQuestions = det.columns.reduce((sum, col) => sum + col.length, 0);
     const effectiveTotalQuestions =
       config.totalQuestions > 0 ? config.totalQuestions : detectedTotalQuestions;
@@ -139,87 +147,14 @@ export function detectOmrGrid(
   }
 }
 
-/**
- * Aplica transformação de perspectiva e analisa o preenchimento das bolinhas no Canvas,
- * gerando informações detalhadas de diagnóstico e depuração visual.
- */
-export function analyzeCanvasOmrWithDebug(
-  canvas: HTMLCanvasElement,
+function sampleBubblesDirectly(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
   bubbles: BubbleCoordinates[],
-  _corners?: SheetCorners,
-  config?: GridConfig
+  debugInfo: OmrDebugInfo
 ): OmrAnalysisResult {
-  const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  const debugInfo: OmrDebugInfo = {
-    method: 'standard_fallback',
-    bubbles: [],
-    logs: [],
-  };
-
-  if (!ctx) {
-    debugInfo.logs.push('Erro: Não foi possível obter contexto 2D do Canvas.');
-    return { detections: [], debugInfo, bubbles: [] };
-  }
-
-  const width = canvas.width;
-  const height = canvas.height;
-  debugInfo.logs.push(`Dimensões da imagem: ${width}x${height}px`);
-
-  const inferredConfig: GridConfig = config
-    ? config
-    : {
-        totalQuestions: bubbles.length > 0 ? Math.max(...bubbles.map((b) => b.questionNumber)) : 0,
-        optionsPerQuestion: 5,
-        columnsCount: bubbles.some((b) => b.centerXPercent > 50 && b.questionNumber <= 12) ? 1 : 2,
-        subjectiveQuestions: [],
-      };
-
-  // Tenta detecção dinâmica de alta precisão por fiduciais e sincronizadores de linha
-  try {
-    const imgData = ctx.getImageData(0, 0, width, height);
-    const gray = toGray(imgData);
-    const questionsPerColumn =
-      inferredConfig.totalQuestions > 0
-        ? inferredConfig.totalQuestions <= 12
-          ? inferredConfig.totalQuestions
-          : Math.ceil(inferredConfig.totalQuestions / Math.max(1, inferredConfig.columnsCount))
-        : undefined;
-
-    const det = detectSheet(gray, inferredConfig.columnsCount, questionsPerColumn);
-    const detectedTotalQuestions = det.columns.reduce((sum, col) => sum + col.length, 0);
-    const effectiveTotalQuestions =
-      inferredConfig.totalQuestions > 0 ? inferredConfig.totalQuestions : detectedTotalQuestions;
-
-    const result = readBubbles(gray, det, {
-      totalQuestions: effectiveTotalQuestions,
-      subjectiveQuestions: inferredConfig.subjectiveQuestions,
-    });
-
-    debugInfo.method = 'fiducials_timing_marks';
-    debugInfo.fiducials = {
-      topLeft: det.corners[0],
-      topRight: det.corners[1],
-      bottomRight: det.corners[2],
-      bottomLeft: det.corners[3],
-    };
-    debugInfo.timingMarks = result.timingMarks;
-    debugInfo.bubbles = result.debugBubbles;
-    debugInfo.logs.push(
-      `Folha detectada com sucesso via 4 fiduciais e ${result.timingMarks.length} sincronizadores de linha.`
-    );
-
-    return {
-      detections: result.detections,
-      debugInfo,
-      bubbles: result.bubbles,
-    };
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    debugInfo.logs.push(`Detecção por fiduciais não disponível: ${msg}. Utilizando coordenadas padronizadas.`);
-  }
-
-  let bubblesToUse = bubbles;
-
+  debugInfo.method = 'standard_fallback';
   const imgData = ctx.getImageData(0, 0, width, height);
   const data = imgData.data;
 
@@ -228,7 +163,7 @@ export function analyzeCanvasOmrWithDebug(
     { label: 'A' | 'B' | 'C' | 'D' | 'E'; darkness: number; cx: number; cy: number; r: number }[]
   >();
 
-  for (const b of bubblesToUse) {
+  for (const b of bubbles) {
     const cx = (b.centerXPercent / 100) * width;
     const cy = (b.centerYPercent / 100) * height;
     const r = (b.radiusPercent / 100) * Math.min(width, height);
@@ -356,7 +291,95 @@ export function analyzeCanvasOmrWithDebug(
   return {
     detections: sortedResults,
     debugInfo,
-    bubbles: bubblesToUse,
+    bubbles,
+  };
+}
+
+/**
+ * Aplica transformação de perspectiva e analisa o preenchimento das bolinhas no Canvas,
+ * gerando informações detalhadas de diagnóstico e depuração visual.
+ */
+export function analyzeCanvasOmrWithDebug(
+  canvas: HTMLCanvasElement,
+  bubbles: BubbleCoordinates[],
+  _corners?: SheetCorners,
+  config?: GridConfig
+): OmrAnalysisResult {
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  const debugInfo: OmrDebugInfo = {
+    method: 'fiducials_timing_marks',
+    bubbles: [],
+    logs: [],
+  };
+
+  if (!ctx) {
+    throw new OmrDetectionError('INVALID_IMAGE', 'Não foi possível obter contexto 2D do Canvas.');
+  }
+
+  const width = canvas.width;
+  const height = canvas.height;
+  debugInfo.logs.push(`Dimensões da imagem: ${width}x${height}px`);
+
+  if (width < 100 || height < 100) {
+    throw new OmrDetectionError('INVALID_IMAGE', 'Imagem muito pequena para análise OMR.');
+  }
+
+  // Se forem passadas bolinhas explicitamente sem config (compatibilidade / testes unitários diretos de amostragem)
+  if (!config && bubbles.length > 0) {
+    return sampleBubblesDirectly(ctx, width, height, bubbles, debugInfo);
+  }
+
+  const inferredTotalQuestions =
+    bubbles.length > 0 ? Math.max(...bubbles.map((b) => b.questionNumber)) : 0;
+  const defaultLayout = getColumnLayout(inferredTotalQuestions);
+
+  const inferredConfig: GridConfig = config
+    ? config
+    : {
+        totalQuestions: inferredTotalQuestions,
+        optionsPerQuestion: 5,
+        columnsCount: defaultLayout.columns,
+        subjectiveQuestions: [],
+      };
+
+  const imgData = ctx.getImageData(0, 0, width, height);
+  const gray = toGray(imgData);
+  const layout = getColumnLayout(inferredConfig.totalQuestions);
+  const cols = inferredConfig.columnsCount || layout.columns;
+  const questionsPerColumn =
+    inferredConfig.totalQuestions > 0
+      ? cols === 1
+        ? inferredConfig.totalQuestions
+        : [layout.perColumn, inferredConfig.totalQuestions - layout.perColumn]
+      : undefined;
+
+  const det = detectSheet(gray, cols, questionsPerColumn);
+  const detectedTotalQuestions = det.columns.reduce((sum, col) => sum + col.length, 0);
+  const effectiveTotalQuestions =
+    inferredConfig.totalQuestions > 0 ? inferredConfig.totalQuestions : detectedTotalQuestions;
+
+  const result = readBubbles(gray, det, {
+    totalQuestions: effectiveTotalQuestions,
+    subjectiveQuestions: inferredConfig.subjectiveQuestions,
+  });
+
+  debugInfo.method = 'fiducials_timing_marks';
+  debugInfo.fiducials = {
+    topLeft: det.corners[0],
+    topRight: det.corners[1],
+    bottomRight: det.corners[2],
+    bottomLeft: det.corners[3],
+  };
+  debugInfo.timingMarks = result.timingMarks;
+  debugInfo.bubbles = result.debugBubbles;
+  debugInfo.logs.push(
+    `Folha detectada com sucesso via 4 fiduciais e ${result.timingMarks.length} sincronizadores de linha.`
+  );
+
+  return {
+    detections: result.detections,
+    debugInfo,
+    bubbles: result.bubbles,
   };
 }
 
@@ -595,7 +618,8 @@ export function gradeCanvasWithPayloadDebug(
     payload.totalQuestions ??
     Math.max(...Object.keys(payload.key).map(Number), 0);
   const subjectiveQuestions = payload.subjectiveQuestions ?? [];
-  const columnsCount = totalQuestions <= 12 ? 1 : 2;
+  const layout = getColumnLayout(totalQuestions);
+  const columnsCount = layout.columns;
 
   const gridConfig: GridConfig = {
     totalQuestions,

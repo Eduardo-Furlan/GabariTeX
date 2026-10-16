@@ -28,11 +28,15 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div>
-          <label className="block text-xs font-semibold text-slate-600 uppercase mb-1">
-            Instituição / Universidade
+          <label className="flex items-center justify-between text-xs font-semibold text-slate-600 uppercase mb-1">
+            <span>Instituição / Universidade</span>
+            <span className="text-[10px] text-slate-400 font-mono font-normal">
+              {(exam.header.institution || '').length}/70
+            </span>
           </label>
           <input
             type="text"
+            maxLength={70}
             className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:outline-none"
             placeholder="Ex: Universidade Federal..."
             value={exam.header.institution}
@@ -41,11 +45,15 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-600 uppercase mb-1">
-            Disciplina
+          <label className="flex items-center justify-between text-xs font-semibold text-slate-600 uppercase mb-1">
+            <span>Disciplina</span>
+            <span className="text-[10px] text-slate-400 font-mono font-normal">
+              {(exam.header.course || '').length}/40
+            </span>
           </label>
           <input
             type="text"
+            maxLength={40}
             className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:outline-none"
             placeholder="Ex: Cálculo I, Álgebra Linear..."
             value={exam.header.course}
@@ -54,11 +62,15 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-600 uppercase mb-1">
-            Título da Avaliação
+          <label className="flex items-center justify-between text-xs font-semibold text-slate-600 uppercase mb-1">
+            <span>Título da Avaliação</span>
+            <span className="text-[10px] text-slate-400 font-mono font-normal">
+              {(exam.header.examTitle || '').length}/50
+            </span>
           </label>
           <input
             type="text"
+            maxLength={50}
             className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:outline-none"
             placeholder="Ex: Prova 1, Exame Final..."
             value={exam.header.examTitle}
@@ -67,11 +79,15 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-600 uppercase mb-1">
-            Professor(a)
+          <label className="flex items-center justify-between text-xs font-semibold text-slate-600 uppercase mb-1">
+            <span>Professor(a)</span>
+            <span className="text-[10px] text-slate-400 font-mono font-normal">
+              {(exam.header.professor || '').length}/40
+            </span>
           </label>
           <input
             type="text"
+            maxLength={40}
             className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:outline-none"
             placeholder="Nome do docente"
             value={exam.header.professor}

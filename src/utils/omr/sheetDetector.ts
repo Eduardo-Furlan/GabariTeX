@@ -69,7 +69,7 @@ function combinations<T>(arr: T[], k: number): T[][] {
 export function detectSheet(
   grayImg: GrayImage,
   cols: number = 1,
-  expectedRows?: number
+  expectedRows?: number | number[]
 ): SheetDetectionResult {
   // 1. Redimensiona para dimensão máxima de 1600 px
   const { image: scaledImg, scale } = resize(grayImg, 1600);
@@ -255,10 +255,11 @@ export function detectSheet(
       }
     }
 
-    if (expectedRows !== undefined && expectedRows > 0 && pairs.length < expectedRows) {
+    const targetExpected = Array.isArray(expectedRows) ? expectedRows[k] : expectedRows;
+    if (targetExpected !== undefined && targetExpected > 0 && pairs.length < targetExpected) {
       throw new OmrDetectionError(
         'ROWS_MISMATCH',
-        `Linhas pareadas insuficientes: ${pairs.length}, esperado mínimo: ${expectedRows}.`
+        `Linhas pareadas insuficientes: ${pairs.length}, esperado mínimo: ${targetExpected}.`
       );
     }
 

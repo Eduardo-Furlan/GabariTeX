@@ -2,7 +2,6 @@ import { Html5Qrcode } from 'html5-qrcode';
 import { ExamVersion, GradingRecord } from '../types/exam';
 import { DecryptedQrPayload, OmrDebugInfo, GradingEvidence } from '../types/omr';
 import { decryptAnswerKey } from './crypto';
-import { buildPayload } from './payload';
 import { gradeCanvasWithPayloadDebug } from './omrProcessor';
 
 export interface PhotoResult {
@@ -137,6 +136,42 @@ async function scanQrFromImageOrCanvas(file: File, canvas: HTMLCanvasElement): P
       topCanvas.width = 0;
       topCanvas.height = 0;
     }
+
+    // Tentativa 3: Região central (para fotos focadas / close-up do QR Code como em fotos verticais centralizadas)
+    if (!decodedText) {
+      const cropX = Math.floor(canvas.width * 0.05);
+      const cropY = Math.floor(canvas.height * 0.15);
+      const cropW = Math.floor(canvas.width * 0.90);
+      const cropH = Math.floor(canvas.height * 0.70);
+      const maxDim = Math.max(cropW, cropH);
+      const scale = Math.min(1, 1400 / maxDim);
+      const centerCanvas = document.createElement('canvas');
+      centerCanvas.width = Math.max(300, Math.round(cropW * scale));
+      centerCanvas.height = Math.max(300, Math.round(cropH * scale));
+      const centerCtx = centerCanvas.getContext('2d');
+      if (centerCtx) {
+        centerCtx.imageSmoothingEnabled = true;
+        centerCtx.imageSmoothingQuality = 'high';
+        centerCtx.drawImage(
+          canvas,
+          cropX,
+          cropY,
+          cropW,
+          cropH,
+          0,
+          0,
+          centerCanvas.width,
+          centerCanvas.height
+        );
+        try {
+          decodedText = await scanCanvas(centerCanvas);
+        } catch {
+          // Falha
+        }
+      }
+      centerCanvas.width = 0;
+      centerCanvas.height = 0;
+    }
   } catch {
     // Falha silenciosa no leitor de QR
   }
@@ -223,43 +258,47 @@ export async function gradePhotoFile(
     }
 
     if (!targetPayload) {
-      if (opts.alwaysReadQr) {
-        return {
-          status: 'error',
-          payloadSource: 'none',
-          error: 'Não encontrei o QR code na folha e não há versão selecionada.',
-        };
-      }
-
-      // Fallback para fluxo de teste de 1 foto quando não há QR code
-      const defaultVer = opts.availableVersions?.find((v) => v.questions && v.questions.length > 0);
-      if (defaultVer) {
-        targetPayload = buildPayload({
-          examId: 'auto-exam',
-          versionLetter: defaultVer.versionLetter,
-          questions: defaultVer.questions,
-          objectiveAnswerKey: defaultVer.objectiveAnswerKey,
-        });
-        payloadSource = 'locked';
-      } else {
-        targetPayload = {
-          examId: 'debug-exam',
-          version: 'A',
-          key: { 1: 'A', 2: 'B', 3: 'C', 4: 'C', 5: 'D', 6: 'A', 7: 'E', 8: 'A', 9: 'B', 10: 'C' },
-          points: { 1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1, 9: 1, 10: 1 },
-          totalQuestions: 10,
-          subjectiveQuestions: [1, 2, 4],
-          subjectivePoints: { 1: 1, 2: 1, 4: 1 },
-        };
-        payloadSource = 'locked';
-      }
+      return {
+        status: 'error',
+        payloadSource: 'none',
+        error:
+          'Não foi possível identificar o QR Code na folha e nenhuma versão está selecionada no corretor. Enquadre a folha completa ou selecione uma versão manualmente.',
+      };
     }
 
     // 2. Executa OMR e extrai evidências
-    const { record, debugInfo, debugCanvasUrl, evidence } = gradeCanvasWithPayloadDebug(
-      canvas,
-      targetPayload
-    );
+    let record: GradingRecord;
+    let debugInfo: OmrDebugInfo;
+    let debugCanvasUrl: string = '';
+    let evidence: GradingEvidence | undefined;
+
+    try {
+      const omrRes = gradeCanvasWithPayloadDebug(canvas, targetPayload);
+      record = omrRes.record;
+      debugInfo = omrRes.debugInfo;
+      debugCanvasUrl = omrRes.debugCanvasUrl;
+      evidence = omrRes.evidence;
+    } catch (omrErr) {
+      // Se a foto teve QR Code lido com sucesso, mas a folha/fiduciais não foram encontrados (ex: close-up do QR Code)
+      if (payloadSource === 'qr') {
+        return {
+          status: 'qr_only',
+          payload: targetPayload,
+          payloadSource,
+          versionMismatch,
+        };
+      }
+      const msg =
+        omrErr instanceof Error
+          ? omrErr.message
+          : 'Falha na detecção da folha de respostas.';
+      return {
+        status: 'error',
+        payloadSource,
+        versionMismatch,
+        error: `Não foi possível detectar o cartão-resposta na imagem: ${msg}`,
+      };
+    }
 
     // 3. Se a foto teve QR Code lido, mas não contém a grade de respostas com fiduciais (apenas close-up do QR Code)
     if (payloadSource === 'qr' && debugInfo.method !== 'fiducials_timing_marks') {

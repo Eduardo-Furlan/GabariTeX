@@ -6,8 +6,17 @@ import {
   OmrRawDetection,
   OmrTimingMarkDebug,
 } from '../../types/omr';
+import {
+  bubbleRadiusPx,
+  getColumnLayout,
+  markSpanPx,
+  optionCenterOffsetsPx,
+} from '../sheetLayout';
+import { OmrDetectionError } from './errors';
 
-export const FR = [0.222, 0.390, 0.554, 0.720, 0.888];
+export const FR = optionCenterOffsetsPx().map((offset) =>
+  Number((offset / markSpanPx()).toFixed(3))
+);
 export const OPTION_LABELS: ('A' | 'B' | 'C' | 'D' | 'E')[] = [
   'A',
   'B',
@@ -43,7 +52,8 @@ export function readBubbles(
   const {
     totalQuestions,
     subjectiveQuestions = [],
-    innerRadiusFactor = 0.60,
+    optionsPerQuestion = 5,
+    innerRadiusFactor = 0.70,
     ambiguousThreshold = 0.35,
     markedThreshold = 0.55,
   } = options;
@@ -83,10 +93,47 @@ export function readBubbles(
   const debugBubbles: OmrBubbleDebug[] = [];
   const timingMarks: OmrTimingMarkDebug[] = [];
 
-  const questionsPerColumn =
-    totalQuestions <= 12
-      ? totalQuestions
-      : Math.ceil(totalQuestions / Math.max(1, det.columns.length));
+  const span = markSpanPx();
+  const offsets = optionCenterOffsetsPx();
+  const baseRad = bubbleRadiusPx();
+
+  // Validação geométrica: variação de escala entre linhas e compatibilidade com fiduciais
+  const scales: number[] = [];
+  for (const col of det.columns) {
+    for (const [l, r] of col) {
+      const d = Math.hypot(r.x - l.x, r.y - l.y);
+      scales.push(d / span);
+    }
+  }
+
+  if (scales.length > 0) {
+    const sortedScales = [...scales].sort((a, b) => a - b);
+    const medianScale = sortedScales[Math.floor(sortedScales.length / 2)];
+    if (medianScale > 0) {
+      const maxDev = Math.max(...scales.map((s) => Math.abs(s - medianScale) / medianScale));
+      if (maxDev > 0.25) {
+        throw new OmrDetectionError(
+          'INVALID_GEOMETRY',
+          `Variação excessiva de escala entre linhas (${(maxDev * 100).toFixed(1)}% > 25%). Folha pode estar amassada ou distorcida.`
+        );
+      }
+
+      if (det.corners && det.corners.length === 4) {
+        const topFidDist = Math.hypot(det.corners[1].x - det.corners[0].x, det.corners[1].y - det.corners[0].y);
+        const bottomFidDist = Math.hypot(det.corners[2].x - det.corners[3].x, det.corners[2].y - det.corners[3].y);
+        const fidWidth = Math.max(topFidDist, bottomFidDist);
+        const medianDist = medianScale * span;
+        if (fidWidth > 0 && (medianDist < 0.1 * fidWidth || medianDist > 1.1 * fidWidth)) {
+          throw new OmrDetectionError(
+            'INVALID_GEOMETRY',
+            'Largura das linhas incompatível com o tamanho dos fiduciais da folha.'
+          );
+        }
+      }
+    }
+  }
+
+  const { perColumn: questionsPerColumn } = getColumnLayout(totalQuestions);
 
   for (let cIdx = 0; cIdx < det.columns.length; cIdx++) {
     const colPairs = det.columns[cIdx];
@@ -110,7 +157,10 @@ export function readBubbles(
       const dx = r.x - l.x;
       const dy = r.y - l.y;
       const dist = Math.hypot(dx, dy);
-      const rad = dist * 0.032;
+      const lineScale = span > 0 ? dist / span : 1;
+      const rad = baseRad * lineScale;
+      const dirX = dist > 0 ? dx / dist : 1;
+      const dirY = dist > 0 ? dy / dist : 0;
 
       const fillRatios: Record<'A' | 'B' | 'C' | 'D' | 'E', number> = {
         A: 0,
@@ -127,11 +177,12 @@ export function readBubbles(
       const rOut1Sq = rOut1 * rOut1;
       const rOut2Sq = rOut2 * rOut2;
 
-      for (let o = 0; o < FR.length; o++) {
+      const numOptions = Math.min(optionsPerQuestion, offsets.length);
+      for (let o = 0; o < numOptions; o++) {
         const optLabel = OPTION_LABELS[o];
-        const f = FR[o];
-        const cx = l.x + dx * f;
-        const cy = l.y + dy * f;
+        const offset = offsets[o];
+        const cx = l.x + dirX * offset * lineScale;
+        const cy = l.y + dirY * offset * lineScale;
         const cxRound = Math.round(cx);
         const cyRound = Math.round(cy);
 

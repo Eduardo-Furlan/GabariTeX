@@ -19,6 +19,7 @@ import { ExamHeaderEditor } from './components/editor/ExamHeaderEditor';
 import { QuestionList } from './components/editor/QuestionList';
 import { ExamPrintView } from './components/preview/ExamPrintView';
 import { AnswerSheetView } from './components/preview/AnswerSheetView';
+import { isWithinLimit, MAX_QUESTIONS } from './utils/examLimits';
 import { PhotoUploader } from './components/scanner/PhotoUploader';
 import { BatchGrader } from './components/scanner/BatchGrader';
 import { PasswordModal } from './components/scanner/PasswordModal';
@@ -91,6 +92,8 @@ export const App: React.FC = () => {
   const [isClassManagerOpen, setIsClassManagerOpen] = useState<boolean>(false);
   const [isBackupPanelOpen, setIsBackupPanelOpen] = useState<boolean>(false);
   const [scannerMode, setScannerMode] = useState<'single' | 'batch'>('single');
+  const [isSheetOverflowing, setIsSheetOverflowing] = useState<boolean>(false);
+  const isExamCorrupted = !isWithinLimit(exam.questions.length);
 
   // Autosave com debounce (400ms para a prova/turmas, 300ms para notas) e flush automático
   const examAutosave = useAutosave(exam, saveExamToStorage, 400);
@@ -174,6 +177,12 @@ export const App: React.FC = () => {
   };
 
   const handleExamChange = (updated: Exam) => {
+    if (!isWithinLimit(updated.questions.length)) {
+      alert(
+        `A prova não pode exceder ${MAX_QUESTIONS} questões (máximo suportado na folha de respostas A4). A alteração foi rejeitada.`
+      );
+      return;
+    }
     setExam(updated);
     if (updated.password) {
       setTeacherPassword(updated.password);
@@ -209,6 +218,12 @@ export const App: React.FC = () => {
       try {
         const parsed = JSON.parse(e.target?.result as string) as Exam;
         if (parsed.header && parsed.questions) {
+          if (!isWithinLimit(parsed.questions.length)) {
+            alert(
+              `A prova tem ${parsed.questions.length} questões; o máximo é ${MAX_QUESTIONS}. Remova ${parsed.questions.length - MAX_QUESTIONS} e tente novamente.`
+            );
+            return;
+          }
           setExam(parsed);
           if (parsed.password) {
             updateTeacherPassword(parsed.password);
@@ -265,11 +280,21 @@ export const App: React.FC = () => {
 
   const currentVersion = versions.find((v) => v.versionLetter === selectedVersionLetter) || versions[0];
 
+  const handleTabChange = (tab: ActiveTab) => {
+    if (isExamCorrupted && tab !== 'editor' && tab !== 'gradebook') {
+      alert(
+        `A prova atual possui ${exam.questions.length} questões, excedendo o limite de ${MAX_QUESTIONS}. Remova o excesso na aba "Editar Prova" para acessar esta funcionalidade.`
+      );
+      return;
+    }
+    setActiveTab(tab);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-page overflow-x-hidden print:bg-white print:min-h-0 print:overflow-visible">
       <Navbar
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={handleTabChange}
         onExportJson={() => exportExamToJson(exam)}
         onImportJson={handleImportJson}
         onLoadSample={handleLoadSample}
@@ -279,6 +304,17 @@ export const App: React.FC = () => {
         gradedCount={records.length}
         autosaveState={examAutosave}
       />
+
+      {isExamCorrupted && (
+        <div className="bg-rose-500 text-on-accent px-4 py-3 text-xs sm:text-sm font-semibold shadow-md no-print">
+          <div className="flex items-center gap-2 max-w-7xl mx-auto w-full">
+            <AlertTriangle className="w-5 h-5 shrink-0 text-on-accent" />
+            <span>
+              A prova atual possui {exam.questions.length} questões, excedendo o limite máximo de {MAX_QUESTIONS} suportado na folha de respostas A4. As abas de Versões, Impressão e Corretor estão bloqueadas até que {exam.questions.length - MAX_QUESTIONS} {exam.questions.length - MAX_QUESTIONS === 1 ? 'questão seja removida' : 'questões sejam removidas'}.
+            </span>
+          </div>
+        </div>
+      )}
 
       {hasStorageError && (
         <div className="bg-rose-600 text-on-accent px-4 py-2 text-xs font-semibold flex items-center justify-between shadow-md no-print">
@@ -534,14 +570,38 @@ export const App: React.FC = () => {
 
                   <button
                     type="button"
-                    onClick={() => window.print()}
-                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-on-accent rounded-xl text-xs font-bold shadow-md transition"
+                    disabled={isSheetOverflowing || isExamCorrupted}
+                    onClick={() => {
+                      if (isSheetOverflowing || isExamCorrupted) return;
+                      window.print();
+                    }}
+                    title={
+                      isSheetOverflowing
+                        ? 'A folha de respostas não cabe em uma página. Reduza o texto do cabeçalho ou o número de questões.'
+                        : isExamCorrupted
+                        ? `A prova excede o limite de ${MAX_QUESTIONS} questões.`
+                        : undefined
+                    }
+                    className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-xl text-xs font-bold shadow-md transition ${
+                      isSheetOverflowing || isExamCorrupted
+                        ? 'bg-slate-300 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed shadow-none'
+                        : 'bg-indigo-600 hover:bg-indigo-700 text-on-accent'
+                    }`}
                   >
                     <Printer className="w-4 h-4" /> Imprimir / Salvar PDF
                   </button>
                 </div>
               </div>
             </div>
+
+            {isSheetOverflowing && (
+              <div className="mb-4 p-4 bg-rose-50 dark:bg-rose-500/10 border-2 border-rose-300 dark:border-rose-500/40 rounded-2xl flex items-center gap-3 text-rose-900 dark:text-rose-200 no-print">
+                <AlertTriangle className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0" />
+                <div className="text-xs sm:text-sm font-semibold">
+                  A folha de respostas não cabe em uma página. Reduza o texto do cabeçalho ou o número de questões.
+                </div>
+              </div>
+            )}
 
             {/* Aviso no celular para Tab 3 */}
             <div className="block lg:hidden p-3 bg-indigo-50/70 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 rounded-xl text-xs text-indigo-900 dark:text-indigo-200 leading-relaxed no-print">
@@ -553,7 +613,11 @@ export const App: React.FC = () => {
               <div className="min-w-fit mx-auto flex flex-col items-center">
                 {printMode === 'complete' && currentVersion && (
                   <div className="w-full flex flex-col items-center">
-                    <AnswerSheetView version={currentVersion} header={exam.header} />
+                    <AnswerSheetView
+                      version={currentVersion}
+                      header={exam.header}
+                      onOverflowChange={setIsSheetOverflowing}
+                    />
                     <div className="a4-page-separator">
                       Quebra de Página A4 — Início do Caderno de Questões
                     </div>
@@ -577,7 +641,11 @@ export const App: React.FC = () => {
 
               {printMode === 'answersheet_only' && currentVersion && (
                 <div className="w-full flex flex-col items-center">
-                  <AnswerSheetView version={currentVersion} header={exam.header} />
+                  <AnswerSheetView
+                    version={currentVersion}
+                    header={exam.header}
+                    onOverflowChange={setIsSheetOverflowing}
+                  />
                 </div>
               )}
 
@@ -585,7 +653,11 @@ export const App: React.FC = () => {
                 <div className="w-full flex flex-col items-center">
                   {versions.map((v, idx) => (
                     <React.Fragment key={v.versionLetter}>
-                      <AnswerSheetView version={v} header={exam.header} />
+                      <AnswerSheetView
+                        version={v}
+                        header={exam.header}
+                        onOverflowChange={idx === 0 ? setIsSheetOverflowing : undefined}
+                      />
                       <div className="a4-page-separator">
                         Quebra de Página A4 — Caderno de Questões (Versão {v.versionLetter})
                       </div>

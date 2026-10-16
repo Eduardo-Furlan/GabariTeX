@@ -1,5 +1,6 @@
 import { Question } from '../types/exam';
 import { DecryptedQrPayload } from '../types/omr';
+import { validateExamQuestionCount } from './examLimits';
 
 export interface BuildPayloadParams {
   examId: string;
@@ -14,6 +15,7 @@ export interface BuildPayloadParams {
  */
 export function buildPayload(params: BuildPayloadParams): DecryptedQrPayload {
   const { examId, versionLetter, questions, objectiveAnswerKey } = params;
+  validateExamQuestionCount(questions.length);
   const pointsMap: Record<number, number> = {};
   const subjectiveQuestions: number[] = [];
   const subjectivePoints: Record<number, number> = {};

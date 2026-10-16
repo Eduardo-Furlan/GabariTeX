@@ -1,7 +1,8 @@
 import React from 'react';
 import { Question } from '../../types/exam';
 import { QuestionEditor } from './QuestionEditor';
-import { Plus, Layers, Calculator } from 'lucide-react';
+import { Plus, Layers, Calculator, AlertTriangle } from 'lucide-react';
+import { MAX_QUESTIONS, remainingQuestions } from '../../utils/examLimits';
 
 interface QuestionListProps {
   questions: Question[];
@@ -9,6 +10,10 @@ interface QuestionListProps {
 }
 
 export const QuestionList: React.FC<QuestionListProps> = ({ questions, onChange }) => {
+  const isLimitReached = questions.length >= MAX_QUESTIONS;
+  const remaining = remainingQuestions(questions.length);
+  const showWarning = questions.length >= 36 && !isLimitReached;
+
   const handleUpdateQuestion = (index: number, updated: Question) => {
     const list = [...questions];
     list[index] = updated;
@@ -25,6 +30,9 @@ export const QuestionList: React.FC<QuestionListProps> = ({ questions, onChange 
   };
 
   const handleAddQuestion = (type: 'objective' | 'subjective') => {
+    if (questions.length >= MAX_QUESTIONS) {
+      return;
+    }
     const newId = `q-${Date.now()}`;
     const newQuestion: Question =
       type === 'objective'
@@ -61,7 +69,7 @@ export const QuestionList: React.FC<QuestionListProps> = ({ questions, onChange 
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs sm:text-sm text-slate-600">
           <span className="flex items-center gap-1.5 font-medium">
             <Layers className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
-            Total: <strong>{questions.length}</strong>
+            Total: <strong>{questions.length}/{MAX_QUESTIONS}</strong>
           </span>
           <span className="text-slate-300 hidden sm:inline">•</span>
           <span>
@@ -81,20 +89,56 @@ export const QuestionList: React.FC<QuestionListProps> = ({ questions, onChange 
         <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
+            disabled={isLimitReached}
             onClick={() => handleAddQuestion('objective')}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-on-accent rounded-lg text-xs font-semibold shadow-sm transition"
+            title={
+              isLimitReached
+                ? 'Limite de 40 questões atingido: é o máximo que cabe na folha de respostas A4.'
+                : undefined
+            }
+            className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition ${
+              isLimitReached
+                ? 'bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed shadow-none'
+                : 'bg-indigo-600 hover:bg-indigo-700 text-on-accent'
+            }`}
           >
             <Plus className="w-3.5 h-3.5" /> Nova Objetiva
           </button>
           <button
             type="button"
+            disabled={isLimitReached}
             onClick={() => handleAddQuestion('subjective')}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition"
+            title={
+              isLimitReached
+                ? 'Limite de 40 questões atingido: é o máximo que cabe na folha de respostas A4.'
+                : undefined
+            }
+            className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+              isLimitReached
+                ? 'bg-slate-100 dark:bg-slate-800 text-slate-300 dark:text-slate-600 cursor-not-allowed'
+                : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+            }`}
           >
             <Plus className="w-3.5 h-3.5" /> Nova Dissertativa
           </button>
         </div>
       </div>
+
+      {isLimitReached && (
+        <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 rounded-xl text-xs sm:text-sm font-semibold text-rose-800 dark:text-rose-300 flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+          <span>Limite de 40 questões atingido: é o máximo que cabe na folha de respostas A4.</span>
+        </div>
+      )}
+
+      {showWarning && (
+        <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-xl text-xs sm:text-sm font-medium text-amber-800 dark:text-amber-300 flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+          <span>
+            Atenção: restam apenas {remaining} {remaining === 1 ? 'questão' : 'questões'} antes de atingir o limite de {MAX_QUESTIONS} da folha A4.
+          </span>
+        </div>
+      )}
 
       <div className="space-y-4">
         {questions.map((q, idx) => (
@@ -111,15 +155,35 @@ export const QuestionList: React.FC<QuestionListProps> = ({ questions, onChange 
       <div className="mt-6 flex flex-col sm:flex-row justify-center gap-3">
         <button
           type="button"
+          disabled={isLimitReached}
           onClick={() => handleAddQuestion('objective')}
-          className="flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 rounded-xl text-xs sm:text-sm font-semibold transition"
+          title={
+            isLimitReached
+              ? 'Limite de 40 questões atingido: é o máximo que cabe na folha de respostas A4.'
+              : undefined
+          }
+          className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition border ${
+            isLimitReached
+              ? 'bg-slate-100 dark:bg-slate-800/40 text-slate-400 dark:text-slate-600 border-slate-200 dark:border-slate-800 cursor-not-allowed'
+              : 'bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-500/30'
+          }`}
         >
           <Plus className="w-4 h-4" /> Adicionar Questão Objetiva
         </button>
         <button
           type="button"
+          disabled={isLimitReached}
           onClick={() => handleAddQuestion('subjective')}
-          className="flex items-center justify-center gap-2 px-5 py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold transition"
+          title={
+            isLimitReached
+              ? 'Limite de 40 questões atingido: é o máximo que cabe na folha de respostas A4.'
+              : undefined
+          }
+          className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition border ${
+            isLimitReached
+              ? 'bg-slate-50 dark:bg-slate-900/40 text-slate-300 dark:text-slate-700 border-slate-200 dark:border-slate-800 cursor-not-allowed'
+              : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200'
+          }`}
         >
           <Plus className="w-4 h-4" /> Adicionar Questão Dissertativa
         </button>

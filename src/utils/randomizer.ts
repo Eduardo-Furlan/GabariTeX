@@ -1,6 +1,7 @@
 import { Exam, ExamVersion, Question } from '../types/exam';
 import { encryptAnswerKey } from './crypto';
 import { buildPayload } from './payload';
+import { validateExamQuestionCount } from './examLimits';
 
 // PRNG determinístico Mulberry32
 function mulberry32(a: number) {
@@ -24,6 +25,7 @@ function shuffleArray<T>(array: T[], prng: () => number): T[] {
 const OPTION_LABELS: ('A' | 'B' | 'C' | 'D' | 'E')[] = ['A', 'B', 'C', 'D', 'E'];
 
 export async function generateExamVersions(exam: Exam): Promise<ExamVersion[]> {
+  validateExamQuestionCount(exam.questions.length);
   const versions: ExamVersion[] = [];
   const versionLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
