@@ -1,6 +1,7 @@
 [package]
 name = "gabaritex"
-version = "1.0.0"
+version = "0.1.0"
+
 description = "GabariTeX - Criador e Corretor de Provas"
 authors = ["GabariTeX"]
 license = "GPL-3.0"
