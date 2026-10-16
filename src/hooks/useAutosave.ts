@@ -118,6 +118,41 @@ export class AutosaveManager<T> {
     }
   }
 
+  public async flushAsync(): Promise<SaveResult> {
+    if (this.timer) {
+      clearTimeout(this.timer);
+      this.timer = null;
+    }
+    if (!this.hasPendingSave) {
+      return { ok: true };
+    }
+    this.hasPendingSave = false;
+
+    try {
+      const resultOrPromise = this.saveFn(this.value);
+      const result = await Promise.resolve(resultOrPromise);
+      if (result.ok) {
+        this.onStateChange?.({
+          status: 'saved',
+          savedAt: new Date(),
+          reason: undefined,
+        });
+      } else {
+        this.onStateChange?.({
+          status: 'error',
+          reason: result.reason,
+        });
+      }
+      return result;
+    } catch (err) {
+      this.onStateChange?.({
+        status: 'error',
+        reason: 'unknown',
+      });
+      return { ok: false, error: err, reason: 'unknown' };
+    }
+  }
+
   public destroy() {
     this.flush();
     if (this.timer) {
@@ -140,7 +175,7 @@ export function useAutosave<T>(
   value: T,
   saveFn: (val: T) => SaveResult | Promise<SaveResult>,
   delay = 400
-): AutosaveState & { flush: () => void } {
+): AutosaveState & { flush: () => void; flushAsync: () => Promise<SaveResult> } {
   const [state, setState] = useState<AutosaveState>({
     status: 'saved',
     savedAt: new Date(),
@@ -158,6 +193,11 @@ export function useAutosave<T>(
 
   const flush = useCallback(() => {
     managerRef.current?.flush();
+  }, []);
+
+  const flushAsync = useCallback(async (): Promise<SaveResult> => {
+    if (!managerRef.current) return { ok: true };
+    return managerRef.current.flushAsync();
   }, []);
 
   useEffect(() => {
@@ -198,6 +238,6 @@ export function useAutosave<T>(
     };
   }, []);
 
-  return { ...state, flush };
+  return { ...state, flush, flushAsync };
 }
 

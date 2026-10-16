@@ -105,5 +105,21 @@ describe('Gerenciador de Autosave (AutosaveManager)', () => {
     expect(saveMock).toHaveBeenCalledTimes(1);
     expect(saveMock).toHaveBeenCalledWith('final');
   });
+
+  it('flushAsync deve aguardar a resolução assíncrona do salvamento', async () => {
+    let resolved = false;
+    const saveMock = vi.fn(async (_val: string): Promise<SaveResult> => {
+      resolved = true;
+      return { ok: true };
+    });
+
+    const manager = new AutosaveManager('v0', saveMock, 500);
+    manager.updateValue('dados-assincronos');
+
+    const result = await manager.flushAsync();
+    expect(result.ok).toBe(true);
+    expect(resolved).toBe(true);
+    expect(saveMock).toHaveBeenCalledWith('dados-assincronos');
+  });
 });
 

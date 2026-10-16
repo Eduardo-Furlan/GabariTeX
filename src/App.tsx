@@ -17,6 +17,7 @@ import { GradebookScreen } from './screens/GradebookScreen';
 import { ProfileExportImportModal } from './components/profile/ProfileExportImportModal';
 import { GradingModal } from './components/scanner/GradingModal';
 import { UpdatePrompt } from './components/pwa/UpdatePrompt';
+import { triggerDesktopSnapshot } from './platform/snapshots';
 import { Exam } from './types/exam';
 import { ProfileData, ProfileSettings } from './types/profile';
 import { BookOpen, Loader2 } from 'lucide-react';
@@ -88,6 +89,14 @@ const AppContent: React.FC = () => {
     data: ProfileData,
     settings: ProfileSettings
   ) => {
+    if (typeof __DESKTOP__ !== 'undefined' && __DESKTOP__ && exportProfileData) {
+      try {
+        await triggerDesktopSnapshot(exportProfileData, 'pre-import');
+      } catch (err) {
+        console.warn('[Desktop Snapshot] Falha ao criar snapshot pré-importação:', err);
+      }
+    }
+
     for (const ex of data.exams) {
       await store.putExam(ex);
     }

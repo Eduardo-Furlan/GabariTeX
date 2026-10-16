@@ -19,6 +19,10 @@ import { useAutosave, AutosaveState } from '../hooks/useAutosave';
 import { DecryptedQrPayload, GradingEvidence } from '../types/omr';
 import { buildPayload } from '../utils/payload';
 import { computeExamFingerprint } from '../utils/fingerprint';
+import {
+  triggerDesktopSnapshot,
+  checkAndRunDailySnapshot,
+} from '../platform/snapshots';
 
 export interface ExamSwitchPromptState {
   targetExamId: string;
@@ -94,6 +98,7 @@ export interface ProfileContextType {
     options?: { newStudentToClass?: { classId: string; name: string; registration?: string } }
   ) => void;
   reloadProfile: () => Promise<void>;
+  flushAll: () => Promise<void>;
 }
 
 const ProfileContext = createContext<ProfileContextType | null>(null);
@@ -189,6 +194,84 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
         classroomsAutosave.status === 'saving'
       ? { status: 'saving' }
       : { status: 'saved' };
+
+  const flushAll = useCallback(async (): Promise<void> => {
+    await Promise.all([
+      examAutosave.flushAsync(),
+      gradebookAutosave.flushAsync(),
+      classroomsAutosave.flushAsync(),
+    ]);
+  }, [examAutosave, gradebookAutosave, classroomsAutosave]);
+
+  // Fechamento da janela em Desktop (onCloseRequested) com flush de pendências
+  useEffect(() => {
+    if (typeof __DESKTOP__ === 'undefined' || !__DESKTOP__) {
+      return;
+    }
+
+    let unlisten: (() => void) | undefined;
+    let isClosing = false;
+
+    import('@tauri-apps/api/window')
+      .then(({ getCurrentWindow }) => {
+        const appWindow = getCurrentWindow();
+        return appWindow.onCloseRequested(async (event) => {
+          if (isClosing) return;
+          isClosing = true;
+          event.preventDefault();
+
+          try {
+            const flushPromise = flushAll();
+            const timeoutPromise = new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Flush timeout')), 3000)
+            );
+            await Promise.race([flushPromise, timeoutPromise]);
+          } catch (err) {
+            console.warn('[Desktop Close] Erro ou timeout ao salvar antes de fechar:', err);
+          } finally {
+            await appWindow.destroy();
+          }
+        });
+      })
+      .then((fn) => {
+        unlisten = fn;
+      })
+      .catch((err) => {
+        console.warn('[Desktop Close] Falha ao registrar onCloseRequested:', err);
+      });
+
+    return () => {
+      if (unlisten) unlisten();
+    };
+  }, [flushAll]);
+
+  // Snapshot diário automático no desktop (3s após o carregamento inicial)
+  useEffect(() => {
+    if (typeof __DESKTOP__ === 'undefined' || !__DESKTOP__ || isLoadingProfile) {
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        const fullExams = await Promise.all(exams.map((m) => store.getExam(m.id)));
+        const validExams = fullExams.filter((e): e is Exam => Boolean(e));
+        const examMap = new Map(validExams.map((e) => [e.id, e]));
+        if (exam.id) examMap.set(exam.id, exam);
+
+        const currentProfileData: ProfileData = {
+          exams: Array.from(examMap.values()),
+          classes,
+          records,
+        };
+
+        await checkAndRunDailySnapshot(currentProfileData);
+      } catch (err) {
+        console.warn('[Desktop Snapshot] Erro ao checar snapshot diário:', err);
+      }
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [isLoadingProfile, exams, exam, classes, records, store]);
 
   // Carregamento inicial do Perfil
   const initProfile = useCallback(async () => {
@@ -433,6 +516,22 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const deleteExam = useCallback(
     async (id: string) => {
+      if (typeof __DESKTOP__ !== 'undefined' && __DESKTOP__) {
+        const hasRecords = records.some((r) => r.examId === id);
+        if (hasRecords) {
+          try {
+            const fullExams = await Promise.all(exams.map((m) => store.getExam(m.id)));
+            const validExams = fullExams.filter((e): e is Exam => Boolean(e));
+            await triggerDesktopSnapshot(
+              { exams: validExams, classes, records },
+              'pre-delete'
+            );
+          } catch (err) {
+            console.warn('[Desktop Snapshot] Falha ao criar snapshot pré-exclusão:', err);
+          }
+        }
+      }
+
       await store.deleteExam(id);
       const remainingExams = exams.filter((e) => e.id !== id);
       setExams(remainingExams);
@@ -782,6 +881,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
     handleDisassociateRecordsFromClass,
     handleGradeSaved,
     reloadProfile: initProfile,
+    flushAll,
   };
 
   return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>;

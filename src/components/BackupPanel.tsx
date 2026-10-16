@@ -26,6 +26,12 @@ import {
   ShieldAlert,
   FolderOpen,
 } from 'lucide-react';
+import {
+  getDesktopSnapshotInfo,
+  pickDesktopSnapshotDir,
+  triggerDesktopSnapshot,
+  DesktopSnapshotInfo,
+} from '../platform/snapshots';
 
 interface BackupPanelProps {
   exam: Exam;
@@ -56,6 +62,7 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({
     path: string;
     usedBytes: number;
   } | null>(null);
+  const [desktopSnapshotInfo, setDesktopSnapshotInfo] = useState<DesktopSnapshotInfo | null>(null);
 
   const [restoreCandidate, setRestoreCandidate] = useState<BackupFile | null>(null);
   const [mergeCandidate, setMergeCandidate] = useState<{
@@ -75,6 +82,9 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({
       import('@tauri-apps/api/core')
         .then(({ invoke }) => invoke<{ path: string; usedBytes: number }>('store_open'))
         .then((info) => setDesktopStoreInfo(info))
+        .catch(() => {});
+      getDesktopSnapshotInfo()
+        .then(setDesktopSnapshotInfo)
         .catch(() => {});
       return;
     }
@@ -99,6 +109,31 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({
     import('@tauri-apps/plugin-opener')
       .then(({ revealItemInDir }) => revealItemInDir(desktopStoreInfo.path))
       .catch(() => {});
+  };
+
+  const handlePickBackupDir = async () => {
+    const picked = await pickDesktopSnapshotDir();
+    if (picked) {
+      const updated = await getDesktopSnapshotInfo();
+      setDesktopSnapshotInfo(updated);
+      setSuccessMessage(`Pasta de backups atualizada para: ${picked}`);
+    }
+  };
+
+  const handleTriggerDesktopSnapshot = async () => {
+    try {
+      const res = await triggerDesktopSnapshot(
+        { exams: [exam], classes: classes || [], records: gradebook },
+        'manual'
+      );
+      if (res) {
+        const updated = await getDesktopSnapshotInfo();
+        setDesktopSnapshotInfo(updated);
+        setSuccessMessage(`Backup automático gravado com sucesso: ${res}`);
+      }
+    } catch (err) {
+      setErrorMessage('Erro ao gravar backup automático: ' + String(err));
+    }
   };
 
   const handleExportFullBackup = () => {
@@ -221,29 +256,62 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({
         {/* Status de Armazenamento e Lembrete de Backup */}
         <div className="mt-4 p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-3">
           {__DESKTOP__ ? (
-            <div className="space-y-2 text-xs">
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <div className="flex items-center gap-2 font-medium text-slate-900">
-                  <HardDrive className="w-4 h-4 text-indigo-500" />
-                  <span>Pasta do perfil neste computador:</span>
+            <div className="space-y-3 text-xs">
+              <div className="space-y-1">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2 font-medium text-slate-900">
+                    <HardDrive className="w-4 h-4 text-indigo-500" />
+                    <span>Pasta do perfil neste computador:</span>
+                  </div>
+                  {desktopStoreInfo && (
+                    <button
+                      type="button"
+                      onClick={handleRevealProfileDir}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 font-semibold text-[11px] transition"
+                    >
+                      <FolderOpen className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                      Mostrar pasta
+                    </button>
+                  )}
                 </div>
-                {desktopStoreInfo && (
-                  <button
-                    type="button"
-                    onClick={handleRevealProfileDir}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 font-semibold text-[11px] transition"
-                  >
-                    <FolderOpen className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-                    Mostrar pasta
-                  </button>
+                {desktopStoreInfo ? (
+                  <div className="font-mono text-[11px] text-slate-500 break-all">
+                    {desktopStoreInfo.path} ({(desktopStoreInfo.usedBytes / 1024).toFixed(1)} KB)
+                  </div>
+                ) : (
+                  <div className="text-[11px] text-slate-500">Armazenamento em disco ativo</div>
                 )}
               </div>
-              {desktopStoreInfo ? (
-                <div className="font-mono text-[11px] text-slate-500 break-all">
-                  {desktopStoreInfo.path} ({(desktopStoreInfo.usedBytes / 1024).toFixed(1)} KB)
+
+              {/* Pasta de Backups Automáticos */}
+              {desktopSnapshotInfo && (
+                <div className="pt-2 border-t border-slate-200/50 space-y-1">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2 font-medium text-slate-900">
+                      <FolderOpen className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>Pasta de backups automáticos (rotação de 10):</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={handlePickBackupDir}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 font-semibold text-[11px] transition"
+                      >
+                        Alterar pasta
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleTriggerDesktopSnapshot}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-zinc-50 font-semibold text-[11px] transition"
+                      >
+                        Fazer cópia agora
+                      </button>
+                    </div>
+                  </div>
+                  <div className="font-mono text-[11px] text-slate-500 break-all">
+                    {desktopSnapshotInfo.dir}
+                  </div>
                 </div>
-              ) : (
-                <div className="text-[11px] text-slate-500">Armazenamento em disco ativo</div>
               )}
             </div>
           ) : (
@@ -290,18 +358,32 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({
             <div className="flex items-center gap-1.5">
               <Calendar className="w-3.5 h-3.5" />
               <span>
-                Último backup completo:{' '}
-                {lastBackup ? (
-                  <strong className="text-slate-900 font-medium">
-                    {lastBackup.toLocaleDateString('pt-BR')} às{' '}
-                    {lastBackup.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                  </strong>
+                {__DESKTOP__ && desktopSnapshotInfo ? (
+                  desktopSnapshotInfo.lastSnapshotAt ? (
+                    <>
+                      Último backup automático:{' '}
+                      <strong className="text-slate-900 font-medium">
+                        {new Date(desktopSnapshotInfo.lastSnapshotAt).toLocaleDateString('pt-BR')} às{' '}
+                        {new Date(desktopSnapshotInfo.lastSnapshotAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      </strong>
+                    </>
+                  ) : (
+                    <strong className="text-slate-700 font-medium">Nenhum backup diário gerado ainda</strong>
+                  )
+                ) : lastBackup ? (
+                  <>
+                    Último backup completo:{' '}
+                    <strong className="text-slate-900 font-medium">
+                      {lastBackup.toLocaleDateString('pt-BR')} às{' '}
+                      {lastBackup.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                    </strong>
+                  </>
                 ) : (
                   <strong className="text-amber-600 dark:text-amber-400 font-medium">Nenhum realizado ainda</strong>
                 )}
               </span>
             </div>
-            <span className="text-[10px]">Persistência automática ativa</span>
+            <span className="text-[10px]">{__DESKTOP__ ? 'Persistência segura em disco' : 'Persistência automática ativa'}</span>
           </div>
         </div>
 

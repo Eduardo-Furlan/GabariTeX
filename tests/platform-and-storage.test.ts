@@ -93,3 +93,79 @@ describe('saveFile (Plan 12 §5.1 & §8)', () => {
   });
 });
 
+describe('platform snapshots (Plan 12 §6 & §8)', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('gracefully returns null when running on web (!__DESKTOP__)', async () => {
+    vi.stubGlobal('__DESKTOP__', false);
+    const { getDesktopSnapshotInfo, pickDesktopSnapshotDir, triggerDesktopSnapshot, checkAndRunDailySnapshot } =
+      await import('../src/platform/snapshots');
+
+    const emptyProfile = {
+      version: 1,
+      classes: [],
+      exams: [],
+      records: {},
+      settings: { schoolName: '', teacherName: '', darkMode: false, autoScan: true, soundEnabled: true, cameraResolution: '1080p' as const },
+    };
+
+    expect(await getDesktopSnapshotInfo()).toBeNull();
+    expect(await pickDesktopSnapshotDir()).toBeNull();
+    expect(await triggerDesktopSnapshot(emptyProfile)).toBeNull();
+    expect(await checkAndRunDailySnapshot(emptyProfile)).toBeNull();
+  });
+
+  it('calls Tauri IPC commands when running on desktop (__DESKTOP__)', async () => {
+    vi.stubGlobal('__DESKTOP__', true);
+    const mockInvoke = vi.fn();
+    vi.doMock('@tauri-apps/api/core', () => ({
+      invoke: mockInvoke,
+    }));
+
+    mockInvoke.mockImplementation(async (cmd: string) => {
+      if (cmd === 'snapshot_dir_get') {
+        return { dir: '/mock/backups', lastSnapshotAt: undefined };
+      }
+      if (cmd === 'snapshot_dir_pick') {
+        return '/mock/picked-dir';
+      }
+      if (cmd === 'snapshot_write') {
+        return 'gabaritex-test.zip';
+      }
+      return null;
+    });
+
+    const { getDesktopSnapshotInfo, pickDesktopSnapshotDir, triggerDesktopSnapshot, checkAndRunDailySnapshot } =
+      await import('../src/platform/snapshots');
+
+    const sampleProfile = {
+      version: 1,
+      classes: [],
+      exams: [{ id: 'exam-1', name: 'Prova 1', totalQuestions: 10, answers: {}, pointsPerQuestion: 1, allowMultiple: false, activeSheetLayout: 'classic' as const }],
+      records: {},
+      settings: { schoolName: '', teacherName: '', darkMode: false, autoScan: true, soundEnabled: true, cameraResolution: '1080p' as const },
+    };
+
+    const info = await getDesktopSnapshotInfo();
+    expect(info).toEqual({ dir: '/mock/backups', lastSnapshotAt: undefined });
+    expect(mockInvoke).toHaveBeenCalledWith('snapshot_dir_get');
+
+    const picked = await pickDesktopSnapshotDir();
+    expect(picked).toBe('/mock/picked-dir');
+    expect(mockInvoke).toHaveBeenCalledWith('snapshot_dir_pick');
+
+    const saved = await triggerDesktopSnapshot(sampleProfile, 'manual');
+    expect(saved).toBe('gabaritex-test.zip');
+    expect(mockInvoke).toHaveBeenCalledWith('snapshot_write', expect.any(Uint8Array), expect.objectContaining({
+      headers: expect.objectContaining({
+        'x-snapshot-name': expect.stringContaining('manual'),
+      }),
+    }));
+
+    const dailySaved = await checkAndRunDailySnapshot(sampleProfile);
+    expect(dailySaved).toBe('gabaritex-test.zip');
+  });
+});
+
