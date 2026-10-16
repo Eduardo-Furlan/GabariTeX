@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>GabariTeX — Câmera Remota</title>
+  <title>GabariTeX: Câmera Remota</title>
   <style>
     :root {
       --bg: #0f172a;
@@ -80,8 +80,58 @@
     }
     .btn:active { transform: scale(0.98); }
     .btn-primary { background: var(--primary); color: #fff; }
+    .btn-success { background: var(--success); color: #fff; }
     .btn-secondary { background: #334155; color: #f1f5f9; }
     .btn:disabled { opacity: 0.5; pointer-events: none; }
+    .mode-selector-label {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .mode-selector {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      background: #0f172a;
+      padding: 6px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+    .mode-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.15s;
+    }
+    .mode-btn-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: inherit;
+    }
+    .mode-btn-sub {
+      font-size: 0.72rem;
+      opacity: 0.85;
+    }
+    .mode-btn.active-qr {
+      background: #1e1b4b;
+      border-color: #6366f1;
+      color: #c7d2fe;
+    }
+    .mode-btn.active-sheet {
+      background: #064e3b;
+      border-color: #10b981;
+      color: #a7f3d0;
+    }
     .alert-error {
       background: #450a0a;
       border: 1px solid #7f1d1d;
@@ -174,13 +224,25 @@
   <div id="alertBox" class="alert-error"></div>
 
   <div class="actions-card">
+    <div class="mode-selector-label">O que você deseja enviar agora?</div>
+    <div class="mode-selector">
+      <button type="button" id="btnModeQr" class="mode-btn active-qr">
+        <span class="mode-btn-title">1. QR Code</span>
+        <span class="mode-btn-sub">Travar versão da prova</span>
+      </button>
+      <button type="button" id="btnModeSheet" class="mode-btn">
+        <span class="mode-btn-title">2. Gabarito</span>
+        <span class="mode-btn-sub">Corrigir folha de respostas</span>
+      </button>
+    </div>
+
     <button id="btnCapture" class="btn btn-primary">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
-      Tirar Foto com Câmera
+      <span id="btnCaptureLabel">Fotografar QR Code</span>
     </button>
     <button id="btnGallery" class="btn btn-secondary">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/><circle cx="9" cy="9" r="2"/></svg>
-      Escolher da Galeria
+      <span id="btnGalleryLabel">Escolher QR Code da Galeria</span>
     </button>
     <input type="file" id="captureInput" accept="image/*" capture="environment" style="display:none">
     <input type="file" id="galleryInput" accept="image/*" multiple style="display:none">
@@ -189,7 +251,7 @@
   <div class="section-title">Fotos Enviadas</div>
   <div id="photoList" class="photo-list">
     <div id="emptyState" class="empty-state">
-      Nenhuma foto enviada nesta sessão.<br>Toque em <strong>Tirar Foto</strong> para começar.
+      Nenhuma foto enviada nesta sessão.<br>Selecione o tipo acima e toque em <strong>Fotografar</strong>.
     </div>
   </div>
 
@@ -203,15 +265,40 @@
       }
 
       var token = getToken();
+      var currentTarget = 'qr';
       var alertBox = document.getElementById('alertBox');
       var statusBadge = document.getElementById('statusBadge');
       var statusText = document.getElementById('statusText');
       var captureInput = document.getElementById('captureInput');
       var galleryInput = document.getElementById('galleryInput');
       var btnCapture = document.getElementById('btnCapture');
+      var btnCaptureLabel = document.getElementById('btnCaptureLabel');
       var btnGallery = document.getElementById('btnGallery');
+      var btnGalleryLabel = document.getElementById('btnGalleryLabel');
+      var btnModeQr = document.getElementById('btnModeQr');
+      var btnModeSheet = document.getElementById('btnModeSheet');
       var photoList = document.getElementById('photoList');
       var emptyState = document.getElementById('emptyState');
+
+      function setScanTarget(target) {
+        currentTarget = target === 'sheet' ? 'sheet' : 'qr';
+        if (currentTarget === 'sheet') {
+          btnModeQr.className = 'mode-btn';
+          btnModeSheet.className = 'mode-btn active-sheet';
+          btnCapture.className = 'btn btn-success';
+          btnCaptureLabel.textContent = 'Fotografar Gabarito';
+          btnGalleryLabel.textContent = 'Escolher Gabarito da Galeria';
+        } else {
+          btnModeQr.className = 'mode-btn active-qr';
+          btnModeSheet.className = 'mode-btn';
+          btnCapture.className = 'btn btn-primary';
+          btnCaptureLabel.textContent = 'Fotografar QR Code';
+          btnGalleryLabel.textContent = 'Escolher QR Code da Galeria';
+        }
+      }
+
+      btnModeQr.addEventListener('click', function() { setScanTarget('qr'); });
+      btnModeSheet.addEventListener('click', function() { setScanTarget('sheet'); });
 
       function showError(msg) {
         alertBox.textContent = msg;
@@ -224,6 +311,8 @@
         showError(msg || 'Sessão encerrada no computador. Leia o QR Code novamente.');
         btnCapture.disabled = true;
         btnGallery.disabled = true;
+        btnModeQr.disabled = true;
+        btnModeSheet.disabled = true;
       }
 
       if (!token) {
@@ -240,17 +329,19 @@
       function handleFiles(e) {
         var files = e.target.files;
         if (!files || files.length === 0) return;
+        var chosenTarget = currentTarget;
         for (var i = 0; i < files.length; i++) {
-          uploadPhoto(files[i]);
+          uploadPhoto(files[i], chosenTarget);
         }
         e.target.value = '';
       }
 
-      function uploadPhoto(file) {
+      function uploadPhoto(file, photoTarget) {
         if (emptyState) {
           emptyState.style.display = 'none';
         }
 
+        var targetLabel = photoTarget === 'sheet' ? 'Gabarito' : 'QR Code';
         var localId = 'p_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
         var timeStr = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         var thumbUrl = URL.createObjectURL(file);
@@ -261,7 +352,7 @@
         item.innerHTML =
           '<img class="photo-thumb" src="' + thumbUrl + '" alt="Miniatura">' +
           '<div class="photo-details">' +
-            '<div class="photo-time">' + timeStr + ' (' + (file.size / 1024 / 1024).toFixed(1) + ' MB)</div>' +
+            '<div class="photo-time">' + timeStr + ' · ' + targetLabel + ' (' + (file.size / 1024 / 1024).toFixed(1) + ' MB)</div>' +
             '<div class="photo-state-badge state-uploading">Enviando...</div>' +
             '<div class="photo-message"></div>' +
           '</div>';
@@ -280,6 +371,7 @@
             method: 'POST',
             headers: {
               'x-gabaritex-token': token,
+              'x-gabaritex-target': photoTarget,
               'Content-Type': file.type || 'application/octet-stream'
             },
             body: file
@@ -304,7 +396,7 @@
           .then(function(data) {
             badge.className = 'photo-state-badge state-received';
             badge.textContent = 'Recebida no computador';
-            startPolling(data.id, item, file);
+            startPolling(data.id, item, file, photoTarget);
           })
           .catch(function(err) {
             badge.className = 'photo-state-badge state-error';
@@ -326,7 +418,7 @@
         doUpload();
       }
 
-      function startPolling(photoId, item, file) {
+      function startPolling(photoId, item, file, photoTarget) {
         var badge = item.querySelector('.photo-state-badge');
         var msgEl = item.querySelector('.photo-message');
         var pollTimer = null;
@@ -351,12 +443,15 @@
 
             if (data.status === 'processing') {
               badge.className = 'photo-state-badge state-processing';
-              badge.textContent = 'Lendo folha no computador...';
+              badge.textContent = 'Lendo no computador...';
             } else if (data.status === 'ok') {
               clearInterval(pollTimer);
               badge.className = 'photo-state-badge state-ok';
               badge.textContent = data.label || 'Lida';
               msgEl.textContent = data.message || '';
+              if (photoTarget === 'qr') {
+                setScanTarget('sheet');
+              }
             } else if (data.status === 'review') {
               clearInterval(pollTimer);
               badge.className = 'photo-state-badge state-review';

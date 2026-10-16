@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 
 import { PasswordModal } from './PasswordModal';
+import { reportRemotePhoto } from '../../platform/remoteCamera';
 
 interface PhotoUploaderProps {
   teacherPassword: string;
@@ -34,6 +35,12 @@ interface PhotoUploaderProps {
   onSelectExamVersion?: (v: ExamVersion) => void;
   onOpenRemoteCamera?: () => void;
   isRemoteConnected?: boolean;
+  incomingRemotePhoto?: {
+    file: File;
+    id: string;
+    target?: 'qr' | 'sheet';
+    timestamp: number;
+  } | null;
 }
 
 export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
@@ -46,6 +53,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
   onSelectExamVersion,
   onOpenRemoteCamera,
   isRemoteConnected = false,
+  incomingRemotePhoto,
 }) => {
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [scanTarget, setScanTarget] = useState<'qr' | 'sheet'>(activePayload ? 'sheet' : 'qr');
@@ -72,16 +80,38 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const lastProcessedFileRef = useRef<File | null>(null);
+  const lockedPayloadRef = useRef<DecryptedQrPayload | null>(activePayload);
+  const scanTargetRef = useRef<'qr' | 'sheet'>(scanTarget);
 
   useEffect(() => {
-    if (activePayload && scanTarget === 'qr') {
+    scanTargetRef.current = scanTarget;
+  }, [scanTarget]);
+
+  useEffect(() => {
+    lockedPayloadRef.current = activePayload;
+    if (activePayload) {
       setScanTarget('sheet');
-    } else if (!activePayload && scanTarget === 'sheet') {
-      setScanTarget('qr');
+      scanTargetRef.current = 'sheet';
     }
   }, [activePayload]);
 
-  const handleProcessImage = async (file: File, overridePassword?: string) => {
+  // Processa automaticamente fotos recebidas da câmera remota
+  useEffect(() => {
+    if (!incomingRemotePhoto) return;
+    const { file, id, target } = incomingRemotePhoto;
+    if (target) {
+      setScanTarget(target);
+      scanTargetRef.current = target;
+    }
+    handleProcessImage(file, undefined, id, target);
+  }, [incomingRemotePhoto]);
+
+  const handleProcessImage = async (
+    file: File,
+    overridePassword?: string,
+    remoteId?: string,
+    overrideTarget?: 'qr' | 'sheet'
+  ) => {
     lastProcessedFileRef.current = file;
     setIsProcessing(true);
     setErrorMessage(null);
@@ -93,11 +123,14 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
       ? [overridePassword, ...(candidatePasswords || [])]
       : candidatePasswords;
 
+    const effectivePayload = lockedPayloadRef.current || activePayload;
+    const effectiveTarget = overrideTarget || scanTargetRef.current;
+
     const result = await gradePhotoFile(file, {
       teacherPassword,
       candidatePasswords: passwordsToTry,
-      lockedPayload: activePayload,
-      scanTarget,
+      lockedPayload: effectivePayload,
+      scanTarget: effectiveTarget,
       alwaysReadQr: false,
       availableVersions,
     });
@@ -112,26 +145,57 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
       if (result.debugCanvasUrl) {
         setErrorDebugUrl(result.debugCanvasUrl);
       }
+      if (remoteId) {
+        reportRemotePhoto(
+          remoteId,
+          'error',
+          'Erro na leitura',
+          result.error || 'Não foi possível ler a folha'
+        );
+      }
       return;
     }
 
     if (result.status === 'qr_only') {
       if (result.payload) {
+        lockedPayloadRef.current = result.payload;
         onLockPayload?.(result.payload);
         setScanTarget('sheet');
         setSuccessMessage(
           `Versão ${result.payload.version} detectada e travada com sucesso! Agora você pode fotografar ou selecionar a folha de respostas.`
         );
       }
+      if (remoteId) {
+        reportRemotePhoto(
+          remoteId,
+          'ok',
+          `QR Versão ${result.payload?.version || 'identificado'}`,
+          'Agora envie a foto da folha de respostas'
+        );
+      }
       return;
     }
 
     if (result.payload && result.payloadSource === 'qr') {
+      lockedPayloadRef.current = result.payload;
       onLockPayload?.(result.payload);
       setScanTarget('sheet');
       setSuccessMessage(
         `QR Code identificado! Gabarito da Versão ${result.payload.version} carregado com sucesso.`
       );
+    }
+
+    if (remoteId) {
+      if (result.record) {
+        reportRemotePhoto(
+          remoteId,
+          'ok',
+          `Nota: ${result.record.totalScore.toFixed(1)}`,
+          `Versão ${result.record.versionLetter || 'A'}`
+        );
+      } else {
+        reportRemotePhoto(remoteId, 'ok', 'Foto recebida e processada');
+      }
     }
 
     if (isDebugAllowed && isDebugMode && result.record && result.debugInfo && result.debugCanvasUrl) {
@@ -222,7 +286,11 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
                 {onLockPayload && (
                   <button
                     type="button"
-                    onClick={() => onLockPayload(null)}
+                    onClick={() => {
+                      lockedPayloadRef.current = null;
+                      setScanTarget('qr');
+                      onLockPayload(null);
+                    }}
                     className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-slate-600 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 rounded-lg transition border border-slate-200 bg-white"
                   >
                     <RefreshCw className="w-3 h-3" /> Destravar

@@ -51,7 +51,7 @@ const AppContent: React.FC = () => {
 
   const { route, navigate } = useHashRouter();
 
-  // Redireciona se a rota for exam_step mas a prova não existir
+  // Redireciona se a rota for exam_step mas a prova não existir, e garante modo autônomo em /corretor
   useEffect(() => {
     if (isLoadingProfile) return;
 
@@ -62,8 +62,10 @@ const AppContent: React.FC = () => {
       } else if (exists && exam.id !== route.examId) {
         selectActiveExam(route.examId);
       }
+    } else if (route.type === 'scanner' && (exam.id || activeExamId)) {
+      selectActiveExam(null);
     }
-  }, [isLoadingProfile, route, exams, exam.id, selectActiveExam, navigate]);
+  }, [isLoadingProfile, route, exams, exam.id, activeExamId, selectActiveExam, navigate]);
 
   const handleOpenExportImport = async (_mode?: 'export' | 'import') => {
     try {
@@ -149,6 +151,8 @@ const AppContent: React.FC = () => {
         )}
 
         {route.type === 'classes' && <ClassesScreen />}
+
+        {route.type === 'scanner' && <ScannerScreen onNavigate={navigate} />}
 
         {route.type === 'exam_step' && (
           <>

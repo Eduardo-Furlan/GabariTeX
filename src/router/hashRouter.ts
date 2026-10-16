@@ -5,6 +5,7 @@ export type StepId = 'criar' | 'versoes' | 'imprimir' | 'corrigir' | 'notas';
 export type Route =
   | { type: 'exams' }
   | { type: 'classes' }
+  | { type: 'scanner' }
   | { type: 'exam_step'; examId: string; step: StepId };
 
 export const VALID_STEPS: StepId[] = ['criar', 'versoes', 'imprimir', 'corrigir', 'notas'];
@@ -40,6 +41,10 @@ export function parseHash(rawHash: string): Route {
     return { type: 'classes' };
   }
 
+  if (first === 'corretor' || first === 'scanner' || first === 'corrigir') {
+    return { type: 'scanner' };
+  }
+
   if (first === 'prova' && segments.length >= 2) {
     const examId = decodeURIComponent(segments[1]);
     const stepPart = segments[2]?.toLowerCase();
@@ -62,6 +67,9 @@ export function formatHash(route: Route, currentSearch?: string): string {
       break;
     case 'classes':
       path = '/turmas';
+      break;
+    case 'scanner':
+      path = '/corretor';
       break;
     case 'exam_step':
       path = `/prova/${encodeURIComponent(route.examId)}/${route.step}`;
@@ -97,9 +105,8 @@ export function useHashRouter() {
   const navigate = useCallback((target: Route) => {
     if (typeof window === 'undefined') return;
     const newHash = formatHash(target);
-    if (window.location.hash === newHash) {
-      setRoute(target);
-    } else {
+    setRoute(target);
+    if (window.location.hash !== newHash) {
       window.location.hash = newHash;
     }
   }, []);

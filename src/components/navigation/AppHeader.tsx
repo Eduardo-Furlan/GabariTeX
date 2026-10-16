@@ -3,6 +3,7 @@ import {
   FileCheck2,
   BookOpen,
   Users,
+  Camera,
   Menu,
   X,
   CheckCircle2,
@@ -32,6 +33,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
   const isExamsActive = currentRoute.type === 'exams';
   const isClassesActive = currentRoute.type === 'classes';
+  const isScannerActive =
+    currentRoute.type === 'scanner' ||
+    (currentRoute.type === 'exam_step' && currentRoute.step === 'corrigir');
 
   const handleLogoClick = () => {
     if (activeExamId) {
@@ -91,6 +95,19 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             >
               <Users className="w-3.5 h-3.5" />
               <span>Turmas</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onNavigate({ type: 'scanner' })}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition ${
+                isScannerActive
+                  ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent'
+              }`}
+            >
+              <Camera className="w-3.5 h-3.5" />
+              <span>Corretor</span>
             </button>
           </nav>
         </div>
@@ -192,6 +209,22 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             >
               <Users className="w-4 h-4" />
               <span>Turmas & Alunos</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                onNavigate({ type: 'scanner' });
+              }}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-left transition ${
+                isScannerActive
+                  ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-300'
+                  : 'text-slate-700 hover:bg-slate-100'
+              }`}
+            >
+              <Camera className="w-4 h-4" />
+              <span>Corretor Óptico</span>
             </button>
           </div>
 

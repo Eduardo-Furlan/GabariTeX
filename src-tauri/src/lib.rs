@@ -37,6 +37,7 @@ pub fn run() {
             remote_camera::remote_take,
             remote_camera::remote_report,
             remote_camera::remote_list_interfaces,
+            remote_camera::remote_list_pending,
         ])
         .run(tauri::generate_context!())
         .expect("erro ao iniciar o aplicativo Tauri GabariTeX");

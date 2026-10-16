@@ -6,7 +6,6 @@ import {
   Check,
   Plus,
   ArrowRight,
-  FolderOpen,
 } from 'lucide-react';
 import { useProfile } from '../../context/ProfileContext';
 import { Route } from '../../router/hashRouter';
@@ -92,7 +91,7 @@ export const ContextBar: React.FC<ContextBarProps> = ({ currentRoute, onNavigate
                 <FileText className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-300 shrink-0" />
                 <span className="text-slate-500 font-medium shrink-0">Prova:</span>
                 <span className="truncate max-w-[140px] sm:max-w-[220px] font-bold">
-                  {activeExamId ? examTitle : 'Nenhuma prova selecionada'}
+                  {activeExamId ? examTitle : 'Modo Autônomo (Auto QR)'}
                 </span>
               </div>
               <ChevronDown
@@ -123,6 +122,29 @@ export const ContextBar: React.FC<ContextBarProps> = ({ currentRoute, onNavigate
                 </div>
 
                 <div className="max-h-60 overflow-y-auto py-1">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setExamDropdownOpen(false);
+                      onNavigate({ type: 'scanner' });
+                      await selectActiveExam(null);
+                    }}
+                    className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-slate-50 transition border-b border-slate-100 ${
+                      !activeExamId ? 'bg-indigo-50 dark:bg-indigo-500/10 font-bold' : ''
+                    }`}
+                  >
+                    <div className="truncate pr-2">
+                      <span className="text-slate-800 block truncate font-bold">
+                        Modo Autônomo (Sem prova fixa)
+                      </span>
+                      <span className="text-[10px] text-slate-500 block">
+                        Auto-identificação via QR Code de qualquer prova
+                      </span>
+                    </div>
+                    {!activeExamId && (
+                      <Check className="w-4 h-4 text-indigo-600 dark:text-indigo-300 shrink-0" />
+                    )}
+                  </button>
                   {exams.length === 0 ? (
                     <div className="px-3 py-3 text-center text-xs text-slate-500">
                       Nenhuma prova encontrada.
@@ -263,18 +285,6 @@ export const ContextBar: React.FC<ContextBarProps> = ({ currentRoute, onNavigate
             )}
           </div>
         </div>
-
-        {/* Atalho rápido para biblioteca caso não haja prova ativa */}
-        {!activeExamId && (
-          <button
-            type="button"
-            onClick={() => onNavigate({ type: 'exams' })}
-            className="text-xs text-indigo-600 dark:text-indigo-300 hover:underline flex items-center gap-1 font-semibold"
-          >
-            <FolderOpen className="w-3.5 h-3.5" />
-            <span>Abrir Biblioteca de Provas</span>
-          </button>
-        )}
       </div>
     </div>
   );

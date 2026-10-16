@@ -64,6 +64,7 @@ pub struct PhotoItem {
     pub id: String,
     pub bytes: Vec<u8>,
     pub mime: String,
+    pub target: String,
     pub received_at: Instant,
     pub feedback: PhotoFeedback,
 }
@@ -73,6 +74,7 @@ pub struct RemotePhotoEvent {
     pub id: String,
     pub size: usize,
     pub mime: String,
+    pub target: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -256,6 +258,18 @@ async fn handle_upload_photo(
         return Err(StatusCode::TOO_MANY_REQUESTS);
     }
 
+    let target = headers
+        .get("x-gabaritex-target")
+        .and_then(|v| v.to_str().ok())
+        .map(|s| {
+            if s.eq_ignore_ascii_case("sheet") {
+                "sheet".to_string()
+            } else {
+                "qr".to_string()
+            }
+        })
+        .unwrap_or_else(|| "qr".to_string());
+
     let photo_id = format!(
         "p_{}_{:06x}",
         current_epoch_seconds(),
@@ -266,6 +280,7 @@ async fn handle_upload_photo(
         id: photo_id.clone(),
         bytes: body.to_vec(),
         mime: mime.to_string(),
+        target: target.clone(),
         received_at: now,
         feedback: PhotoFeedback {
             status: PhotoProcessingStatus::Received,
@@ -280,14 +295,18 @@ async fn handle_upload_photo(
 
     // Emite evento para a interface do Tauri no desktop
     if let Some(app) = &state.app_handle {
-        let _ = app.emit(
+        match app.emit(
             "remote:photo",
             RemotePhotoEvent {
                 id: photo_id.clone(),
                 size: photo_size,
                 mime: photo_mime,
+                target,
             },
-        );
+        ) {
+            Ok(_) => println!("[RemoteCamera] Evento remote:photo emitido com sucesso: {photo_id}"),
+            Err(e) => eprintln!("[RemoteCamera] Erro ao emitir remote:photo: {e}"),
+        }
     }
 
     let response_body = serde_json::json!({ "id": photo_id });
@@ -497,11 +516,43 @@ pub async fn remote_take(
         return Err("Nenhuma sessão de câmera remota ativa".to_string());
     };
 
-    let mut map = active.photos.write().await;
-    match map.remove(&id) {
-        Some(item) => Ok(tauri::ipc::Response::new(item.bytes)),
-        None => Err("Foto não encontrada ou já processada".to_string()),
+    let map = active.photos.read().await;
+    match map.get(&id) {
+        Some(item) if !item.bytes.is_empty() => Ok(tauri::ipc::Response::new(item.bytes.clone())),
+        _ => Err("Foto não encontrada ou já processada".to_string()),
     }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PendingPhotoInfo {
+    pub id: String,
+    pub mime: String,
+    pub size: usize,
+    pub target: String,
+}
+
+#[tauri::command]
+pub async fn remote_list_pending(
+    state: State<'_, RemoteCameraState>,
+) -> Result<Vec<PendingPhotoInfo>, String> {
+    let guard = state.session.lock().await;
+    let Some(active) = guard.as_ref() else {
+        return Ok(Vec::new());
+    };
+
+    let map = active.photos.read().await;
+    let list = map
+        .values()
+        .filter(|p| !p.bytes.is_empty())
+        .map(|p| PendingPhotoInfo {
+            id: p.id.clone(),
+            mime: p.mime.clone(),
+            size: p.bytes.len(),
+            target: p.target.clone(),
+        })
+        .collect();
+    Ok(list)
 }
 
 #[tauri::command]
@@ -532,15 +583,17 @@ pub async fn remote_report(
             label,
             message,
         };
+        item.bytes = Vec::new();
         Ok(())
     } else {
-        // Se a foto já foi removida da fila de bytes, podemos armazenar um stub de feedback para o celular consultar
+        // Se a foto já foi removida da fila de bytes, armazenamos um stub de feedback para o celular consultar
         map.insert(
             id.clone(),
             PhotoItem {
                 id,
                 bytes: Vec::new(),
                 mime: "image/jpeg".to_string(),
+                target: "qr".to_string(),
                 received_at: Instant::now(),
                 feedback: PhotoFeedback {
                     status: parsed_status,

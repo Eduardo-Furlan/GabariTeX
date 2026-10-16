@@ -18,6 +18,7 @@ export interface RemotePhotoEvent {
   id: string;
   size: number;
   mime: string;
+  target?: 'qr' | 'sheet';
 }
 
 export interface RemoteStoppedEvent {
@@ -31,6 +32,14 @@ export interface PhotoReportPayload {
 }
 
 export function mapPhotoResultToReport(result: PhotoResult): PhotoReportPayload {
+  if (result.status === 'qr_only') {
+    const v = result.payload?.version;
+    return {
+      status: 'ok',
+      label: v ? `QR Versão ${v}` : 'QR Code lido',
+      message: 'Agora envie a foto do gabarito',
+    };
+  }
   const classified = classifyPhotoResult(result);
   if (classified.status === 'ok') {
     const v = result.record?.versionLetter;
@@ -135,8 +144,28 @@ export async function reportRemotePhoto(
   }
 }
 
+export interface PendingPhotoInfo {
+  id: string;
+  mime: string;
+  size: number;
+  target?: 'qr' | 'sheet';
+}
+
+export async function getRemotePendingPhotos(): Promise<PendingPhotoInfo[]> {
+  if (typeof __DESKTOP__ === 'undefined' || !__DESKTOP__) {
+    return [];
+  }
+  try {
+    const { invoke } = await import('@tauri-apps/api/core');
+    return await invoke<PendingPhotoInfo[]>('remote_list_pending');
+  } catch (err) {
+    console.warn('[RemoteCamera] Falha ao listar fotos pendentes:', err);
+    return [];
+  }
+}
+
 export async function listenRemotePhotos(
-  onPhoto: (file: File, id: string) => void
+  onPhoto: (file: File, id: string, target?: 'qr' | 'sheet') => void
 ): Promise<() => void> {
   if (typeof __DESKTOP__ === 'undefined' || !__DESKTOP__) {
     return () => {};
@@ -144,7 +173,7 @@ export async function listenRemotePhotos(
   try {
     const { listen } = await import('@tauri-apps/api/event');
     const unlisten = await listen<RemotePhotoEvent>('remote:photo', async (event) => {
-      const { id, mime } = event.payload;
+      const { id, mime, target } = event.payload;
       const bytes = await takeRemotePhoto(id);
       if (!bytes || bytes.length === 0) return;
 
@@ -155,7 +184,7 @@ export async function listenRemotePhotos(
         { type: mime || 'image/jpeg', lastModified: Date.now() }
       );
 
-      onPhoto(file, id);
+      onPhoto(file, id, target === 'sheet' ? 'sheet' : 'qr');
     });
     return unlisten;
   } catch (err) {

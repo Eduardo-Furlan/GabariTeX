@@ -302,12 +302,18 @@ export async function gradePhotoFile(
     };
   }
 
-  if (scanTarget === 'qr' && (!opts.teacherPassword || !opts.teacherPassword.trim())) {
+  const candidatePasswords = resolveCandidatePasswords(opts);
+  if (
+    scanTarget === 'qr' &&
+    candidatePasswords.length === 0 &&
+    (!opts.teacherPassword || !opts.teacherPassword.trim())
+  ) {
     return {
       status: 'error',
       payloadSource: 'none',
       error:
         'Por favor, informe a senha da prova para desbloquear e ler o QR Code.',
+      needsManualPassword: true,
     };
   }
 
@@ -395,22 +401,23 @@ export async function gradePhotoFile(
         return buildRecordFromNativeResponse(nativeRes, targetPayload, 'locked', false);
       }
 
-      // MODO 3: AUTOMÁTICO / COMBINADO (usado em correções em lote)
+      // MODO 3: AUTOMÁTICO / COMBINADO
+      const targetPayload = opts.lockedPayload;
       const initialTotalQuestions =
-        opts.lockedPayload?.totalQuestions ??
-        (opts.lockedPayload?.key
-          ? Math.max(...Object.keys(opts.lockedPayload.key).map(Number), 0)
+        targetPayload?.totalQuestions ??
+        (targetPayload?.key
+          ? Math.max(...Object.keys(targetPayload.key).map(Number), 0)
           : opts.availableVersions?.[0]?.questions.length || 20);
 
       const initialSubjectiveQuestions =
-        opts.lockedPayload?.subjectiveQuestions ??
+        targetPayload?.subjectiveQuestions ??
         (opts.availableVersions?.[0]
           ? opts.availableVersions[0].questions
               .map((q, idx) => (q.type === 'subjective' ? idx + 1 : -1))
               .filter((idx) => idx !== -1)
           : []);
 
-      const shouldReadQr = opts.alwaysReadQr || !opts.lockedPayload;
+      const shouldReadQr = opts.alwaysReadQr || !targetPayload;
 
       let nativeRes = await processExamPhotoNative(imageBytes, {
         totalQuestions: initialTotalQuestions,
@@ -420,8 +427,8 @@ export async function gradePhotoFile(
         generateDebugImage: true,
       });
 
-      let targetPayload = opts.lockedPayload;
-      let payloadSource: 'qr' | 'locked' | 'none' = opts.lockedPayload ? 'locked' : 'none';
+      let resolvedPayload = targetPayload;
+      let payloadSource: 'qr' | 'locked' | 'none' = targetPayload ? 'locked' : 'none';
       let versionMismatch = false;
 
       if (nativeRes.qrRawText) {
@@ -432,15 +439,23 @@ export async function gradePhotoFile(
             const qrPayload = decRes.payload;
             enrichSubjectivePoints(qrPayload, opts.availableVersions);
 
-            if (opts.lockedPayload) {
+            if (targetPayload) {
               if (
-                qrPayload.version !== opts.lockedPayload.version ||
-                (qrPayload.examId && opts.lockedPayload.examId && qrPayload.examId !== opts.lockedPayload.examId)
+                targetPayload.examId &&
+                qrPayload.examId === targetPayload.examId &&
+                qrPayload.version !== targetPayload.version
+              ) {
+                versionMismatch = true;
+              } else if (
+                !opts.alwaysReadQr &&
+                qrPayload.examId &&
+                targetPayload.examId &&
+                qrPayload.examId !== targetPayload.examId
               ) {
                 versionMismatch = true;
               }
             }
-            targetPayload = qrPayload;
+            resolvedPayload = qrPayload;
             payloadSource = 'qr';
           } catch {
             return {
@@ -462,10 +477,10 @@ export async function gradePhotoFile(
       }
 
       if (nativeRes.omrError) {
-        if (payloadSource === 'qr' && targetPayload) {
+        if (payloadSource === 'qr' && resolvedPayload) {
           return {
             status: 'qr_only',
-            payload: targetPayload,
+            payload: resolvedPayload,
             payloadSource,
             versionMismatch,
             debugCanvasUrl: nativeRes.debugImageDataUrl,
@@ -480,20 +495,20 @@ export async function gradePhotoFile(
         };
       }
 
-      if (!targetPayload) {
+      if (!resolvedPayload) {
         return {
           status: 'error',
           payloadSource: 'none',
           error:
-            'Não foi possível identificar o QR Code na folha e nenhuma versão está selecionada no corretor. Enquadre a folha completa ou selecione uma versão manualmente.',
+            'Não foi possível identificar o QR Code na folha e nenhuma versão de prova está travada. Enquadre o QR Code ou selecione a versão manualmente.',
           debugCanvasUrl: nativeRes.debugImageDataUrl,
         };
       }
 
       const finalTotalQuestions =
-        targetPayload.totalQuestions ??
-        Math.max(...Object.keys(targetPayload.key).map(Number), 0);
-      const finalSubjectiveQuestions = targetPayload.subjectiveQuestions ?? [];
+        resolvedPayload.totalQuestions ??
+        Math.max(...Object.keys(resolvedPayload.key).map(Number), 0);
+      const finalSubjectiveQuestions = resolvedPayload.subjectiveQuestions ?? [];
 
       if (
         finalTotalQuestions !== initialTotalQuestions ||
@@ -508,7 +523,7 @@ export async function gradePhotoFile(
         });
       }
 
-      return buildRecordFromNativeResponse(nativeRes, targetPayload, payloadSource, versionMismatch);
+      return buildRecordFromNativeResponse(nativeRes, resolvedPayload, payloadSource, versionMismatch);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Falha ao processar arquivo no motor nativo OpenCV.';
       return {
@@ -638,8 +653,16 @@ export async function gradePhotoFile(
 
             if (opts.lockedPayload) {
               if (
-                qrPayload.version !== opts.lockedPayload.version ||
-                (qrPayload.examId && opts.lockedPayload.examId && qrPayload.examId !== opts.lockedPayload.examId)
+                opts.lockedPayload.examId &&
+                qrPayload.examId === opts.lockedPayload.examId &&
+                qrPayload.version !== opts.lockedPayload.version
+              ) {
+                versionMismatch = true;
+              } else if (
+                !opts.alwaysReadQr &&
+                qrPayload.examId &&
+                opts.lockedPayload.examId &&
+                qrPayload.examId !== opts.lockedPayload.examId
               ) {
                 versionMismatch = true;
               }

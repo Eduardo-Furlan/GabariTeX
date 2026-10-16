@@ -68,6 +68,10 @@ export const StepTabs: React.FC<StepTabsProps> = ({ currentRoute, onNavigate }) 
   ];
 
   const handleStepClick = (stepId: StepId) => {
+    if (stepId === 'corrigir' && !activeExamId) {
+      onNavigate({ type: 'scanner' });
+      return;
+    }
     if (!activeExamId) return;
     onNavigate({
       type: 'exam_step',
@@ -85,7 +89,7 @@ export const StepTabs: React.FC<StepTabsProps> = ({ currentRoute, onNavigate }) 
         >
           {steps.map((s) => {
             const isActive = isExamRoute && activeStep === s.id;
-            const isDisabled = !activeExamId;
+            const isDisabled = !activeExamId && s.id !== 'corrigir';
 
             return (
               <button

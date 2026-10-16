@@ -77,7 +77,12 @@ export interface ProfileContextType {
   setExamSwitchPrompt: (p: ExamSwitchPromptState | null) => void;
 
   // Ações de Prova
-  selectActiveExam: (id: string) => Promise<void>;
+  selectActiveExam: (id: string | null) => Promise<void>;
+  ensureExamExists: (
+    examId: string,
+    versionLetter?: string,
+    payload?: DecryptedQrPayload
+  ) => Promise<ExamMeta>;
   createExam: (title?: string) => Promise<Exam>;
   duplicateExam: (id: string) => Promise<Exam | undefined>;
   renameExam: (id: string, newTitle: string) => Promise<void>;
@@ -393,9 +398,126 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, [exam.id]);
 
+  const ensureExamExists = useCallback(
+    async (
+      examId: string,
+      _versionLetter?: string,
+      payload?: DecryptedQrPayload
+    ): Promise<ExamMeta> => {
+      const existing = exams.find((e) => e.id === examId);
+      if (existing) return existing;
+
+      const inStore = await store.getExam(examId);
+      if (inStore) {
+        const meta: ExamMeta = {
+          id: inStore.id,
+          name: inStore.header?.examTitle || 'Sem título',
+          updatedAt: inStore.updatedAt || new Date().toISOString(),
+          questionCount: inStore.questions?.length ?? 0,
+          recordCount: records.filter((r) => r.examId === examId).length,
+        };
+        setExams((prev) => (prev.some((e) => e.id === examId) ? prev : [meta, ...prev]));
+        if (inStore.password) {
+          setAllExamPasswords((prev) => ({ ...prev, [examId]: inStore.password! }));
+        }
+        return meta;
+      }
+
+      const questionCount =
+        payload?.totalQuestions ??
+        (payload?.key ? Math.max(...Object.keys(payload.key).map(Number), 0) : 20);
+
+      const questions = [];
+      for (let i = 1; i <= questionCount; i++) {
+        const correctOpt = payload?.key?.[i] || 'A';
+        const isSubj = payload?.subjectiveQuestions?.includes(i);
+        const pts =
+          (payload?.subjectivePoints && payload.subjectivePoints[i]) ||
+          (typeof payload?.points === 'number' ? payload.points : 1);
+
+        questions.push({
+          id: `q-rec-${i}`,
+          type: isSubj ? ('subjective' as const) : ('objective' as const),
+          prompt: `Questão ${i}`,
+          points: pts,
+          options: [
+            { id: `opt-A-${i}`, label: 'A' as const, text: '', isCorrect: correctOpt === 'A' },
+            { id: `opt-B-${i}`, label: 'B' as const, text: '', isCorrect: correctOpt === 'B' },
+            { id: `opt-C-${i}`, label: 'C' as const, text: '', isCorrect: correctOpt === 'C' },
+            { id: `opt-D-${i}`, label: 'D' as const, text: '', isCorrect: correctOpt === 'D' },
+            { id: `opt-E-${i}`, label: 'E' as const, text: '', isCorrect: correctOpt === 'E' },
+          ],
+        });
+      }
+
+      const shortId = examId.length > 8 ? examId.slice(0, 8) : examId;
+      const recoveredTitle = `Prova Recuperada (${shortId})`;
+
+      const pass = teacherPassword || generateExamPassword(8);
+      const recoveredExam: Exam = {
+        id: examId,
+        header: {
+          institution: '',
+          course: '',
+          professor: '',
+          examTitle: recoveredTitle,
+          date: new Date().toLocaleDateString('pt-BR'),
+          instructions:
+            'Prova identificada e recuperada automaticamente via leitura de QR Code no Corretor Óptico.',
+        },
+        password: pass,
+        versionCount: 1,
+        shuffleQuestions: false,
+        shuffleOptions: false,
+        twoColumns: true,
+        updatedAt: new Date().toISOString(),
+        questions,
+      };
+
+      await store.putExam(recoveredExam);
+
+      const meta: ExamMeta = {
+        id: examId,
+        name: recoveredTitle,
+        updatedAt: recoveredExam.updatedAt!,
+        questionCount: recoveredExam.questions.length,
+        recordCount: 1,
+      };
+
+      setExams((prev) => [meta, ...prev.filter((e) => e.id !== examId)]);
+      setAllExamPasswords((prev) => ({ ...prev, [examId]: pass }));
+
+      return meta;
+    },
+    [exams, store, records, teacherPassword]
+  );
+
   const selectActiveExam = useCallback(
-    async (id: string) => {
-      const target = await store.getExam(id);
+    async (id: string | null) => {
+      if (!id) {
+        const autonomousExam: Exam = {
+          ...emptyExam,
+          id: '',
+          header: {
+            ...emptyExam.header,
+            examTitle: 'Modo Autônomo',
+          },
+        };
+        setExam(autonomousExam);
+        setVersions([]);
+        setActivePayload(null);
+        const newSettings = { ...profileSettings, activeExamId: undefined };
+        setProfileSettings(newSettings);
+        await store.putSettings(newSettings);
+        return;
+      }
+
+      let target = await store.getExam(id);
+      if (!target) {
+        await ensureExamExists(id);
+        target = await store.getExam(id);
+      }
+
       if (target) {
         let pass = target.password;
         if (!pass) {
@@ -412,7 +534,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
         await store.putSettings(newSettings);
       }
     },
-    [store, profileSettings]
+    [store, profileSettings, ensureExamExists]
   );
 
   const createExam = useCallback(
@@ -698,15 +820,20 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, []);
 
   const handleGradeSaved = useCallback(
-    (
+    async (
       newRecord: GradingRecord,
       options?: { newStudentToClass?: { classId: string; name: string; registration?: string } }
     ) => {
+      const recordExamId = newRecord.examId || activePayload?.examId || exam.id;
       const recordToStore: GradingRecord = {
         ...newRecord,
-        examId: newRecord.examId || exam.id,
+        examId: recordExamId,
         timestamp: Date.now(),
       };
+
+      if (recordExamId && !exams.some((e) => e.id === recordExamId)) {
+        await ensureExamExists(recordExamId, recordToStore.versionLetter, activePayload || undefined);
+      }
 
       setRecords((prev) => [recordToStore, ...prev.filter((r) => r.id !== recordToStore.id)]);
 
@@ -723,18 +850,30 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
         });
       }
     },
-    [exam.id, handleAddStudentToClass]
+    [exam.id, activePayload, exams, ensureExamExists, handleAddStudentToClass]
   );
 
   const handleBatchSaveRecords = useCallback(
-    (newRecords: GradingRecord[]) => {
+    async (newRecords: GradingRecord[]) => {
       if (newRecords.length === 0) return;
 
       const stamped = newRecords.map((r) => ({
         ...r,
-        examId: r.examId || exam.id,
+        examId: r.examId || activePayload?.examId || exam.id,
         timestamp: r.timestamp || Date.now(),
       }));
+
+      const unknownExamIds = Array.from(
+        new Set(
+          stamped
+            .map((r) => r.examId)
+            .filter((eId): eId is string => Boolean(eId) && !exams.some((e) => e.id === eId))
+        )
+      );
+
+      for (const uId of unknownExamIds) {
+        await ensureExamExists(uId);
+      }
 
       const newIds = new Set(stamped.map((r) => r.id));
 
@@ -745,8 +884,8 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       const countByExam: Record<string, number> = {};
       stamped.forEach((r) => {
-        const eId = r.examId || exam.id;
-        countByExam[eId] = (countByExam[eId] || 0) + 1;
+        const eId = r.examId;
+        if (eId) countByExam[eId] = (countByExam[eId] || 0) + 1;
       });
 
       setExams((prev) =>
@@ -756,47 +895,30 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
         })
       );
     },
-    [exam.id]
+    [exam.id, activePayload, exams, ensureExamExists]
   );
 
   const handleLockPayload = useCallback(
-    (payload: DecryptedQrPayload | null) => {
-      if (payload?.examId && payload.examId !== exam.id) {
-        const matchingExam = exams.find((e) => e.id === payload.examId);
-        if (matchingExam) {
-          setExamSwitchPrompt({
-            targetExamId: matchingExam.id,
-            targetExamName: matchingExam.name,
-            pendingPayload: payload,
-          });
-          return;
+    async (payload: DecryptedQrPayload | null) => {
+      setActivePayload(payload);
+      if (payload?.examId) {
+        if (!exams.some((e) => e.id === payload.examId)) {
+          await ensureExamExists(payload.examId, payload.version, payload);
         }
       }
-      setActivePayload(payload);
     },
-    [exam.id, exams]
+    [exams, ensureExamExists]
   );
 
   const handlePhotoGraded = useCallback(
     (record: GradingRecord, evidence?: GradingEvidence) => {
-      const recordExamId = record.examId || activePayload?.examId;
-      if (recordExamId && recordExamId !== exam.id) {
-        const matchingExam = exams.find((e) => e.id === recordExamId);
-        if (matchingExam) {
-          setExamSwitchPrompt({
-            targetExamId: matchingExam.id,
-            targetExamName: matchingExam.name,
-            pendingRecord: { ...record, examId: recordExamId },
-          });
-          return;
-        }
-      }
+      const recordExamId = record.examId || activePayload?.examId || exam.id;
       setGradingSession({
-        record: { ...record, examId: recordExamId || exam.id },
+        record: { ...record, examId: recordExamId },
         evidence,
       });
     },
-    [exam.id, activePayload, exams]
+    [exam.id, activePayload]
   );
 
   const handleSelectExamVersion = useCallback(
@@ -826,7 +948,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
     isLoadingProfile,
     exams,
     exam,
-    activeExamId: exam.id,
+    activeExamId: exam.id && exams.some((e) => e.id === exam.id) ? exam.id : '',
     versions,
     selectedVersionLetter,
     setSelectedVersionLetter,
@@ -865,6 +987,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setExamSwitchPrompt,
 
     selectActiveExam,
+    ensureExamExists,
     createExam,
     duplicateExam,
     renameExam,

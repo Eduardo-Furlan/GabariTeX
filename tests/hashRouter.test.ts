@@ -13,6 +13,13 @@ describe('hashRouter (Plano 10 §2.7 & §5)', () => {
     expect(parseHash('#turmas')).toEqual({ type: 'classes' });
   });
 
+  it('converte #/corretor e #/scanner para rota autônoma do corretor', () => {
+    expect(parseHash('#/corretor')).toEqual({ type: 'scanner' });
+    expect(parseHash('#corretor')).toEqual({ type: 'scanner' });
+    expect(parseHash('#/scanner')).toEqual({ type: 'scanner' });
+    expect(parseHash('#/corrigir')).toEqual({ type: 'scanner' });
+  });
+
   it('converte rotas de etapas da prova ativa', () => {
     expect(parseHash('#/prova/mat-2026/criar')).toEqual({
       type: 'exam_step',
@@ -86,6 +93,7 @@ describe('hashRouter (Plano 10 §2.7 & §5)', () => {
     const routes: Route[] = [
       { type: 'exams' },
       { type: 'classes' },
+      { type: 'scanner' },
       { type: 'exam_step', examId: 'fisica-1', step: 'criar' },
       { type: 'exam_step', examId: 'fisica-1', step: 'versoes' },
       { type: 'exam_step', examId: 'fisica-1', step: 'imprimir' },

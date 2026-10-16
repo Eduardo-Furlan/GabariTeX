@@ -38,6 +38,18 @@ export const MobileTabBar: React.FC<MobileTabBarProps> = ({ currentRoute, onNavi
   ];
 
   const handleStepClick = (stepId: StepId) => {
+    if (stepId === 'corrigir') {
+      if (activeExamId) {
+        onNavigate({
+          type: 'exam_step',
+          examId: activeExamId,
+          step: 'corrigir',
+        });
+      } else {
+        onNavigate({ type: 'scanner' });
+      }
+      return;
+    }
     if (!activeExamId) {
       onNavigate({ type: 'exams' });
       return;
@@ -56,7 +68,9 @@ export const MobileTabBar: React.FC<MobileTabBarProps> = ({ currentRoute, onNavi
     >
       <div className="grid grid-cols-5 h-13 items-center">
         {steps.map((s) => {
-          const isActive = isExamRoute && activeStep === s.id;
+          const isActive =
+            (isExamRoute && activeStep === s.id) ||
+            (currentRoute.type === 'scanner' && s.id === 'corrigir');
           const Icon = s.icon;
 
           return (

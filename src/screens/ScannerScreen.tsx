@@ -29,6 +29,8 @@ import {
   getNetworkInterfaces,
   listenRemotePhotos,
   listenRemoteStopped,
+  takeRemotePhoto,
+  getRemotePendingPhotos,
 } from '../platform/remoteCamera';
 import { Route } from '../router/hashRouter';
 
@@ -57,6 +59,7 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
     setActiveClassId,
     records,
     handleAddStudentToClass,
+    selectActiveExam,
   } = useProfile();
 
   const [showTeacherPassword, setShowTeacherPassword] = useState<boolean>(false);
@@ -67,6 +70,34 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
   const [isStartingRemote, setIsStartingRemote] = useState<boolean>(false);
   const [remoteReceivedCount, setRemoteReceivedCount] = useState<number>(0);
   const [availableInterfaces, setAvailableInterfaces] = useState<NetworkInterfaceInfo[]>([]);
+  const [incomingRemotePhoto, setIncomingRemotePhoto] = useState<{
+    file: File;
+    id: string;
+    target?: 'qr' | 'sheet';
+    timestamp: number;
+  } | null>(null);
+  const processedRemoteIdsRef = React.useRef<Set<string>>(new Set());
+
+  const handleProcessRemotePhoto = React.useCallback(
+    async (id: string, mime: string, target?: 'qr' | 'sheet') => {
+      if (processedRemoteIdsRef.current.has(id)) return;
+      processedRemoteIdsRef.current.add(id);
+
+      const bytes = await takeRemotePhoto(id);
+      if (!bytes || bytes.length === 0) return;
+
+      const ext = mime.includes('png') ? 'png' : mime.includes('webp') ? 'webp' : 'jpg';
+      const file = new File(
+        [bytes as BlobPart],
+        `celular-${new Date().toISOString().replace(/[:.]/g, '-')}.${ext}`,
+        { type: mime || 'image/jpeg', lastModified: Date.now() }
+      );
+
+      setRemoteReceivedCount((c) => c + 1);
+      setIncomingRemotePhoto({ file, id, target, timestamp: Date.now() });
+    },
+    []
+  );
 
   React.useEffect(() => {
     if (typeof __DESKTOP__ === 'undefined' || !__DESKTOP__) return;
@@ -85,17 +116,39 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
     });
 
     let unlistenPhotos: (() => void) | undefined;
-    listenRemotePhotos(() => {
+    listenRemotePhotos((file, id, target) => {
+      if (processedRemoteIdsRef.current.has(id)) return;
+      processedRemoteIdsRef.current.add(id);
       setRemoteReceivedCount((c) => c + 1);
+      setIncomingRemotePhoto({ file, id, target, timestamp: Date.now() });
     }).then((un) => {
       unlistenPhotos = un;
     });
 
+    // Polling de redundância para garantir recebimento mesmo se o evento do Tauri for suprimido
+    const pollInterval = setInterval(async () => {
+      try {
+        const pending = await getRemotePendingPhotos();
+        for (const p of pending) {
+          if (!processedRemoteIdsRef.current.has(p.id)) {
+            await handleProcessRemotePhoto(
+              p.id,
+              p.mime,
+              p.target === 'sheet' ? 'sheet' : 'qr'
+            );
+          }
+        }
+      } catch {
+        // Ignora erros transitórios
+      }
+    }, 1500);
+
     return () => {
       if (unlistenStopped) unlistenStopped();
       if (unlistenPhotos) unlistenPhotos();
+      clearInterval(pollInterval);
     };
-  }, []);
+  }, [handleProcessRemotePhoto]);
 
   const handleStartRemote = async (ip?: string) => {
     setIsStartingRemote(true);
@@ -123,7 +176,6 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
   };
 
   const handleOpenRemoteCamera = () => {
-    setScannerMode('batch');
     setRemotePanelOpen(true);
     if (!remoteSession) {
       handleStartRemote();
@@ -134,6 +186,7 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
     ? classes.find((c) => c.id === activeClassId)?.name || 'Sem turma fixa'
     : 'Sem turma fixa';
 
+  const isAutonomous = !activeExamId || !exam.id;
   const examTitle = exam.header?.examTitle || 'Sem título';
 
   return (
@@ -160,7 +213,7 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
                   <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5 flex-wrap">
                     <span>Corrigindo:</span>
                     <span className="font-extrabold text-indigo-700 dark:text-indigo-300 flex items-center gap-1">
-                      <FileText className="w-3.5 h-3.5" /> {examTitle}
+                      <FileText className="w-3.5 h-3.5" /> {isAutonomous ? 'Modo Autônomo (Auto QR)' : examTitle}
                     </span>
                     <span>·</span>
                     <span className="text-slate-700 flex items-center gap-1">
@@ -168,7 +221,9 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
                     </span>
                   </div>
                   <span className="text-[11px] text-slate-500 block">
-                    As leituras registradas serão computadas para esta avaliação.
+                    {isAutonomous
+                      ? 'Identificação automática de prova, versão e gabarito via QR Code em cada folha.'
+                      : 'As leituras registradas serão computadas para esta avaliação.'}
                   </span>
                 </div>
               </div>
@@ -194,13 +249,33 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
                     'Câmera do Celular'
                   )}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => onNavigate({ type: 'exams' })}
-                  className="px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:underline bg-white rounded-lg border border-indigo-200 dark:border-indigo-500/30"
-                >
-                  Trocar Prova
-                </button>
+                {isAutonomous ? (
+                  <button
+                    type="button"
+                    onClick={() => onNavigate({ type: 'exams' })}
+                    className="px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:underline bg-white rounded-lg border border-indigo-200 dark:border-indigo-500/30"
+                  >
+                    Vincular a uma Prova
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => selectActiveExam(null)}
+                      className="px-2.5 py-1 text-xs font-semibold text-slate-600 hover:text-slate-800 hover:underline bg-white rounded-lg border border-slate-200"
+                      title="Ativar modo autônomo sem prova fixa"
+                    >
+                      Modo Autônomo
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onNavigate({ type: 'exams' })}
+                      className="px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:underline bg-white rounded-lg border border-indigo-200 dark:border-indigo-500/30"
+                    >
+                      Trocar Prova
+                    </button>
+                  </>
+                )}
                 <button
                   type="button"
                   onClick={() => onNavigate({ type: 'classes' })}
@@ -270,12 +345,12 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
                   <KeyRound className="w-4 h-4 text-amber-700 dark:text-amber-300 shrink-0" />
                   <div>
                     <label className="block text-[10px] font-bold text-amber-900 dark:text-amber-200 uppercase">
-                      Senha Mestra desta Prova:
+                      {isAutonomous ? 'Senha para Leitura dos QR Codes:' : 'Senha Mestra desta Prova:'}
                     </label>
                     <div className="relative flex items-center mt-0.5">
                       <input
                         type={showTeacherPassword ? 'text' : 'password'}
-                        placeholder="Senha da prova"
+                        placeholder={isAutonomous ? 'Senha da prova ou perfil' : 'Senha da prova'}
                         value={teacherPassword}
                         onChange={(e) => updateTeacherPassword(e.target.value)}
                         className="px-2.5 pr-8 py-1 text-xs border border-amber-300 dark:border-amber-500/40 rounded font-mono font-bold bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-amber-500 w-full sm:w-44"
@@ -301,10 +376,17 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
                   {activePayload ? (
                     <span className="px-2.5 py-1 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 font-extrabold text-xs rounded-lg flex items-center gap-1.5 border border-emerald-300 dark:border-emerald-500/30">
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-300" /> VERSÃO {activePayload.version}
+                      {activePayload.examId && (
+                        <span className="text-[10px] font-mono opacity-80">
+                          ({activePayload.examId.slice(0, 8)})
+                        </span>
+                      )}
                     </span>
                   ) : (
                     <span className="px-2.5 py-1 bg-slate-100 text-slate-600 font-medium text-xs rounded-lg">
-                      Nenhuma (Selecione abaixo ou tire foto com QR Code)
+                      {isAutonomous
+                        ? 'Auto-identificação (lendo QR Code de cada folha)'
+                        : 'Nenhuma (Selecione abaixo ou tire foto com QR Code)'}
                     </span>
                   )}
                 </div>
@@ -436,6 +518,7 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
                   onSelectExamVersion={handleSelectExamVersion}
                   onOpenRemoteCamera={handleOpenRemoteCamera}
                   isRemoteConnected={Boolean(remoteSession)}
+                  incomingRemotePhoto={incomingRemotePhoto}
                 />
               ) : (
                 <BatchGrader
@@ -452,6 +535,8 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
                   onOpenClassManager={() => onNavigate({ type: 'classes' })}
                   onAddStudentToClass={handleAddStudentToClass}
                   onOpenRemoteCamera={handleOpenRemoteCamera}
+                  incomingRemotePhoto={incomingRemotePhoto}
+                  remoteReceivedCount={remoteReceivedCount}
                 />
               )}
             </div>

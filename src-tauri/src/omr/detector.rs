@@ -44,9 +44,43 @@ pub fn canonical_fiducials() -> DetectedFiducials {
 
 /// Topological search for the 4 concentric square fiducials using RETR_TREE hierarchy.
 pub fn find_fiducials(gray: &Mat) -> Result<DetectedFiducials, String> {
+    let orig_w = gray.cols();
+    let orig_h = gray.rows();
+    if orig_w < 100 || orig_h < 100 {
+        return Err("Dimensões da imagem insuficientes".to_string());
+    }
+
+    // Normaliza escala se a imagem for muito alta resolução (ex: câmera de celular 3000px+),
+    // pois blockSize=31 em 4000px fica menor que a espessura da barra do fiducial.
+    let max_dim = orig_w.max(orig_h) as f64;
+    let target_max = 1600.0;
+    let scale = if max_dim > target_max {
+        target_max / max_dim
+    } else {
+        1.0
+    };
+
+    let work_gray = if scale < 1.0 {
+        let mut resized = Mat::default();
+        let new_w = ((orig_w as f64 * scale).round() as i32).max(100);
+        let new_h = ((orig_h as f64 * scale).round() as i32).max(100);
+        imgproc::resize(
+            gray,
+            &mut resized,
+            Size::new(new_w, new_h),
+            0.0,
+            0.0,
+            imgproc::INTER_AREA,
+        )
+        .map_err(|e| e.to_string())?;
+        resized
+    } else {
+        gray.clone()
+    };
+
     let mut bin = Mat::default();
     imgproc::adaptive_threshold(
-        gray,
+        &work_gray,
         &mut bin,
         255.0,
         imgproc::ADAPTIVE_THRESH_GAUSSIAN_C,
@@ -74,8 +108,9 @@ pub fn find_fiducials(gray: &Mat) -> Result<DetectedFiducials, String> {
         return Err("Menos de 4 contornos na imagem".to_string());
     }
 
-    let img_area = (gray.cols() * gray.rows()) as f64;
-    let mut raw_candidates: Vec<(f64, f64, f64)> = Vec::new(); // (cx, cy, area)
+    let img_area = (work_gray.cols() * work_gray.rows()) as f64;
+    // (cx, cy, area, has_grandchild)
+    let mut raw_candidates: Vec<(f64, f64, f64, bool)> = Vec::new();
 
     for i in 0..count {
         // Hierarchy element: [Next, Previous, First_Child, Parent]
@@ -84,7 +119,7 @@ pub fn find_fiducials(gray: &Mat) -> Result<DetectedFiducials, String> {
         };
         let first_child = node[2];
         if first_child < 0 {
-            continue; // Must have an inner child (the white center square)
+            continue; // Must have an inner child (the white center ring)
         }
 
         let parent_cnt = contours.get(i).unwrap();
@@ -102,7 +137,7 @@ pub fn find_fiducials(gray: &Mat) -> Result<DetectedFiducials, String> {
 
         let rect = geometry::bounding_rect(&approx).unwrap_or(Rect::default());
         let aspect = rect.width as f64 / rect.height.max(1) as f64;
-        if aspect < 0.65 || aspect > 1.55 {
+        if !(0.65..=1.55).contains(&aspect) {
             continue;
         }
 
@@ -116,15 +151,16 @@ pub fn find_fiducials(gray: &Mat) -> Result<DetectedFiducials, String> {
         let cy = p_m.m01 / p_m.m00;
         let max_side = rect.width.max(rect.height) as f64;
 
-        // Check direct children for a concentric white hole
+        // Check direct children for a concentric white hole (and nested black center dot)
         let mut has_concentric_hole = false;
+        let mut has_nested_center = false;
         let mut child_idx = first_child;
         let mut safety = 0;
         while child_idx >= 0 && (child_idx as usize) < count && safety < 32 {
             safety += 1;
             let child_cnt = contours.get(child_idx as usize).unwrap();
             let c_area = geometry::contour_area(&child_cnt, false).unwrap_or(0.0);
-            if c_area >= p_area * 0.03 && c_area <= p_area * 0.50 {
+            if c_area >= p_area * 0.03 && c_area <= p_area * 0.65 {
                 if let Ok(c_m) = geometry::moments(&child_cnt, false) {
                     if c_m.m00 > 0.0 {
                         let ccx = c_m.m10 / c_m.m00;
@@ -132,7 +168,13 @@ pub fn find_fiducials(gray: &Mat) -> Result<DetectedFiducials, String> {
                         let dist = ((cx - ccx).powi(2) + (cy - ccy).powi(2)).sqrt();
                         if dist <= max_side * 0.25 {
                             has_concentric_hole = true;
-                            break;
+                            if let Ok(c_node) = hierarchy.at_2d::<opencv::core::Vec4i>(0, child_idx) {
+                                let grand_idx = c_node[2];
+                                if grand_idx >= 0 && (grand_idx as usize) < count {
+                                    has_nested_center = true;
+                                    break;
+                                }
+                            }
                         }
                     }
                 }
@@ -145,70 +187,144 @@ pub fn find_fiducials(gray: &Mat) -> Result<DetectedFiducials, String> {
         }
 
         if has_concentric_hole {
-            raw_candidates.push((cx, cy, p_area));
+            raw_candidates.push((cx / scale, cy / scale, p_area / (scale * scale), has_nested_center));
         }
     }
+
+    // Prioriza candidatos que possuem os 3 níveis concêntricos (quadrado preto -> anel branco -> miolo preto)
+    // caso existam pelo menos 4 deles; caso contrário usa todos os candidatos com buraco concêntrico.
+    let nested_count = raw_candidates.iter().filter(|c| c.3).count();
+    let mut filtered_candidates: Vec<(f64, f64, f64)> = if nested_count >= 4 {
+        raw_candidates
+            .into_iter()
+            .filter(|c| c.3)
+            .map(|(x, y, a, _)| (x, y, a))
+            .collect()
+    } else {
+        raw_candidates
+            .into_iter()
+            .map(|(x, y, a, _)| (x, y, a))
+            .collect()
+    };
 
     // Deduplicate candidates that are very close to each other
-    raw_candidates.sort_by(|a, b| b.2.partial_cmp(&a.2).unwrap());
-    let mut candidate_centers: Vec<(f64, f64)> = Vec::new();
-    for (cx, cy, _) in raw_candidates {
-        let duplicate = candidate_centers
+    filtered_candidates.sort_by(|a, b| b.2.partial_cmp(&a.2).unwrap());
+    let mut unique_candidates: Vec<(f64, f64, f64)> = Vec::new();
+    let min_dedup_dist = 16.0 / scale;
+    for (cx, cy, area) in filtered_candidates {
+        let duplicate = unique_candidates
             .iter()
-            .any(|&(ex, ey)| ((cx - ex).powi(2) + (cy - ey).powi(2)).sqrt() < 16.0);
+            .any(|&(ex, ey, _)| ((cx - ex).powi(2) + (cy - ey).powi(2)).sqrt() < min_dedup_dist);
         if !duplicate {
-            candidate_centers.push((cx, cy));
+            unique_candidates.push((cx, cy, area));
         }
     }
 
-    if candidate_centers.len() < 4 {
+    if unique_candidates.len() < 4 {
         return Err(format!(
             "Apenas {} candidatos a fiduciais encontrados (esperado: 4)",
-            candidate_centers.len()
+            unique_candidates.len()
         ));
     }
 
-    // Pick corners using extremum of (x + y) and (x - y)
-    let tl = *candidate_centers
-        .iter()
-        .min_by(|a, b| (a.0 + a.1).partial_cmp(&(b.0 + b.1)).unwrap())
-        .unwrap();
-    let br = *candidate_centers
-        .iter()
-        .max_by(|a, b| (a.0 + a.1).partial_cmp(&(b.0 + b.1)).unwrap())
-        .unwrap();
-    let tr = *candidate_centers
-        .iter()
-        .max_by(|a, b| (a.0 - a.1).partial_cmp(&(b.0 - b.1)).unwrap())
-        .unwrap();
-    let bl = *candidate_centers
-        .iter()
-        .min_by(|a, b| (a.0 - a.1).partial_cmp(&(b.0 - b.1)).unwrap())
-        .unwrap();
+    // Limita aos 16 maiores candidatos por área para busca combinatória rápida
+    unique_candidates.truncate(16);
 
-    let top_w = ((tr.0 - tl.0).powi(2) + (tr.1 - tl.1).powi(2)).sqrt();
-    let bot_w = ((br.0 - bl.0).powi(2) + (br.1 - bl.1).powi(2)).sqrt();
-    let left_h = ((bl.0 - tl.0).powi(2) + (bl.1 - tl.1).powi(2)).sqrt();
-    let right_h = ((br.0 - tr.0).powi(2) + (br.1 - tr.1).powi(2)).sqrt();
+    let w = orig_w as f64;
+    let h = orig_h as f64;
 
-    let w = gray.cols() as f64;
-    let h = gray.rows() as f64;
-    if top_w < w * 0.25 || bot_w < w * 0.25 || left_h < h * 0.25 || right_h < h * 0.25 {
-        return Err("Área delimitada pelos fiduciais insuficiente".to_string());
+    // Procura o quarteto de candidatos que forma o maior quadrilátero retangular válido nos 4 cantos
+    let n = unique_candidates.len();
+    let mut best_quad: Option<(DetectedFiducials, f64)> = None;
+
+    for i in 0..n {
+        for j in (i + 1)..n {
+            for k in (j + 1)..n {
+                for l in (k + 1)..n {
+                    let pts = [
+                        unique_candidates[i],
+                        unique_candidates[j],
+                        unique_candidates[k],
+                        unique_candidates[l],
+                    ];
+
+                    let tl = *pts
+                        .iter()
+                        .min_by(|a, b| (a.0 + a.1).partial_cmp(&(b.0 + b.1)).unwrap())
+                        .unwrap();
+                    let br = *pts
+                        .iter()
+                        .max_by(|a, b| (a.0 + a.1).partial_cmp(&(b.0 + b.1)).unwrap())
+                        .unwrap();
+                    let tr = *pts
+                        .iter()
+                        .max_by(|a, b| (a.0 - a.1).partial_cmp(&(b.0 - b.1)).unwrap())
+                        .unwrap();
+                    let bl = *pts
+                        .iter()
+                        .min_by(|a, b| (a.0 - a.1).partial_cmp(&(b.0 - b.1)).unwrap())
+                        .unwrap();
+
+                    // Garante que os 4 cantos são pontos distintos
+                    if (tl.0 == tr.0 && tl.1 == tr.1)
+                        || (tl.0 == bl.0 && tl.1 == bl.1)
+                        || (br.0 == tr.0 && br.1 == tr.1)
+                        || (br.0 == bl.0 && br.1 == bl.1)
+                    {
+                        continue;
+                    }
+
+                    let top_w = ((tr.0 - tl.0).powi(2) + (tr.1 - tl.1).powi(2)).sqrt();
+                    let bot_w = ((br.0 - bl.0).powi(2) + (br.1 - bl.1).powi(2)).sqrt();
+                    let left_h = ((bl.0 - tl.0).powi(2) + (bl.1 - tl.1).powi(2)).sqrt();
+                    let right_h = ((br.0 - tr.0).powi(2) + (br.1 - tr.1).powi(2)).sqrt();
+
+                    if top_w < w * 0.25 || bot_w < w * 0.25 || left_h < h * 0.25 || right_h < h * 0.25 {
+                        continue;
+                    }
+
+                    let w_ratio = top_w / bot_w.max(1.0);
+                    let h_ratio = left_h / right_h.max(1.0);
+                    if !(0.55..=1.80).contains(&w_ratio) || !(0.55..=1.80).contains(&h_ratio) {
+                        continue;
+                    }
+
+                    // Verifica similaridade de tamanho (área) entre os 4 marcadores de canto
+                    let min_a = pts.iter().map(|p| p.2).fold(f64::INFINITY, f64::min);
+                    let max_a = pts.iter().map(|p| p.2).fold(0.0_f64, f64::max);
+                    if max_a > min_a * 6.0 {
+                        continue;
+                    }
+
+                    // Calcula área aproximada do quadrilátero para escolher o maior quadro válido
+                    let quad_area = 0.5
+                        * ((tl.0 * tr.1 - tr.0 * tl.1)
+                            + (tr.0 * br.1 - br.0 * tr.1)
+                            + (br.0 * bl.1 - bl.0 * br.1)
+                            + (bl.0 * tl.1 - tl.0 * bl.1))
+                            .abs();
+
+                    if best_quad.as_ref().map_or(true, |(_, best_a)| quad_area > *best_a) {
+                        best_quad = Some((
+                            DetectedFiducials {
+                                top_left: FiducialPoint { x: tl.0, y: tl.1 },
+                                top_right: FiducialPoint { x: tr.0, y: tr.1 },
+                                bottom_right: FiducialPoint { x: br.0, y: br.1 },
+                                bottom_left: FiducialPoint { x: bl.0, y: bl.1 },
+                            },
+                            quad_area,
+                        ));
+                    }
+                }
+            }
+        }
     }
 
-    let w_ratio = top_w / bot_w.max(1.0);
-    let h_ratio = left_h / right_h.max(1.0);
-    if !(0.55..=1.80).contains(&w_ratio) || !(0.55..=1.80).contains(&h_ratio) {
-        return Err("Geometria dos fiduciais inválida (quadrilátero distorcido)".to_string());
+    if let Some((fid, _)) = best_quad {
+        return Ok(fid);
     }
 
-    Ok(DetectedFiducials {
-        top_left: FiducialPoint { x: tl.0, y: tl.1 },
-        top_right: FiducialPoint { x: tr.0, y: tr.1 },
-        bottom_right: FiducialPoint { x: br.0, y: br.1 },
-        bottom_left: FiducialPoint { x: bl.0, y: bl.1 },
-    })
+    Err("Área delimitada pelos fiduciais insuficiente".to_string())
 }
 
 /// Warps the perspective so that the 4 fiducials map exactly to canonical coordinates.

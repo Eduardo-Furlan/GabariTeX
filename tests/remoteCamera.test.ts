@@ -7,6 +7,7 @@ import {
   stopRemoteCamera,
   takeRemotePhoto,
   reportRemotePhoto,
+  getRemotePendingPhotos,
   listenRemotePhotos,
   listenRemoteStopped,
 } from '../src/platform/remoteCamera';
@@ -98,6 +99,23 @@ describe('mapPhotoResultToReport (Plan 13 §4 & §7)', () => {
     expect(report.label).toBe('Não foi possível ler');
     expect(report.message).toContain('tire outra');
   });
+
+  it('maps qr_only status to "ok" with instruction to send answer sheet photo next', () => {
+    const mockResult: PhotoResult = {
+      status: 'qr_only',
+      payloadSource: 'qr',
+      payload: {
+        version: 'B',
+        examId: 'exam-1',
+        key: { 1: 'A' },
+      },
+    };
+
+    const report = mapPhotoResultToReport(mockResult);
+    expect(report.status).toBe('ok');
+    expect(report.label).toBe('QR Versão B');
+    expect(report.message).toContain('gabarito');
+  });
 });
 
 describe('remoteCamera platform adapter (!__DESKTOP__)', () => {
@@ -110,6 +128,7 @@ describe('remoteCamera platform adapter (!__DESKTOP__)', () => {
     expect(await getRemoteCameraStatus()).toBeNull();
     expect(await startRemoteCamera()).toBeNull();
     expect(await takeRemotePhoto('p-1')).toBeNull();
+    expect(await getRemotePendingPhotos()).toEqual([]);
 
     await expect(stopRemoteCamera()).resolves.toBeUndefined();
     await expect(reportRemotePhoto('p-1', 'ok')).resolves.toBeUndefined();
@@ -153,6 +172,9 @@ describe('remoteCamera platform adapter (__DESKTOP__)', () => {
       if (cmd === 'remote_take') {
         return new Uint8Array([0xff, 0xd8, 0xff]).buffer;
       }
+      if (cmd === 'remote_list_pending') {
+        return [{ id: 'p-99', mime: 'image/jpeg', size: 1024 }];
+      }
       return null;
     });
 
@@ -179,6 +201,10 @@ describe('remoteCamera platform adapter (__DESKTOP__)', () => {
     expect(bytes).toBeInstanceOf(Uint8Array);
     expect(bytes?.length).toBe(3);
     expect(mockInvoke).toHaveBeenCalledWith('remote_take', { id: 'p-123' });
+
+    const pending = await getRemotePendingPhotos();
+    expect(pending).toEqual([{ id: 'p-99', mime: 'image/jpeg', size: 1024 }]);
+    expect(mockInvoke).toHaveBeenCalledWith('remote_list_pending');
 
     await reportRemotePhoto('p-123', 'ok', 'Lida ✓');
     expect(mockInvoke).toHaveBeenCalledWith('remote_report', {

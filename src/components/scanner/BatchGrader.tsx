@@ -54,6 +54,13 @@ export interface BatchGraderProps {
   onOpenClassManager?: () => void;
   onAddStudentToClass?: (classId: string, student: { name: string; registration?: string }) => void;
   onOpenRemoteCamera?: () => void;
+  incomingRemotePhoto?: {
+    file: File;
+    id: string;
+    target?: 'qr' | 'sheet';
+    timestamp: number;
+  } | null;
+  remoteReceivedCount?: number;
 }
 
 export const BatchGrader: React.FC<BatchGraderProps> = ({
@@ -70,6 +77,8 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
   onOpenClassManager,
   onAddStudentToClass,
   onOpenRemoteCamera,
+  incomingRemotePhoto,
+  remoteReceivedCount: propsReceivedCount = 0,
 }) => {
   const [state, dispatch] = useReducer(batchReducer, initialBatchState);
   const [reviewingItem, setReviewingItem] = useState<BatchItem | null>(null);
@@ -80,9 +89,11 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
   const [remotePanelOpen, setRemotePanelOpen] = useState<boolean>(false);
   const [remoteSession, setRemoteSession] = useState<RemoteSessionInfo | null>(null);
   const [isStartingRemote, setIsStartingRemote] = useState<boolean>(false);
-  const [remoteReceivedCount, setRemoteReceivedCount] = useState<number>(0);
+  const [localRemoteReceivedCount, setLocalRemoteReceivedCount] = useState<number>(0);
+  const effectiveReceivedCount = propsReceivedCount || localRemoteReceivedCount;
   const [availableInterfaces, setAvailableInterfaces] = useState<NetworkInterfaceInfo[]>([]);
   const remoteIdBySignatureRef = useRef<Map<string, string>>(new Map());
+  const remoteTargetBySignatureRef = useRef<Map<string, 'qr' | 'sheet'>>(new Map());
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cancelRequestedRef = useRef<boolean>(false);
@@ -135,6 +146,22 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
     }
   };
 
+  // Recebe e enfileira fotos provenientes da câmera remota centralizada no ScannerScreen
+  useEffect(() => {
+    if (!incomingRemotePhoto) return;
+    const { file, id, target } = incomingRemotePhoto;
+    const sig = getFileSignature(file);
+    remoteIdBySignatureRef.current.set(sig, id);
+    if (target) {
+      remoteTargetBySignatureRef.current.set(sig, target);
+    }
+
+    dispatch({ type: 'ADD_FILES', files: [file] });
+    cancelRequestedRef.current = false;
+    inFlightIdsRef.current.clear();
+    dispatch({ type: 'START_PROCESSING' });
+  }, [incomingRemotePhoto]);
+
   useEffect(() => {
     if (typeof __DESKTOP__ === 'undefined' || !__DESKTOP__) return;
 
@@ -148,18 +175,23 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
     let unlistenPhoto: (() => void) | undefined;
     let unlistenStopped: (() => void) | undefined;
 
-    listenRemotePhotos((file, remoteId) => {
-      const sig = getFileSignature(file);
-      remoteIdBySignatureRef.current.set(sig, remoteId);
-      setRemoteReceivedCount((c) => c + 1);
+    if (!onOpenRemoteCamera) {
+      listenRemotePhotos((file, remoteId, target) => {
+        const sig = getFileSignature(file);
+        remoteIdBySignatureRef.current.set(sig, remoteId);
+        if (target) {
+          remoteTargetBySignatureRef.current.set(sig, target);
+        }
+        setLocalRemoteReceivedCount((c) => c + 1);
 
-      dispatch({ type: 'ADD_FILES', files: [file] });
-      cancelRequestedRef.current = false;
-      inFlightIdsRef.current.clear();
-      dispatch({ type: 'START_PROCESSING' });
-    }).then((unlisten) => {
-      unlistenPhoto = unlisten;
-    });
+        dispatch({ type: 'ADD_FILES', files: [file] });
+        cancelRequestedRef.current = false;
+        inFlightIdsRef.current.clear();
+        dispatch({ type: 'START_PROCESSING' });
+      }).then((unlisten) => {
+        unlistenPhoto = unlisten;
+      });
+    }
 
     listenRemoteStopped(() => {
       setRemoteSession(null);
@@ -171,7 +203,7 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
       unlistenPhoto?.();
       unlistenStopped?.();
     };
-  }, []);
+  }, [onOpenRemoteCamera]);
 
   const runQueue = useCallback(async () => {
     if (isRunningRef.current) return;
@@ -197,15 +229,23 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
 
         if (cancelRequestedRef.current) break;
 
+        const itemTarget =
+          remoteTargetBySignatureRef.current.get(nextItem.signature) ||
+          (activePayloadRef.current ? 'sheet' : 'qr');
+
         const result = await gradePhotoFile(nextItem.file, {
           teacherPassword: teacherPasswordRef.current,
           candidatePasswords: candidatePasswordsRef.current,
           lockedPayload: activePayloadRef.current,
-          alwaysReadQr: true,
+          scanTarget: itemTarget,
+          alwaysReadQr: false,
           availableVersions: availableVersionsRef.current,
         });
 
-        if (result.payload && result.payloadSource === 'qr' && !activePayloadRef.current) {
+        if (result.status === 'qr_only' && result.payload) {
+          activePayloadRef.current = result.payload;
+          onLockPayloadRef.current?.(result.payload);
+        } else if (result.status === 'graded' && result.payload && !activePayloadRef.current) {
           activePayloadRef.current = result.payload;
           onLockPayloadRef.current?.(result.payload);
         }
@@ -578,10 +618,18 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
                       </span>
 
                       {rec && (
-                        <div className="flex items-center gap-1.5 pt-0.5">
+                        <div className="flex items-center gap-1.5 pt-0.5 flex-wrap">
                           <span className="px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-800 dark:text-indigo-300 font-bold text-[10px] rounded">
                             Versão {rec.versionLetter}
                           </span>
+                          {rec.examId && (
+                            <span
+                              className="px-1.5 py-0.5 bg-slate-100 text-slate-600 font-mono text-[10px] rounded"
+                              title={`ID da Prova: ${rec.examId}`}
+                            >
+                              {rec.examId.length > 8 ? rec.examId.slice(0, 8) : rec.examId}
+                            </span>
+                          )}
                           <span className="font-mono font-bold text-slate-700 text-[11px]">
                             {rec.totalScore.toFixed(1)}/{rec.maxScore.toFixed(1)} pt
                           </span>
@@ -883,7 +931,7 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
           onClose={() => setRemotePanelOpen(false)}
           session={remoteSession}
           isStarting={isStartingRemote}
-          receivedCount={remoteReceivedCount}
+          receivedCount={effectiveReceivedCount}
           availableInterfaces={availableInterfaces}
           onStart={handleStartRemote}
           onStop={handleStopRemote}
