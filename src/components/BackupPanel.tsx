@@ -24,6 +24,7 @@ import {
   ArrowRightLeft,
   Calendar,
   ShieldAlert,
+  FolderOpen,
 } from 'lucide-react';
 
 interface BackupPanelProps {
@@ -51,6 +52,10 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({
     quotaMB: number;
     percent: number;
   } | null>(null);
+  const [desktopStoreInfo, setDesktopStoreInfo] = useState<{
+    path: string;
+    usedBytes: number;
+  } | null>(null);
 
   const [restoreCandidate, setRestoreCandidate] = useState<BackupFile | null>(null);
   const [mergeCandidate, setMergeCandidate] = useState<{
@@ -64,8 +69,16 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({
   const backupInputRef = useRef<HTMLInputElement>(null);
   const gradebookInputRef = useRef<HTMLInputElement>(null);
 
-  // Consulta cota de armazenamento no navegador
+  // Consulta cota de armazenamento no navegador ou pasta do perfil no desktop
   useEffect(() => {
+    if (__DESKTOP__) {
+      import('@tauri-apps/api/core')
+        .then(({ invoke }) => invoke<{ path: string; usedBytes: number }>('store_open'))
+        .then((info) => setDesktopStoreInfo(info))
+        .catch(() => {});
+      return;
+    }
+
     if (typeof navigator !== 'undefined' && navigator.storage && typeof navigator.storage.estimate === 'function') {
       navigator.storage
         .estimate()
@@ -80,6 +93,13 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({
         .catch(() => {});
     }
   }, []);
+
+  const handleRevealProfileDir = () => {
+    if (!__DESKTOP__ || !desktopStoreInfo) return;
+    import('@tauri-apps/plugin-opener')
+      .then(({ revealItemInDir }) => revealItemInDir(desktopStoreInfo.path))
+      .catch(() => {});
+  };
 
   const handleExportFullBackup = () => {
     try {
@@ -200,40 +220,70 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({
 
         {/* Status de Armazenamento e Lembrete de Backup */}
         <div className="mt-4 p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-3">
-          <div className="flex items-center justify-between flex-wrap gap-2 text-xs">
-            <div className="flex items-center gap-2 font-medium text-slate-900">
-              <HardDrive className="w-4 h-4 text-indigo-500" />
-              <span>Armazenamento local do navegador:</span>
+          {__DESKTOP__ ? (
+            <div className="space-y-2 text-xs">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2 font-medium text-slate-900">
+                  <HardDrive className="w-4 h-4 text-indigo-500" />
+                  <span>Pasta do perfil neste computador:</span>
+                </div>
+                {desktopStoreInfo && (
+                  <button
+                    type="button"
+                    onClick={handleRevealProfileDir}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 font-semibold text-[11px] transition"
+                  >
+                    <FolderOpen className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                    Mostrar pasta
+                  </button>
+                )}
+              </div>
+              {desktopStoreInfo ? (
+                <div className="font-mono text-[11px] text-slate-500 break-all">
+                  {desktopStoreInfo.path} ({(desktopStoreInfo.usedBytes / 1024).toFixed(1)} KB)
+                </div>
+              ) : (
+                <div className="text-[11px] text-slate-500">Armazenamento em disco ativo</div>
+              )}
             </div>
-            {storageEstimate ? (
-              <span className="font-mono text-slate-500 text-[11px]">
-                {storageEstimate.usageMB} MB / {storageEstimate.quotaMB} MB ({storageEstimate.percent}%)
-              </span>
-            ) : (
-              <span className="text-slate-500 text-[11px]">Armazenamento padrão ativo</span>
-            )}
-          </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between flex-wrap gap-2 text-xs">
+                <div className="flex items-center gap-2 font-medium text-slate-900">
+                  <HardDrive className="w-4 h-4 text-indigo-500" />
+                  <span>Armazenamento local do navegador:</span>
+                </div>
+                {storageEstimate ? (
+                  <span className="font-mono text-slate-500 text-[11px]">
+                    {storageEstimate.usageMB} MB / {storageEstimate.quotaMB} MB ({storageEstimate.percent}%)
+                  </span>
+                ) : (
+                  <span className="text-slate-500 text-[11px]">Armazenamento padrão ativo</span>
+                )}
+              </div>
 
-          {storageEstimate && (
-            <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-              <div
-                className={`h-full transition-all ${
-                  storageEstimate.percent > 80
-                    ? 'bg-rose-500'
-                    : storageEstimate.percent > 50
-                    ? 'bg-amber-500'
-                    : 'bg-indigo-600 dark:bg-indigo-400'
-                }`}
-                style={{ width: `${Math.max(2, storageEstimate.percent)}%` }}
-              />
-            </div>
-          )}
+              {storageEstimate && (
+                <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full transition-all ${
+                      storageEstimate.percent > 80
+                        ? 'bg-rose-500'
+                        : storageEstimate.percent > 50
+                        ? 'bg-amber-500'
+                        : 'bg-indigo-600 dark:bg-indigo-400'
+                    }`}
+                    style={{ width: `${Math.max(2, storageEstimate.percent)}%` }}
+                  />
+                </div>
+              )}
 
-          {storageEstimate && storageEstimate.percent > 80 && (
-            <div className="p-2.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 rounded-lg text-xs text-amber-800 dark:text-amber-200 flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600" />
-              <span>Atenção: mais de 80% do espaço de armazenamento está utilizado. Exporte um backup.</span>
-            </div>
+              {storageEstimate && storageEstimate.percent > 80 && (
+                <div className="p-2.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 rounded-lg text-xs text-amber-800 dark:text-amber-200 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600" />
+                  <span>Atenção: mais de 80% do espaço de armazenamento está utilizado. Exporte um backup.</span>
+                </div>
+              )}
+            </>
           )}
 
           <div className="flex items-center justify-between pt-1 border-t border-slate-200/50 text-[11px] text-slate-500">

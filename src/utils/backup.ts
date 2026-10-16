@@ -1,6 +1,7 @@
 import { Exam, GradingRecord, Classroom } from '../types/exam';
 import { saveLastBackupDate } from './storage';
 import { isWithinLimit, MAX_QUESTIONS } from './examLimits';
+import { saveFile } from '../platform/files';
 
 export interface BackupFile {
   app: 'gabaritex';
@@ -126,20 +127,16 @@ export function parseBackup(
 }
 
 /**
- * Dispara o download do arquivo de backup no navegador e registra a data do último backup.
+ * Dispara o download do arquivo de backup e registra a data do último backup.
  */
 export function downloadBackupFile(backup: BackupFile): void {
   const jsonStr = JSON.stringify(backup, null, 2);
-  const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
   const dateStr = new Date().toISOString().slice(0, 10);
-  const link = document.createElement('a');
-  link.setAttribute('href', url);
-  link.setAttribute('download', `gabaritex-backup-${dateStr}.json`);
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
+  void saveFile({
+    suggestedName: `gabaritex-backup-${dateStr}.json`,
+    mime: 'application/json;charset=utf-8;',
+    data: jsonStr,
+  });
   saveLastBackupDate();
 }
 
@@ -161,16 +158,12 @@ export function buildGradebookExport(gradebook: GradingRecord[]): GradebookExpor
 export function downloadGradebookJson(gradebook: GradingRecord[]): void {
   const fileData = buildGradebookExport(gradebook);
   const jsonStr = JSON.stringify(fileData, null, 2);
-  const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
   const dateStr = new Date().toISOString().slice(0, 10);
-  const link = document.createElement('a');
-  link.setAttribute('href', url);
-  link.setAttribute('download', `gabaritex-notas-${dateStr}.json`);
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
+  void saveFile({
+    suggestedName: `gabaritex-notas-${dateStr}.json`,
+    mime: 'application/json;charset=utf-8;',
+    data: jsonStr,
+  });
 }
 
 /**

@@ -24,6 +24,7 @@ import { ClassroomManager } from './components/classrooms/ClassroomManager';
 import { BackupPanel } from './components/BackupPanel';
 import { BackupFile } from './utils/backup';
 import { useAutosave } from './hooks/useAutosave';
+import { printPage } from './platform/print';
 import {
   Printer,
   Shuffle,
@@ -502,7 +503,7 @@ export const App: React.FC = () => {
                     disabled={isSheetOverflowing || isExamCorrupted}
                     onClick={() => {
                       if (isSheetOverflowing || isExamCorrupted) return;
-                      window.print();
+                      printPage();
                     }}
                     title={
                       isSheetOverflowing

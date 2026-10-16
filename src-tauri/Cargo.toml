@@ -1,0 +1,31 @@
+[package]
+name = "gabaritex"
+version = "1.0.0"
+description = "GabariTeX - Criador e Corretor de Provas"
+authors = ["GabariTeX"]
+license = "GPL-3.0"
+repository = ""
+edition = "2021"
+rust-version = "1.77.2"
+
+[lib]
+name = "gabaritex_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-opener = "2"
+tauri-plugin-single-instance = "2"
+tauri-plugin-updater = "2"
+tauri-plugin-process = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+
+[dev-dependencies]
+tempfile = "3"
+

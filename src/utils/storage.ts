@@ -1,6 +1,9 @@
 import { Exam, GradingRecord, Classroom, Student } from '../types/exam';
+import { saveFile } from '../platform/files';
 
-export type SaveResult = { ok: true } | { ok: false; reason: 'quota' | 'unknown' };
+export type SaveResult =
+  | { ok: true }
+  | { ok: false; reason: 'quota' | 'disk_full' | 'permission' | 'unknown' };
 
 export const EXAM_STORAGE_KEY = 'mcorr_exam_data';
 export const GRADEBOOK_STORAGE_KEY = 'mcorr_gradebook_data';
@@ -31,6 +34,7 @@ export function isQuotaExceededError(err: unknown): boolean {
 }
 
 export function tryRequestPersistence(): void {
+  if (__DESKTOP__) return;
   try {
     if (typeof navigator !== 'undefined' && navigator.storage && typeof navigator.storage.persist === 'function') {
       navigator.storage.persist().catch(() => {});
@@ -157,14 +161,12 @@ export function loadActiveClassIdFromStorage(): string | null {
 }
 
 export function exportExamToJson(exam: Exam): void {
-  const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(exam, null, 2));
-  const downloadAnchor = document.createElement('a');
-  downloadAnchor.setAttribute('href', dataStr);
   const safeTitle = (exam.header.examTitle || 'prova').toLowerCase().replace(/[^a-z0-9]/gi, '_');
-  downloadAnchor.setAttribute('download', `${safeTitle}_banco.json`);
-  document.body.appendChild(downloadAnchor);
-  downloadAnchor.click();
-  downloadAnchor.remove();
+  void saveFile({
+    suggestedName: `${safeTitle}_banco.json`,
+    mime: 'application/json;charset=utf-8;',
+    data: JSON.stringify(exam, null, 2),
+  });
 }
 
 function escapeCsvField(val: unknown): string {
@@ -312,12 +314,9 @@ export function exportGradebookToCsv(
   if (!csvBody) return;
 
   const csvContent = '\uFEFF' + csvBody;
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.setAttribute('href', url);
-  link.setAttribute('download', `notas_turma_${new Date().toISOString().slice(0, 10)}.csv`);
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
+  void saveFile({
+    suggestedName: `notas_turma_${new Date().toISOString().slice(0, 10)}.csv`,
+    mime: 'text/csv;charset=utf-8;',
+    data: csvContent,
+  });
 }

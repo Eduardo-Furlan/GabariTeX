@@ -4,7 +4,7 @@ import { SaveResult } from '../utils/storage';
 export interface AutosaveState {
   status: 'saved' | 'saving' | 'error';
   savedAt?: Date;
-  reason?: 'quota' | 'unknown';
+  reason?: 'quota' | 'disk_full' | 'permission' | 'unknown';
 }
 
 /**
