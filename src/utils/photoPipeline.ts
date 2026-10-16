@@ -1,8 +1,9 @@
-import { Html5Qrcode } from 'html5-qrcode';
-import { ExamVersion, GradingRecord } from '../types/exam';
+import { ExamVersion, GradingRecord, GradedAnswer, SubjectiveAnswer } from '../types/exam';
 import { DecryptedQrPayload, OmrDebugInfo, GradingEvidence } from '../types/omr';
 import { decryptAnswerKey } from './crypto';
 import { gradeCanvasWithPayloadDebug } from './omrProcessor';
+import { buildObjectiveAnswer, recomputeTotals } from './grading';
+import { processExamPhotoNative, convertNativeResponse } from '../platform/omrBackend';
 
 export interface PhotoResult {
   status: 'graded' | 'qr_only' | 'error';
@@ -70,6 +71,7 @@ async function scanQrFromImageOrCanvas(file: File, canvas: HTMLCanvasElement): P
   let decodedText: string | null = null;
 
   try {
+    const { Html5Qrcode } = await import('html5-qrcode');
     const qrScanner = new Html5Qrcode('hidden-qr-reader');
 
     // Tentativa 0: Arquivo original inteiro
@@ -183,6 +185,179 @@ export async function gradePhotoFile(
   file: File,
   opts: GradePhotoOptions
 ): Promise<PhotoResult> {
+  // Se estiver no ambiente desktop, processa via OpenCV nativo no Tauri
+  if (__DESKTOP__) {
+    try {
+      const buffer = await file.arrayBuffer();
+      const imageBytes = new Uint8Array(buffer);
+
+      const totalQuestions =
+        opts.lockedPayload?.totalQuestions ||
+        (opts.lockedPayload?.key ? Object.keys(opts.lockedPayload.key).length : 20);
+
+      const subjectiveQuestions = opts.lockedPayload?.subjectiveQuestions || [];
+      const shouldReadQr = opts.alwaysReadQr || !opts.lockedPayload;
+
+      const nativeRes = await processExamPhotoNative(imageBytes, {
+        totalQuestions,
+        subjectiveQuestions,
+        readQr: shouldReadQr,
+        generateDebugImage: true,
+      });
+
+      let targetPayload = opts.lockedPayload;
+      let payloadSource: 'qr' | 'locked' | 'none' = opts.lockedPayload ? 'locked' : 'none';
+      let versionMismatch = false;
+
+      if (nativeRes.qrRawText) {
+        if (opts.teacherPassword && opts.teacherPassword.trim()) {
+          try {
+            const qrPayload = await decryptAnswerKey(nativeRes.qrRawText, opts.teacherPassword);
+            enrichSubjectivePoints(qrPayload, opts.availableVersions);
+
+            if (opts.lockedPayload) {
+              if (
+                qrPayload.version !== opts.lockedPayload.version ||
+                (qrPayload.examId && opts.lockedPayload.examId && qrPayload.examId !== opts.lockedPayload.examId)
+              ) {
+                versionMismatch = true;
+              }
+            }
+            targetPayload = qrPayload;
+            payloadSource = 'qr';
+          } catch {
+            return {
+              status: 'error',
+              payloadSource: 'none',
+              error:
+                'QR Code detectado na folha, porém a senha informada não confere com a senha da prova. Verifique a senha do professor.',
+            };
+          }
+        } else {
+          return {
+            status: 'error',
+            payloadSource: 'none',
+            error: 'QR Code detectado na folha! Por favor, informe a senha da prova para desbloquear a correção.',
+          };
+        }
+      }
+
+      if (nativeRes.omrError) {
+        if (payloadSource === 'qr' && targetPayload) {
+          return {
+            status: 'qr_only',
+            payload: targetPayload,
+            payloadSource,
+            versionMismatch,
+            debugCanvasUrl: nativeRes.debugImageDataUrl,
+          };
+        }
+        return {
+          status: 'error',
+          payloadSource,
+          versionMismatch,
+          error: `Não foi possível detectar o cartão-resposta na imagem: ${nativeRes.omrError.message}`,
+          debugCanvasUrl: nativeRes.debugImageDataUrl,
+        };
+      }
+
+      if (!targetPayload) {
+        return {
+          status: 'error',
+          payloadSource: 'none',
+          error:
+            'Não foi possível identificar o QR Code na folha e nenhuma versão está selecionada no corretor. Enquadre a folha completa ou selecione uma versão manualmente.',
+          debugCanvasUrl: nativeRes.debugImageDataUrl,
+        };
+      }
+
+      const { detections, debugInfo, evidence } = convertNativeResponse(nativeRes);
+
+      const answers: GradedAnswer[] = [];
+      const objectiveQuestionNumbers = Object.keys(targetPayload.key)
+        .map(Number)
+        .sort((a, b) => a - b);
+
+      for (const i of objectiveQuestionNumbers) {
+        const correctOpt = targetPayload.key[i] || 'A';
+        const qPoint = targetPayload.points?.[i] ?? 1.0;
+        const detected = detections.find((d) => d.questionNumber === i);
+
+        answers.push(
+          buildObjectiveAnswer({
+            questionNumber: i,
+            correctOption: correctOpt,
+            maxPoints: qPoint,
+            detection: detected,
+          })
+        );
+      }
+
+      const subjectiveAnswers: SubjectiveAnswer[] = [];
+      const subjMap: Record<number, number> = {};
+
+      if (targetPayload.subjectivePoints) {
+        Object.entries(targetPayload.subjectivePoints).forEach(([q, pts]) => {
+          subjMap[Number(q)] = pts;
+        });
+      }
+
+      if (targetPayload.subjectiveQuestions && Array.isArray(targetPayload.subjectiveQuestions)) {
+        for (const qNum of targetPayload.subjectiveQuestions) {
+          if (subjMap[qNum] === undefined) {
+            const fallbackPts = targetPayload.points?.[qNum];
+            subjMap[qNum] = typeof fallbackPts === 'number' && fallbackPts > 0 ? fallbackPts : 1.0;
+          }
+        }
+      }
+
+      const sortedSubj = Object.entries(subjMap)
+        .map(([q, pts]) => ({ qNum: Number(q), pts }))
+        .sort((a, b) => a.qNum - b.qNum);
+
+      for (const item of sortedSubj) {
+        subjectiveAnswers.push({
+          questionNumber: item.qNum,
+          maxPoints: item.pts > 0 ? item.pts : 1.0,
+          pointsEarned: null,
+        });
+      }
+
+      const initialRecord: GradingRecord = {
+        id: `rec-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        timestamp: Date.now(),
+        studentName: '',
+        studentId: '',
+        versionLetter: targetPayload.version,
+        totalScore: 0,
+        maxScore: 0,
+        percentage: 0,
+        answers,
+        subjectiveAnswers: subjectiveAnswers.length > 0 ? subjectiveAnswers : undefined,
+      };
+
+      const record = recomputeTotals(initialRecord);
+
+      return {
+        status: 'graded',
+        record,
+        evidence,
+        payload: targetPayload,
+        payloadSource,
+        versionMismatch,
+        debugInfo,
+        debugCanvasUrl: nativeRes.debugImageDataUrl,
+      };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Falha ao processar arquivo no motor nativo OpenCV.';
+      return {
+        status: 'error',
+        payloadSource: 'none',
+        error: msg,
+      };
+    }
+  }
+
   let imgUrl: string | null = null;
   const canvas = document.createElement('canvas');
 

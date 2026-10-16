@@ -1,3 +1,4 @@
+pub mod omr;
 pub mod profile_fs;
 
 use profile_fs::ProfileFsState;
@@ -26,6 +27,7 @@ pub fn run() {
             profile_fs::snapshot_dir_get,
             profile_fs::snapshot_dir_pick,
             profile_fs::snapshot_write,
+            omr::process_exam_photo,
         ])
         .run(tauri::generate_context!())
         .expect("erro ao iniciar o aplicativo Tauri GabariTeX");

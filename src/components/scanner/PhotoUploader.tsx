@@ -452,25 +452,27 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
 
         {/* Botões de Ação para Captura */}
         <div className="space-y-3">
-          <button
-            type="button"
-            onClick={() => cameraInputRef.current?.click()}
-            disabled={isProcessing}
-            className={`w-full py-4 px-5 text-on-accent font-extrabold text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50 active:scale-[0.99] ${
-              activePayload
-                ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-700/20'
-                : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-700/20'
-            }`}
-          >
-            <Camera className="w-5 h-5" />
-            <span>
-              {isProcessing
-                ? 'Processando imagem com OMR...'
-                : activePayload
-                ? `Tirar Foto da Folha de Respostas (Versão ${activePayload.version})`
-                : 'Tirar Foto com Câmera do Celular'}
-            </span>
-          </button>
+          {!__DESKTOP__ && (
+            <button
+              type="button"
+              onClick={() => cameraInputRef.current?.click()}
+              disabled={isProcessing}
+              className={`w-full py-4 px-5 text-on-accent font-extrabold text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50 active:scale-[0.99] ${
+                activePayload
+                  ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-700/20'
+                  : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-700/20'
+              }`}
+            >
+              <Camera className="w-5 h-5" />
+              <span>
+                {isProcessing
+                  ? 'Processando imagem com OMR...'
+                  : activePayload
+                  ? `Tirar Foto da Folha de Respostas (Versão ${activePayload.version})`
+                  : 'Tirar Foto com Câmera do Celular'}
+              </span>
+            </button>
+          )}
 
           <div
             onClick={() => fileInputRef.current?.click()}

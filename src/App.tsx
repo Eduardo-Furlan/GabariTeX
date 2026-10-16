@@ -25,6 +25,10 @@ import { BackupPanel } from './components/BackupPanel';
 import { BackupFile } from './utils/backup';
 import { useAutosave } from './hooks/useAutosave';
 import { printPage } from './platform/print';
+import { PhotoUploader } from './components/scanner/PhotoUploader';
+import { BatchGrader } from './components/scanner/BatchGrader';
+import { GradingModal } from './components/scanner/GradingModal';
+import { DecryptedQrPayload, GradingEvidence } from './types/omr';
 import {
   Printer,
   Shuffle,
@@ -34,6 +38,8 @@ import {
   CheckCircle2,
   AlertTriangle,
   Monitor,
+  Camera,
+  Layers,
 } from 'lucide-react';
 import './styles/print.css';
 
@@ -74,6 +80,11 @@ export const App: React.FC = () => {
   const [isBackupPanelOpen, setIsBackupPanelOpen] = useState<boolean>(false);
   const [isSheetOverflowing, setIsSheetOverflowing] = useState<boolean>(false);
   const isExamCorrupted = !isWithinLimit(exam.questions.length);
+
+  const [scannerMode, setScannerMode] = useState<'single' | 'batch'>('single');
+  const [lockedPayload, setLockedPayload] = useState<DecryptedQrPayload | null>(null);
+  const [gradingModalRecord, setGradingModalRecord] = useState<GradingRecord | null>(null);
+  const [gradingModalEvidence, setGradingModalEvidence] = useState<GradingEvidence | undefined>(undefined);
 
   // Autosave com debounce (400ms para a prova/turmas, 300ms para notas) e flush automático
   const examAutosave = useAutosave(exam, saveExamToStorage, 400);
@@ -610,31 +621,109 @@ export const App: React.FC = () => {
           </div>
         )}
 
-        {/* ABA 4: CORRETOR OMR (DISPONÍVEL NO APLICATIVO DESKTOP) */}
+        {/* ABA 4: CORRETOR OMR */}
         {activeTab === 'scanner' && (
-          <div className="max-w-2xl mx-auto my-8">
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 sm:p-10 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 flex items-center justify-center text-indigo-600 dark:text-indigo-300 mx-auto mb-5">
-                <Monitor className="w-8 h-8" />
+          __DESKTOP__ ? (
+            <div className="space-y-6">
+              {/* Seletor de Modo: Individual vs. Lote */}
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <Camera className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                    Corretor Óptico de Folhas (OMR Nativo OpenCV)
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Processamento nativo em alta velocidade com retificação de perspectiva e leitura morfológica das bolinhas.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => setScannerMode('single')}
+                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition ${
+                      scannerMode === 'single'
+                        ? 'bg-white text-indigo-700 dark:text-indigo-300 shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Camera className="w-4 h-4" /> Uma Foto
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setScannerMode('batch')}
+                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition ${
+                      scannerMode === 'batch'
+                        ? 'bg-white text-indigo-700 dark:text-indigo-300 shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Layers className="w-4 h-4" /> Correção em Lote
+                  </button>
+                </div>
               </div>
 
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-500/20 border border-amber-300 dark:border-amber-500/40 text-amber-800 dark:text-amber-300 text-xs font-bold uppercase tracking-wider mb-4">
-                Em Breve (Coming Soon)
-              </div>
+              {scannerMode === 'single' ? (
+                <PhotoUploader
+                  teacherPassword={teacherPassword}
+                  activePayload={lockedPayload}
+                  onLockPayload={setLockedPayload}
+                  availableVersions={versions}
+                  onGraded={(newRecord, evidence) => {
+                    setGradingModalRecord(newRecord);
+                    setGradingModalEvidence(evidence);
+                  }}
+                  onSelectExamVersion={(v) => {
+                    setLockedPayload({
+                      examId: exam.id,
+                      version: v.versionLetter,
+                      key: v.objectiveAnswerKey,
+                    });
+                  }}
+                />
+              ) : (
+                <BatchGrader
+                  teacherPassword={teacherPassword}
+                  activePayload={lockedPayload}
+                  availableVersions={versions}
+                  classes={classes}
+                  activeClassId={activeClassId}
+                  onSelectActiveClass={handleSelectActiveClass}
+                  records={records}
+                  onOpenClassManager={() => setIsClassManagerOpen(true)}
+                  onLockPayload={setLockedPayload}
+                  onSaveRecords={(newRecords) => {
+                    setRecords((prev) => [...newRecords, ...prev]);
+                    setActiveTab('gradebook');
+                  }}
+                />
+              )}
+            </div>
+          ) : (
+            <div className="max-w-2xl mx-auto my-8">
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 sm:p-10 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 flex items-center justify-center text-indigo-600 dark:text-indigo-300 mx-auto mb-5">
+                  <Monitor className="w-8 h-8" />
+                </div>
 
-              <h2 className="text-xl font-bold text-slate-800">
-                Corretor Óptico (OMR) Exclusivo no Aplicativo Desktop
-              </h2>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-500/20 border border-amber-300 dark:border-amber-500/40 text-amber-800 dark:text-amber-300 text-xs font-bold uppercase tracking-wider mb-4">
+                  Em Breve (Coming Soon)
+                </div>
 
-              <p className="text-sm text-slate-600 mt-3 leading-relaxed max-w-lg mx-auto">
-                Para garantir leitura óptica de alta precisão com processamento nativo de imagem (OpenCV), a correção automática de folhas de respostas não está disponível diretamente no navegador.
-              </p>
+                <h2 className="text-xl font-bold text-slate-800">
+                  Corretor Óptico (OMR) Exclusivo no Aplicativo Desktop
+                </h2>
 
-              <div className="mt-6 p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 leading-relaxed max-w-md mx-auto">
-                Para utilizar o corretor OMR, será necessário baixar o <strong>aplicativo desktop do GabariTeX</strong> (disponível em breve para Windows, macOS e Linux). Você pode continuar criando, embaralhando e imprimindo suas provas e folhas de respostas normalmente por aqui.
+                <p className="text-sm text-slate-600 mt-3 leading-relaxed max-w-lg mx-auto">
+                  Para garantir leitura óptica de alta precisão com processamento nativo de imagem (OpenCV), a correção automática de folhas de respostas não está disponível diretamente no navegador.
+                </p>
+
+                <div className="mt-6 p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 leading-relaxed max-w-md mx-auto">
+                  Para utilizar o corretor OMR, será necessário baixar o <strong>aplicativo desktop do GabariTeX</strong> (disponível em breve para Windows, macOS e Linux). Você pode continuar criando, embaralhando e imprimindo suas provas e folhas de respostas normalmente por aqui.
+                </div>
               </div>
             </div>
-          </div>
+          )
         )}
 
         {/* ABA 5: LIVRO DE NOTAS */}
@@ -681,6 +770,29 @@ export const App: React.FC = () => {
         records={records}
         onDisassociateRecordsFromClass={handleDisassociateRecordsFromClass}
       />
+
+      {/* MODAL DE REVISÃO E SALVAMENTO DE NOTA (CORRETOR INDIVIDUAL) */}
+      {gradingModalRecord && (
+        <GradingModal
+          initialRecord={gradingModalRecord}
+          evidence={gradingModalEvidence}
+          classes={classes}
+          activeClassId={activeClassId}
+          onSelectActiveClass={handleSelectActiveClass}
+          records={records}
+          onOpenClassManager={() => setIsClassManagerOpen(true)}
+          onSave={(finalRecord) => {
+            setRecords((prev) => [finalRecord, ...prev.filter((r) => r.id !== finalRecord.id)]);
+            setGradingModalRecord(null);
+            setGradingModalEvidence(undefined);
+            setActiveTab('gradebook');
+          }}
+          onCancel={() => {
+            setGradingModalRecord(null);
+            setGradingModalEvidence(undefined);
+          }}
+        />
+      )}
     </div>
   );
 };
