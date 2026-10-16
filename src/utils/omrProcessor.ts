@@ -699,6 +699,8 @@ export function gradeCanvasWithPayloadDebug(
     percentage: 0,
     answers,
     subjectiveAnswers: subjectiveAnswers.length > 0 ? subjectiveAnswers : undefined,
+    examId: payload.examId || undefined,
+    examFingerprint: payload.examFingerprint || undefined,
   };
 
   const record = recomputeTotals(initialRecord);

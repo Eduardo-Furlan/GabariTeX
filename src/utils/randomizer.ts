@@ -2,6 +2,9 @@ import { Exam, ExamVersion, Question } from '../types/exam';
 import { encryptAnswerKey } from './crypto';
 import { buildPayload } from './payload';
 import { validateExamQuestionCount } from './examLimits';
+import { computeExamFingerprint } from './fingerprint';
+
+export { computeExamFingerprint } from './fingerprint';
 
 // PRNG determinístico Mulberry32
 function mulberry32(a: number) {
@@ -24,9 +27,25 @@ function shuffleArray<T>(array: T[], prng: () => number): T[] {
 
 const OPTION_LABELS: ('A' | 'B' | 'C' | 'D' | 'E')[] = ['A', 'B', 'C', 'D', 'E'];
 
-export async function generateExamVersions(exam: Exam): Promise<ExamVersion[]> {
+export interface VersionLayout {
+  versionLetter: string;
+  seed: number;
+  questions: Question[]; // já embaralhadas, com id originais e rótulos A..E reatribuídos
+  objectiveAnswerKey: Record<number, string>;
+}
+
+export interface MappedAnswer {
+  originalQuestionId: string;
+  originalOptionId?: string;
+}
+
+/**
+ * Constrói a estrutura e o gabarito de todas as versões do exame de forma
+ * puramente síncrona, determinística e sem dependência de criptografia.
+ */
+export function buildVersionLayouts(exam: Exam): VersionLayout[] {
   validateExamQuestionCount(exam.questions.length);
-  const versions: ExamVersion[] = [];
+  const layouts: VersionLayout[] = [];
   const versionLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
   for (let v = 0; v < exam.versionCount; v++) {
@@ -69,20 +88,67 @@ export async function generateExamVersions(exam: Exam): Promise<ExamVersion[]> {
       return q;
     });
 
-    const payload = buildPayload({
-      examId: exam.id,
+    layouts.push({
       versionLetter,
+      seed,
       questions: processedQuestions,
       objectiveAnswerKey: answerKey,
+    });
+  }
+
+  return layouts;
+}
+
+/**
+ * Mapeia o número da questão e a opção marcada em uma versão específica
+ * para o id da questão original e o id da opção original.
+ */
+export function mapVersionAnswerToOriginal(
+  layout: VersionLayout,
+  qNum: number,
+  markedOptionLabel?: string | null
+): MappedAnswer | null {
+  const question = layout.questions[qNum - 1];
+  if (!question) return null;
+
+  let originalOptionId: string | undefined;
+  if (markedOptionLabel && question.options) {
+    const opt = question.options.find((o) => o.label === markedOptionLabel);
+    if (opt) {
+      originalOptionId = opt.id;
+    }
+  }
+
+  return {
+    originalQuestionId: question.id,
+    originalOptionId,
+  };
+}
+
+/**
+ * Gera as versões completas do exame, incluindo os QR codes criptografados com a senha do exame.
+ */
+export async function generateExamVersions(exam: Exam): Promise<ExamVersion[]> {
+  const layouts = buildVersionLayouts(exam);
+  const fingerprint = computeExamFingerprint(exam);
+  const versions: ExamVersion[] = [];
+
+  for (const layout of layouts) {
+    const payload = buildPayload({
+      examId: exam.id,
+      versionLetter: layout.versionLetter,
+      questions: layout.questions,
+      objectiveAnswerKey: layout.objectiveAnswerKey,
+      examFingerprint: fingerprint,
     });
 
     const qrPayload = await encryptAnswerKey(payload, exam.password || 'senha123');
 
     versions.push({
-      versionLetter,
-      seed,
-      questions: processedQuestions,
-      objectiveAnswerKey: answerKey,
+      versionLetter: layout.versionLetter,
+      seed: layout.seed,
+      questions: layout.questions,
+      objectiveAnswerKey: layout.objectiveAnswerKey,
       encryptedQrPayload: qrPayload,
     });
   }

@@ -231,6 +231,9 @@ export function generateGradebookCsv(
     const qAnswers = allQuestionNumbers.map((qNum) => {
       const a = r.answers.find((ans) => ans.questionNumber === qNum);
       if (!a) return '-';
+      if (a.annulled) {
+        return `${a.markedOption || 'BRANCO'}(ANULADA)`;
+      }
       return `${a.markedOption || 'BRANCO'}(${a.isCorrect ? 'C' : 'E'})`;
     });
 

@@ -32,6 +32,7 @@ import { useAutosave } from './hooks/useAutosave';
 import { printPage } from './platform/print';
 import { DecryptedQrPayload, GradingEvidence } from './types/omr';
 import { buildPayload } from './utils/payload';
+import { computeExamFingerprint } from './utils/fingerprint';
 import {
   Printer,
   Shuffle,
@@ -248,6 +249,7 @@ export const App: React.FC = () => {
         versionLetter: v.versionLetter,
         questions: v.questions,
         objectiveAnswerKey: v.objectiveAnswerKey,
+        examFingerprint: computeExamFingerprint(exam),
       })
     );
   };
@@ -931,6 +933,8 @@ export const App: React.FC = () => {
               }
             }}
             onOpenBackupPanel={() => setIsBackupPanelOpen(true)}
+            exam={exam}
+            onUpdateRecords={(newRecords) => setRecords(newRecords)}
           />
         )}
       </main>

@@ -33,6 +33,7 @@ export interface DecryptedQrPayload {
   totalQuestions?: number;
   subjectiveQuestions?: number[];
   subjectivePoints?: Record<number, number>;
+  examFingerprint?: string;
 }
 
 export interface OmrBubbleDebug {

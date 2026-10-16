@@ -126,7 +126,35 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-1.5 text-xs">
+            <label htmlFor={`annulled-${question.id}`} className="font-medium text-slate-600 dark:text-slate-400">
+              Situação:
+            </label>
+            <select
+              id={`annulled-${question.id}`}
+              value={question.annulled || ''}
+              onChange={(e) => {
+                const val = e.target.value as 'give_points' | 'discard' | '';
+                onChange({
+                  ...question,
+                  annulled: val ? val : undefined,
+                });
+              }}
+              className={`border rounded px-2 py-1 text-xs font-medium transition ${
+                question.annulled === 'give_points'
+                  ? 'border-amber-400 bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-700'
+                  : question.annulled === 'discard'
+                  ? 'border-red-400 bg-red-50 text-red-800 dark:bg-red-950/40 dark:text-red-300 dark:border-red-700'
+                  : 'border-slate-300 bg-white text-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:border-slate-700'
+              }`}
+            >
+              <option value="">Válida</option>
+              <option value="give_points">Anulada — pontos para todos</option>
+              <option value="discard">Anulada — desconsiderar</option>
+            </select>
+          </div>
+
           <div className="flex items-center gap-1">
             <label className="text-xs text-slate-500 font-medium">Valor:</label>
             <input
@@ -150,6 +178,23 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
           </button>
         </div>
       </div>
+
+      {question.annulled && (
+        <div
+          className={`mb-3 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center justify-between ${
+            question.annulled === 'give_points'
+              ? 'bg-amber-50 text-amber-900 border border-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-800'
+              : 'bg-red-50 text-red-900 border border-red-200 dark:bg-red-950/30 dark:text-red-300 dark:border-red-800'
+          }`}
+        >
+          <span>
+            {question.annulled === 'give_points'
+              ? 'Questão anulada: pontuação cheia concedida a todos os alunos ao recalcular.'
+              : 'Questão anulada: desconsiderada do total e do valor máximo da prova ao recalcular.'}
+          </span>
+          <span className="text-[10px] opacity-75">Não altera folhas já impressas</span>
+        </div>
+      )}
 
       <div>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 mb-1.5">

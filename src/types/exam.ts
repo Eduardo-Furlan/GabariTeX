@@ -16,6 +16,7 @@ export interface Question {
   imageCaption?: string;
   options?: QuestionOption[];
   linesForAnswer?: number;
+  annulled?: 'give_points' | 'discard';
 }
 
 export interface ExamHeader {
@@ -60,6 +61,7 @@ export interface GradedAnswer {
   fillRatios?: Record<OptionLabel, number>;
   needsReview?: boolean;
   manualOverride?: boolean;
+  annulled?: boolean;
 }
 
 export interface SubjectiveAnswer {
@@ -95,4 +97,6 @@ export interface GradingRecord {
   subjectiveAnswers?: SubjectiveAnswer[];
   classId?: string; // turma no momento do salvamento
   studentRef?: string; // Student.id quando escolhido na turma; ausente se digitado à mão
+  examId?: string;
+  examFingerprint?: string;
 }

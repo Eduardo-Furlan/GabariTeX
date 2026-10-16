@@ -74,10 +74,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
             <div className="min-w-0">
               <h1 className="font-extrabold text-slate-900 text-sm sm:text-base lg:text-lg leading-tight truncate">
-                Gerador & Corretor de Provas
+                GabariTeX
               </h1>
               <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium hidden sm:block truncate">
-                Avaliações de Matemática, LaTeX, Gabarito Criptografado & Leitura Óptica
+                Avaliações, LaTeX, Gabarito e Leitura Óptica
               </p>
             </div>
           </div>

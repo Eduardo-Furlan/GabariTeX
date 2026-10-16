@@ -7,6 +7,7 @@ export interface BuildPayloadParams {
   versionLetter: string;
   questions: Question[];
   objectiveAnswerKey: Record<number, string>;
+  examFingerprint?: string;
 }
 
 /**
@@ -42,6 +43,7 @@ export function buildPayload(params: BuildPayloadParams): DecryptedQrPayload {
     totalQuestions: questions.length,
     subjectiveQuestions,
     subjectivePoints: hasSubjPoints ? subjectivePoints : undefined,
+    examFingerprint: params.examFingerprint,
   };
 }
 

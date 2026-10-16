@@ -69,6 +69,7 @@ export async function encryptAnswerKey(
     t: payload.totalQuestions,
     s: payload.subjectiveQuestions,
     sp: payload.subjectivePoints,
+    f: payload.examFingerprint,
   };
   const plaintext = enc.encode(JSON.stringify(compact));
 
@@ -139,6 +140,7 @@ export async function decryptAnswerKey(
         totalQuestions: (parsed.t || parsed.totalQuestions) as number | undefined,
         subjectiveQuestions: (parsed.s || parsed.subjectiveQuestions) as number[] | undefined,
         subjectivePoints: (parsed.sp || parsed.subjectivePoints) as Record<number, number> | undefined,
+        examFingerprint: (parsed.f as string) || (parsed.examFingerprint as string) || undefined,
       };
     }
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateExamVersions } from '../src/utils/randomizer';
+import { generateExamVersions, buildVersionLayouts, mapVersionAnswerToOriginal } from '../src/utils/randomizer';
 import { initialSampleExam } from '../src/utils/sampleExam';
 import { decryptAnswerKey } from '../src/utils/crypto';
 
@@ -97,4 +97,37 @@ describe('Randomizador de Provas e Gabaritos', () => {
       expect(payload.subjectivePoints![subjQNum]).toBe(2.5);
     }
   });
+
+  it('buildVersionLayouts deve ter paridade total com generateExamVersions', async () => {
+    const layouts = buildVersionLayouts(initialSampleExam);
+    const versions = await generateExamVersions(initialSampleExam);
+
+    expect(layouts.length).toBe(versions.length);
+    for (let i = 0; i < layouts.length; i++) {
+      expect(layouts[i].versionLetter).toBe(versions[i].versionLetter);
+      expect(layouts[i].seed).toBe(versions[i].seed);
+      expect(layouts[i].objectiveAnswerKey).toEqual(versions[i].objectiveAnswerKey);
+      expect(layouts[i].questions).toEqual(versions[i].questions);
+    }
+  });
+
+  it('mapVersionAnswerToOriginal deve mapear posição e rótulo de volta para os IDs originais', () => {
+    const layouts = buildVersionLayouts(initialSampleExam);
+    for (const layout of layouts) {
+      layout.questions.forEach((q, idx) => {
+        const qNum = idx + 1;
+        if (q.type === 'objective' && q.options) {
+          for (const opt of q.options) {
+            const mapped = mapVersionAnswerToOriginal(layout, qNum, opt.label);
+            expect(mapped).toBeDefined();
+            expect(mapped?.originalQuestionId).toBe(q.id);
+            expect(mapped?.originalOptionId).toBe(opt.id);
+          }
+        }
+      });
+    }
+
+    expect(mapVersionAnswerToOriginal(layouts[0], 999)).toBeNull();
+  });
 });
+
