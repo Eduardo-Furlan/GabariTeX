@@ -13,38 +13,26 @@ import {
   saveActiveClassIdToStorage,
   exportExamToJson,
 } from './utils/storage';
-import { addStudent } from './utils/classrooms';
 import { Navbar, ActiveTab } from './components/Navbar';
 import { ExamHeaderEditor } from './components/editor/ExamHeaderEditor';
 import { QuestionList } from './components/editor/QuestionList';
 import { ExamPrintView } from './components/preview/ExamPrintView';
 import { AnswerSheetView } from './components/preview/AnswerSheetView';
 import { isWithinLimit, MAX_QUESTIONS } from './utils/examLimits';
-import { PhotoUploader } from './components/scanner/PhotoUploader';
-import { BatchGrader } from './components/scanner/BatchGrader';
-import { PasswordModal } from './components/scanner/PasswordModal';
-import { GradingModal } from './components/scanner/GradingModal';
 import { GradebookTable } from './components/gradebook/GradebookTable';
 import { ClassroomManager } from './components/classrooms/ClassroomManager';
 import { BackupPanel } from './components/BackupPanel';
 import { BackupFile } from './utils/backup';
 import { useAutosave } from './hooks/useAutosave';
-import { DecryptedQrPayload, GradingEvidence } from './types/omr';
-import { buildPayload } from './utils/payload';
 import {
   Printer,
   Shuffle,
   Eye,
-  EyeOff,
   ShieldCheck,
   BookOpen,
-  KeyRound,
   CheckCircle2,
-  RefreshCw,
   AlertTriangle,
-  Camera,
-  Files,
-  GraduationCap,
+  Monitor,
 } from 'lucide-react';
 import './styles/print.css';
 
@@ -69,14 +57,6 @@ export const App: React.FC = () => {
     );
   });
 
-  const [showPasswordModal, setShowPasswordModal] = useState<boolean>(false);
-  const [showTeacherPassword, setShowTeacherPassword] = useState<boolean>(false);
-  const [gradingSession, setGradingSession] = useState<{
-    record: GradingRecord;
-    evidence?: GradingEvidence;
-  } | null>(null);
-  const [activePayload, setActivePayload] = useState<DecryptedQrPayload | null>(null);
-
   const [records, setRecords] = useState<GradingRecord[]>(() => {
     return loadGradebookFromStorage();
   });
@@ -91,7 +71,6 @@ export const App: React.FC = () => {
 
   const [isClassManagerOpen, setIsClassManagerOpen] = useState<boolean>(false);
   const [isBackupPanelOpen, setIsBackupPanelOpen] = useState<boolean>(false);
-  const [scannerMode, setScannerMode] = useState<'single' | 'batch'>('single');
   const [isSheetOverflowing, setIsSheetOverflowing] = useState<boolean>(false);
   const isExamCorrupted = !isWithinLimit(exam.questions.length);
 
@@ -124,22 +103,6 @@ export const App: React.FC = () => {
           return rest as GradingRecord;
         }
         return r;
-      })
-    );
-  };
-
-  const handleAddStudentToClass = (
-    classId: string,
-    student: { name: string; registration?: string }
-  ) => {
-    setClasses((prev) =>
-      prev.map((c) => {
-        if (c.id !== classId) return c;
-        try {
-          return addStudent(c, student);
-        } catch {
-          return c;
-        }
       })
     );
   };
@@ -237,40 +200,6 @@ export const App: React.FC = () => {
       }
     };
     reader.readAsText(file);
-  };
-
-  const handleSelectExamVersion = (v: ExamVersion) => {
-    setActivePayload(
-      buildPayload({
-        examId: exam.id,
-        versionLetter: v.versionLetter,
-        questions: v.questions,
-        objectiveAnswerKey: v.objectiveAnswerKey,
-      })
-    );
-  };
-
-  const handleGradeSaved = (
-    newRecord: GradingRecord,
-    options?: { newStudentToClass?: { classId: string; name: string; registration?: string } }
-  ) => {
-    setRecords((prev) => {
-      const exists = prev.some((r) => r.id === newRecord.id);
-      const recordToStore = exists ? { ...newRecord, timestamp: Date.now() } : newRecord;
-      return [recordToStore, ...prev.filter((r) => r.id !== newRecord.id)];
-    });
-    if (options?.newStudentToClass) {
-      handleAddStudentToClass(options.newStudentToClass.classId, {
-        name: options.newStudentToClass.name,
-        registration: options.newStudentToClass.registration,
-      });
-    }
-    setGradingSession(null);
-  };
-
-  const handleBatchSaveRecords = (newRecords: GradingRecord[]) => {
-    const newIds = new Set(newRecords.map((r) => r.id));
-    setRecords((prev) => [...newRecords, ...prev.filter((r) => !newIds.has(r.id))]);
   };
 
   const handleUpdateRecord = (updatedRecord: GradingRecord) => {
@@ -680,209 +609,29 @@ export const App: React.FC = () => {
           </div>
         )}
 
-        {/* ABA 4: CORRETOR OMR (AUTÔNOMO) */}
+        {/* ABA 4: CORRETOR OMR (DISPONÍVEL NO APLICATIVO DESKTOP) */}
         {activeTab === 'scanner' && (
-          <div className="space-y-6">
-            {/* Banner de Operação Autônoma e Senha da Prova */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-              <div className="flex items-center justify-between flex-wrap gap-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 flex items-center justify-center text-indigo-600 dark:text-indigo-300 shrink-0">
-                    <ShieldCheck className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h2 className="text-sm font-bold text-slate-800">
-                      Corretor Óptico em 2 Passos
-                    </h2>
-                    <p className="text-xs text-slate-500 mt-0.5 max-w-2xl leading-relaxed">
-                      O gabarito oficial está criptografado no QR Code de cada folha. Para correção em papel físico, use o fluxo em 2 passos: primeiro trave a versão (lendo o QR Code de perto ou selecionando-o abaixo), depois enquadre a folha e corrija em lote.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 bg-amber-50/60 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/30 rounded-xl p-2.5 w-full sm:w-auto">
-                  <KeyRound className="w-4 h-4 text-amber-700 dark:text-amber-300 shrink-0" />
-                  <div>
-                    <label className="block text-[10px] font-bold text-amber-900 dark:text-amber-200 uppercase">
-                      Senha Mestra para Descriptografia:
-                    </label>
-                    <div className="relative flex items-center mt-0.5">
-                      <input
-                        type={showTeacherPassword ? 'text' : 'password'}
-                        placeholder="Senha da prova"
-                        value={teacherPassword}
-                        onChange={(e) => updateTeacherPassword(e.target.value)}
-                        className="px-2.5 pr-8 py-1 text-xs border border-amber-300 dark:border-amber-500/40 rounded font-mono font-bold bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-amber-500 w-full sm:w-44"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowTeacherPassword((prev) => !prev)}
-                        className="absolute right-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"
-                        title={showTeacherPassword ? 'Ocultar senha' : 'Exibir senha'}
-                        aria-label={showTeacherPassword ? 'Ocultar senha' : 'Exibir senha'}
-                      >
-                        {showTeacherPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                      </button>
-                    </div>
-                  </div>
-                </div>
+          <div className="max-w-2xl mx-auto my-8">
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 sm:p-10 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 flex items-center justify-center text-indigo-600 dark:text-indigo-300 mx-auto mb-5">
+                <Monitor className="w-8 h-8" />
               </div>
 
-              {/* Seletor / Status da Versão Travada */}
-              <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between flex-wrap gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-slate-700">Versão Travada para Correção:</span>
-                  {activePayload ? (
-                    <span className="px-2.5 py-1 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 font-extrabold text-xs rounded-lg flex items-center gap-1.5 border border-emerald-300 dark:border-emerald-500/30">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> VERSÃO {activePayload.version}
-                    </span>
-                  ) : (
-                    <span className="px-2.5 py-1 bg-slate-100 text-slate-600 font-medium text-xs rounded-lg">
-                      Nenhuma (Selecione abaixo ou tire foto com QR Code)
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {versions.length > 0 && (
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs text-slate-500 font-medium">Travar:</span>
-                      {versions.map((v) => (
-                        <button
-                          key={v.versionLetter}
-                          type="button"
-                          onClick={() => handleSelectExamVersion(v)}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
-                            activePayload?.version === v.versionLetter
-                              ? 'bg-emerald-600 text-on-accent shadow-sm'
-                              : 'bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-600 hover:text-on-accent text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30'
-                          }`}
-                        >
-                          {v.versionLetter}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {activePayload && (
-                    <button
-                      type="button"
-                      onClick={() => setActivePayload(null)}
-                      className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-slate-600 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 rounded-lg transition"
-                    >
-                      <RefreshCw className="w-3 h-3" /> Destravar
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Seletor de Turma Ativa para Correção */}
-            <div className="flex items-center justify-between flex-wrap gap-3 bg-white p-3.5 rounded-xl border border-slate-200">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
-                  <GraduationCap className="w-4 h-4" />
-                </div>
-                <div>
-                  <span className="text-xs font-bold text-slate-800 block">
-                    Turma Ativa para Correção:
-                  </span>
-                  <span className="text-[11px] text-slate-500">
-                    Notas corrigidas serão vinculadas automaticamente a esta turma.
-                  </span>
-                </div>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-500/20 border border-amber-300 dark:border-amber-500/40 text-amber-800 dark:text-amber-300 text-xs font-bold uppercase tracking-wider mb-4">
+                Em Breve (Coming Soon)
               </div>
 
-              <div className="flex items-center gap-2 flex-wrap">
-                {classes.length === 0 ? (
-                  <button
-                    type="button"
-                    onClick={() => setIsClassManagerOpen(true)}
-                    className="px-3 py-1.5 text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/60 rounded-lg transition"
-                  >
-                    + Criar Primeira Turma
-                  </button>
-                ) : (
-                  <>
-                    <select
-                      value={activeClassId || ''}
-                      onChange={(e) => handleSelectActiveClass(e.target.value || null)}
-                      className="text-xs px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-800 font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                    >
-                      <option value="">Sem turma fixa (escolher na folha)</option>
-                      {classes.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name} ({c.students.length} alunos)
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      type="button"
-                      onClick={() => setIsClassManagerOpen(true)}
-                      className="px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 border border-slate-300 rounded-lg hover:bg-slate-50 transition"
-                    >
-                      Gerenciar Turmas
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
+              <h2 className="text-xl font-bold text-slate-800">
+                Corretor Óptico (OMR) Exclusivo no Aplicativo Desktop
+              </h2>
 
-            {/* Seletor de Modo: Individual vs Em Lote */}
-            <div className="flex items-center justify-center">
-              <div className="inline-flex p-1 bg-slate-100 rounded-lg border border-slate-200 text-xs font-semibold">
-                <button
-                  type="button"
-                  onClick={() => setScannerMode('single')}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition ${
-                    scannerMode === 'single'
-                      ? 'bg-white text-indigo-700 dark:text-indigo-300 shadow-sm font-bold'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <Camera className="w-4 h-4" />
-                  Foto Individual
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setScannerMode('batch')}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition ${
-                    scannerMode === 'batch'
-                      ? 'bg-white text-indigo-700 dark:text-indigo-300 shadow-sm font-bold'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <Files className="w-4 h-4" />
-                  Em Lote (Várias Fotos)
-                </button>
-              </div>
-            </div>
+              <p className="text-sm text-slate-600 mt-3 leading-relaxed max-w-lg mx-auto">
+                Para garantir leitura óptica de alta precisão com processamento nativo de imagem (OpenCV), a correção automática de folhas de respostas não está disponível diretamente no navegador.
+              </p>
 
-            <div className="max-w-4xl mx-auto">
-              {scannerMode === 'single' ? (
-                <PhotoUploader
-                  teacherPassword={teacherPassword}
-                  activePayload={activePayload}
-                  onLockPayload={(payload) => setActivePayload(payload)}
-                  onGraded={(record, evidence) => setGradingSession({ record, evidence })}
-                  availableVersions={versions}
-                  onSelectExamVersion={handleSelectExamVersion}
-                />
-              ) : (
-                <BatchGrader
-                  teacherPassword={teacherPassword}
-                  activePayload={activePayload}
-                  availableVersions={versions}
-                  onSaveRecords={handleBatchSaveRecords}
-                  onLockPayload={(payload) => setActivePayload(payload)}
-                  classes={classes}
-                  activeClassId={activeClassId}
-                  onSelectActiveClass={handleSelectActiveClass}
-                  records={records}
-                  onOpenClassManager={() => setIsClassManagerOpen(true)}
-                  onAddStudentToClass={handleAddStudentToClass}
-                />
-              )}
+              <div className="mt-6 p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 leading-relaxed max-w-md mx-auto">
+                Para utilizar o corretor OMR, será necessário baixar o <strong>aplicativo desktop do GabariTeX</strong> (disponível em breve para Windows, macOS e Linux). Você pode continuar criando, embaralhando e imprimindo suas provas e folhas de respostas normalmente por aqui.
+              </div>
             </div>
           </div>
         )}
@@ -906,30 +655,6 @@ export const App: React.FC = () => {
           />
         )}
       </main>
-
-      {/* MODAL DE SENHA */}
-      {showPasswordModal && (
-        <PasswordModal
-          currentPassword={teacherPassword}
-          onSavePassword={updateTeacherPassword}
-          onClose={() => setShowPasswordModal(false)}
-        />
-      )}
-
-      {/* MODAL DE CORREÇÃO E CONFIRMAÇÃO DE NOTA */}
-      {gradingSession && (
-        <GradingModal
-          initialRecord={gradingSession.record}
-          evidence={gradingSession.evidence}
-          classes={classes}
-          activeClassId={activeClassId}
-          onSelectActiveClass={handleSelectActiveClass}
-          records={records}
-          onOpenClassManager={() => setIsClassManagerOpen(true)}
-          onSave={handleGradeSaved}
-          onCancel={() => setGradingSession(null)}
-        />
-      )}
 
       {/* MODAL DE DADOS E BACKUP COMPLETO */}
       {isBackupPanelOpen && (
