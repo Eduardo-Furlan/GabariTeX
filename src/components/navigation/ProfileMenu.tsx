@@ -7,9 +7,11 @@ import {
   ChevronDown,
   HardDrive,
   FileCheck2,
+  Smartphone,
 } from 'lucide-react';
 import { useProfile } from '../../context/ProfileContext';
 import { ThemeToggle } from '../ThemeToggle';
+import { usePwaInstall } from '../../hooks/usePwaInstall';
 
 interface ProfileMenuProps {
   onOpenExportImport: (mode?: 'export' | 'import') => void;
@@ -20,6 +22,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ onOpenExportImport }) 
   const [showAbout, setShowAbout] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { exams, records, classes } = useProfile();
+  const { canInstall, installApp } = usePwaInstall();
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -86,6 +89,23 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ onOpenExportImport }) 
                 <span className="text-[10px] text-slate-400 font-normal">Restaurar ou mesclar backup de outro aparelho</span>
               </div>
             </button>
+
+            {canInstall && (
+              <button
+                type="button"
+                onClick={async () => {
+                  setIsOpen(false);
+                  await installApp();
+                }}
+                className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 transition border-t border-slate-100"
+              >
+                <Smartphone className="w-4 h-4 text-indigo-600 dark:text-indigo-300" />
+                <div>
+                  <span className="block text-slate-800">Instalar Aplicativo</span>
+                  <span className="text-[10px] text-slate-400 font-normal">Usar direto da tela inicial e operar offline</span>
+                </div>
+              </button>
+            )}
           </div>
 
           <div className="border-t border-slate-100 px-4 py-2 flex items-center justify-between">

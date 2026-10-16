@@ -16,6 +16,7 @@ import { GradebookScreen } from './screens/GradebookScreen';
 
 import { ProfileExportImportModal } from './components/profile/ProfileExportImportModal';
 import { GradingModal } from './components/scanner/GradingModal';
+import { UpdatePrompt } from './components/pwa/UpdatePrompt';
 import { Exam } from './types/exam';
 import { ProfileData, ProfileSettings } from './types/profile';
 import { BookOpen, Loader2 } from 'lucide-react';
@@ -235,6 +236,9 @@ const AppContent: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Notificações e controle de versão do PWA */}
+      <UpdatePrompt />
     </div>
   );
 };
