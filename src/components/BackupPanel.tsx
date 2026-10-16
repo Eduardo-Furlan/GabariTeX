@@ -309,7 +309,7 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({
         <div className="mt-4 p-3 rounded-xl border border-indigo-200/80 dark:border-indigo-900/50 bg-indigo-50/60 dark:bg-indigo-950/30 text-xs text-indigo-900 dark:text-indigo-200 flex items-start gap-2.5">
           <Lock className="w-4 h-4 shrink-0 text-indigo-600 dark:text-indigo-400 mt-0.5" />
           <p className="leading-relaxed">
-            <strong>Privacidade dos dados:</strong> os nomes, turmas e registros de notas ficam salvos exclusivamente no seu navegador. Os arquivos de backup contêm dados pessoais dos alunos — armazene-os em local seguro e de acesso restrito.
+            <strong>Privacidade dos dados:</strong> os nomes, turmas e registros de notas ficam salvos exclusivamente no seu navegador. Os arquivos de backup contêm dados pessoais dos alunos,  armazene-os em local seguro e de acesso restrito.
           </p>
         </div>
 

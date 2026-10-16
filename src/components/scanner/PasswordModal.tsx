@@ -58,7 +58,7 @@ export const PasswordModal: React.FC<PasswordModalProps> = ({
               <button
                 type="button"
                 onClick={() => setShowPassword((prev) => !prev)}
-                className="absolute right-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition p-1"
+                className="absolute right-2.5 text-slate-400 hover:text-slate-600 transition p-1"
                 title={showPassword ? 'Ocultar senha' : 'Exibir senha'}
                 aria-label={showPassword ? 'Ocultar senha' : 'Exibir senha'}
               >

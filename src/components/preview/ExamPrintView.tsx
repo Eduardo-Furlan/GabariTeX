@@ -24,7 +24,7 @@ export const ExamPrintView: React.FC<ExamPrintViewProps> = ({
                 {header.institution || 'Instituição de Ensino'}
               </h1>
               <h2 className="text-sm font-bold text-slate-800">
-                {header.course || 'Disciplina'} — {header.examTitle || 'Avaliação'}
+                {header.course || 'Disciplina'}: {header.examTitle || 'Avaliação'}
               </h2>
               <div className="text-xs text-slate-700 mt-1 flex items-center gap-3">
                 <span>Docente: <strong>{header.professor || 'Docente'}</strong></span>
@@ -125,7 +125,7 @@ export const ExamPrintView: React.FC<ExamPrintViewProps> = ({
 
       {/* Rodapé do Caderno */}
       <div className="pt-2 border-t border-slate-300 flex items-center justify-between text-[10px] text-slate-500 font-sans mt-3 avoid-break">
-        <span>{header.institution || 'Avaliação Acadêmica'} — {header.course}</span>
+        <span>{header.institution || 'Avaliação Acadêmica'}: {header.course}</span>
         <span>Caderno de Questões | Versão {version.versionLetter}</span>
       </div>
     </div>

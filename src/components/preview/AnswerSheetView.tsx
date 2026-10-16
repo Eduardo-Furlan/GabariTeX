@@ -200,7 +200,7 @@ export const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
                 {header.institution || 'Instituição de Ensino'}
               </h1>
               <h2 className="text-xs font-bold text-slate-800 mt-0.5 line-clamp-1">
-                {header.course || 'Disciplina'} — {header.examTitle || 'Avaliação'}
+                {header.course || 'Disciplina'}: {header.examTitle || 'Avaliação'}
               </h2>
               <div className="text-[11px] text-slate-700 mt-0.5 flex items-center gap-2">
                 <span>Docente: <strong>{header.professor || 'Docente'}</strong></span>

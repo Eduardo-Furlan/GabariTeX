@@ -150,9 +150,9 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
         />
 
         {/* Header com Toggle do Modo Diagnóstico */}
-        <div className="flex items-center justify-between pb-4 mb-5 border-b border-slate-100 flex-wrap gap-3">
+        <div className="flex items-center justify-between pb-4 mb-5 border-b border-slate-200 flex-wrap gap-3">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-indigo-50 rounded-xl text-indigo-600">
+            <div className="p-2 bg-indigo-50 dark:bg-indigo-500/10 rounded-xl text-indigo-600 dark:text-indigo-400">
               <Camera className="w-5 h-5" />
             </div>
             <div>
@@ -194,7 +194,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1 text-[11px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                <div className="flex items-center gap-1 text-[11px] text-emerald-700 dark:text-emerald-300 font-semibold bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-500/30">
                   <Sparkles className="w-3.5 h-3.5" /> OMR com auto-alinhamento ativo
                 </div>
                 {onLockPayload && (
@@ -211,7 +211,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
           ) : (
             <div className="flex items-center justify-between w-full flex-wrap gap-3">
               <div className="flex items-center gap-2 text-slate-700 font-medium">
-                <QrCode className="w-4 h-4 text-indigo-600 shrink-0" />
+                <QrCode className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
                 <span>Selecione a versão da prova ou fotografe o QR Code da folha:</span>
               </div>
               {availableVersions.length > 0 && onSelectExamVersion && (
@@ -221,7 +221,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
                       key={v.versionLetter}
                       type="button"
                       onClick={() => onSelectExamVersion(v)}
-                      className="px-3 py-1 bg-indigo-50 hover:bg-indigo-600 hover:text-on-accent text-indigo-700 border border-indigo-200 rounded-lg font-bold text-xs transition active:scale-95 shadow-sm"
+                      className="px-3 py-1 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-600 hover:text-on-accent text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 rounded-lg font-bold text-xs transition active:scale-95 shadow-sm"
                     >
                       Versão {v.versionLetter}
                     </button>
@@ -243,7 +243,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
                 </span>
                 <div>
                   <h4 className="font-extrabold text-sm text-on-accent">
-                    Diagnóstico OMR — Visualização em Tempo Real
+                    Diagnóstico OMR. Visualização em Tempo Real
                   </h4>
                   <p className="text-[11px] text-slate-400">
                     Método:{' '}
@@ -647,17 +647,17 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
               scanTarget === 'sheet' && !activePayload
                 ? 'opacity-50 cursor-not-allowed border-slate-200 bg-slate-50'
                 : isProcessing
-                ? 'border-indigo-400 bg-indigo-50/50'
+                ? 'border-indigo-400 bg-indigo-50/50 dark:bg-indigo-500/10'
                 : scanTarget === 'sheet'
-                ? 'border-slate-300 hover:border-emerald-400 hover:bg-emerald-50/30'
-                : 'border-slate-300 hover:border-indigo-400 hover:bg-indigo-50/30'
+                ? 'border-slate-300 hover:border-emerald-400 hover:bg-emerald-50/30 dark:hover:bg-emerald-500/10'
+                : 'border-slate-300 hover:border-indigo-400 hover:bg-indigo-50/30 dark:hover:bg-indigo-500/10'
             }`}
           >
             <div className="flex flex-col items-center justify-center">
               {scanTarget === 'qr' ? (
-                <QrCode className="w-6 h-6 text-indigo-500 mb-1.5" />
+                <QrCode className="w-6 h-6 text-indigo-500 dark:text-indigo-400 mb-1.5" />
               ) : (
-                <ImageIcon className="w-6 h-6 text-emerald-500 mb-1.5" />
+                <ImageIcon className="w-6 h-6 text-emerald-500 dark:text-emerald-400 mb-1.5" />
               )}
               <span className="text-xs font-semibold text-slate-700">
                 {scanTarget === 'qr'
@@ -677,15 +677,15 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
 
         {/* Mensagens de Sucesso e Erro */}
         {successMessage && (
-          <div className="mt-4 p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 flex items-center gap-2">
-            <Check className="w-4 h-4 shrink-0 text-emerald-600 font-bold" />
+          <div className="mt-4 p-3.5 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 rounded-xl text-xs text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+            <Check className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400 font-bold" />
             <span className="font-medium">{successMessage}</span>
           </div>
         )}
 
         {errorMessage && (
-          <div className="mt-4 p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 shrink-0 text-rose-500" />
+          <div className="mt-4 p-3.5 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 rounded-xl text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 shrink-0 text-rose-500 dark:text-rose-400" />
             <span className="font-medium">{errorMessage}</span>
           </div>
         )}

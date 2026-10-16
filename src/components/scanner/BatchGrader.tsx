@@ -275,11 +275,11 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
           onClick={() => fileInputRef.current?.click()}
           className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition ${
             isDragging
-              ? 'border-indigo-500 bg-indigo-50/40'
+              ? 'border-indigo-500 bg-indigo-50/40 dark:bg-indigo-500/10'
               : 'border-slate-300 hover:border-indigo-400 bg-slate-50/60 hover:bg-slate-50'
           }`}
         >
-          <Upload className="w-10 h-10 mx-auto text-indigo-600 mb-2 opacity-80" />
+          <Upload className="w-10 h-10 mx-auto text-indigo-600 dark:text-indigo-400 mb-2 opacity-80" />
           <p className="text-sm font-bold text-slate-800">
             Clique aqui ou arraste várias fotos das folhas de respostas
           </p>
@@ -289,8 +289,8 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
         </div>
 
         {state.lastDuplicateCount !== undefined && state.lastDuplicateCount > 0 && (
-          <div className="mt-3 p-2.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-lg text-xs text-amber-900 dark:text-amber-200 flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+          <div className="mt-3 p-2.5 bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/30 rounded-lg text-xs text-amber-900 dark:text-amber-300 flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
             <span>
               {state.lastDuplicateCount}{' '}
               {state.lastDuplicateCount === 1 ? 'arquivo repetido foi ignorado' : 'arquivos repetidos foram ignorados'}.
@@ -315,7 +315,7 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
                 <button
                   type="button"
                   onClick={handleCancel}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 transition flex items-center gap-1.5"
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-500/20 border border-rose-200 dark:border-rose-500/30 transition flex items-center gap-1.5"
                 >
                   <AlertTriangle className="w-3.5 h-3.5" /> Pausar / Cancelar
                 </button>
@@ -355,23 +355,23 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
               Total: {summary.total}
             </span>
             {summary.ok > 0 && (
-              <span className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 font-semibold text-emerald-800 dark:text-emerald-300">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> {summary.ok} OK
+              <span className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 font-semibold text-emerald-800 dark:text-emerald-300">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> {summary.ok} OK
               </span>
             )}
             {summary.review > 0 && (
-              <span className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-amber-50 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800 font-semibold text-amber-900 dark:text-amber-200">
-                <AlertTriangle className="w-3.5 h-3.5 text-amber-600" /> {summary.review} Para Revisar
+              <span className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/30 font-semibold text-amber-900 dark:text-amber-200">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /> {summary.review} Para Revisar
               </span>
             )}
             {summary.error > 0 && (
-              <span className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 font-semibold text-rose-800 dark:text-rose-300">
-                <XCircle className="w-3.5 h-3.5 text-rose-600" /> {summary.error} Com Erro
+              <span className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 font-semibold text-rose-800 dark:text-rose-300">
+                <XCircle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" /> {summary.error} Com Erro
               </span>
             )}
             {summary.saved > 0 && (
-              <span className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-indigo-50 border border-indigo-200 font-semibold text-indigo-800">
-                <Check className="w-3.5 h-3.5 text-indigo-600" /> {summary.saved} Salvas
+              <span className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 font-semibold text-indigo-800 dark:text-indigo-300">
+                <Check className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" /> {summary.saved} Salvas
               </span>
             )}
           </div>
@@ -391,11 +391,11 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
                   key={item.id}
                   className={`p-3.5 text-xs transition flex flex-col md:flex-row md:items-center justify-between gap-3 ${
                     item.status === 'processing'
-                      ? 'bg-indigo-50/40'
+                      ? 'bg-indigo-50/40 dark:bg-indigo-500/10'
                       : item.status === 'review'
-                      ? 'bg-amber-50/40'
+                      ? 'bg-amber-50/40 dark:bg-amber-500/15'
                       : item.status === 'error'
-                      ? 'bg-rose-50/30'
+                      ? 'bg-rose-50/30 dark:bg-rose-500/10'
                       : item.status === 'saved'
                       ? 'opacity-70 bg-slate-50/50'
                       : 'hover:bg-slate-50'
@@ -411,7 +411,7 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
                       <img
                         src={evidence.sheetThumbUrl}
                         alt="Miniatura da folha"
-                        className="w-12 h-16 object-cover rounded border border-slate-200 shrink-0 bg-white"
+                        className="w-12 h-16 object-cover rounded border border-slate-200 shrink-0 bg-[#ffffff]"
                       />
                     ) : (
                       <div className="w-12 h-16 rounded border border-dashed border-slate-300 flex items-center justify-center shrink-0 bg-slate-50 text-slate-400">
@@ -433,7 +433,7 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
 
                       {rec && (
                         <div className="flex items-center gap-1.5 pt-0.5">
-                          <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-800 font-bold text-[10px] rounded">
+                          <span className="px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-800 dark:text-indigo-300 font-bold text-[10px] rounded">
                             Versão {rec.versionLetter}
                           </span>
                           <span className="font-mono font-bold text-slate-700 text-[11px]">
@@ -551,28 +551,28 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
                       </span>
                     )}
                     {item.status === 'processing' && (
-                      <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-indigo-50 text-indigo-700 animate-pulse">
-                        <Loader2 className="w-3 h-3 animate-spin text-indigo-600" /> Analisando...
+                      <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 animate-pulse">
+                        <Loader2 className="w-3 h-3 animate-spin text-indigo-600 dark:text-indigo-400" /> Analisando...
                       </span>
                     )}
                     {item.status === 'ok' && (
-                      <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> OK
+                      <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> OK
                       </span>
                     )}
                     {item.status === 'review' && (
-                      <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300">
-                        <AlertTriangle className="w-3.5 h-3.5 text-amber-600" /> Revisar
+                      <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-300">
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /> Revisar
                       </span>
                     )}
                     {item.status === 'error' && (
-                      <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-rose-100 dark:bg-rose-950/70 text-rose-800 dark:text-rose-300">
-                        <XCircle className="w-3.5 h-3.5 text-rose-600" /> Erro
+                      <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-rose-100 dark:bg-rose-500/20 text-rose-800 dark:text-rose-300">
+                        <XCircle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" /> Erro
                       </span>
                     )}
                     {item.status === 'saved' && (
                       <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-200 text-slate-700">
-                        <Check className="w-3.5 h-3.5 text-emerald-600" /> Salva no Livro
+                        <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> Salva no Livro
                       </span>
                     )}
                     {item.status === 'discarded' && (
@@ -597,7 +597,7 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
                         className="px-2.5 py-1 rounded text-xs font-semibold bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 flex items-center gap-1 transition"
                         title="Abrir espelho para conferência manual"
                       >
-                        <Eye className="w-3.5 h-3.5 text-indigo-600" /> Revisar
+                        <Eye className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" /> Revisar
                       </button>
                     )}
 
@@ -619,7 +619,7 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
                         className="px-2.5 py-1 rounded text-xs font-semibold bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 flex items-center gap-1 transition"
                         title="Tentar ler novamente esta foto"
                       >
-                        <RotateCcw className="w-3.5 h-3.5 text-indigo-600" /> Tentar de novo
+                        <RotateCcw className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" /> Tentar de novo
                       </button>
                     )}
 
@@ -627,7 +627,7 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
                       <button
                         type="button"
                         onClick={() => dispatch({ type: 'DISCARD_ITEM', id: item.id })}
-                        className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
+                        className="p-1 rounded text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition"
                         title="Descartar esta foto do lote"
                       >
                         <Trash2 className="w-3.5 h-3.5" />

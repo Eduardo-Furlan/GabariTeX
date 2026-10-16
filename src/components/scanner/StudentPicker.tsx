@@ -152,7 +152,7 @@ export const StudentPicker: React.FC<StudentPickerProps> = ({
               onClick={() => setMode('select')}
               className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition ${
                 mode === 'select'
-                  ? 'bg-white text-indigo-600 shadow-sm font-bold'
+                  ? 'bg-white text-indigo-700 dark:text-indigo-300 shadow-sm font-bold'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -163,7 +163,7 @@ export const StudentPicker: React.FC<StudentPickerProps> = ({
               onClick={() => setMode('manual')}
               className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition ${
                 mode === 'manual'
-                  ? 'bg-white text-indigo-600 shadow-sm font-bold'
+                  ? 'bg-white text-indigo-700 dark:text-indigo-300 shadow-sm font-bold'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -178,7 +178,7 @@ export const StudentPicker: React.FC<StudentPickerProps> = ({
         <div className="space-y-2">
           {studentRef ? (
             /* Aluno Selecionado */
-            <div className="flex items-center justify-between p-2.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-xl">
+            <div className="flex items-center justify-between p-2.5 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 rounded-xl">
               <div className="flex items-center gap-2 min-w-0">
                 <div className="w-7 h-7 rounded-full bg-emerald-200 dark:bg-emerald-800/50 text-emerald-800 dark:text-emerald-300 flex items-center justify-center font-bold text-xs shrink-0">
                   <Check className="w-4 h-4" />
@@ -195,7 +195,7 @@ export const StudentPicker: React.FC<StudentPickerProps> = ({
               <button
                 type="button"
                 onClick={handleClearSelectedStudent}
-                className="text-xs text-slate-500 hover:text-rose-600 flex items-center gap-1 px-2 py-1 rounded hover:bg-black/5"
+                className="text-xs text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 flex items-center gap-1 px-2 py-1 rounded hover:bg-black/5"
               >
                 <X className="w-3.5 h-3.5" /> Trocar
               </button>
@@ -232,7 +232,7 @@ export const StudentPicker: React.FC<StudentPickerProps> = ({
                         className="w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center justify-between transition group"
                       >
                         <div className="min-w-0 pr-2">
-                          <span className="text-xs font-semibold text-slate-800 block truncate group-hover:text-indigo-600">
+                          <span className="text-xs font-semibold text-slate-800 block truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
                             {st.name}
                           </span>
                           <span className="text-[10px] font-mono text-slate-400 block">
@@ -240,8 +240,8 @@ export const StudentPicker: React.FC<StudentPickerProps> = ({
                           </span>
                         </div>
                         {alreadyGraded && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded font-extrabold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 shrink-0 flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3 text-amber-600" /> Já corrigido
+                          <span className="text-[10px] px-1.5 py-0.5 rounded font-extrabold bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-300 shrink-0 flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3 text-amber-600 dark:text-amber-400" /> Já corrigido
                           </span>
                         )}
                       </button>

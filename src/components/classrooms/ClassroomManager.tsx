@@ -279,9 +279,9 @@ export const ClassroomManager: React.FC<ClassroomManagerProps> = ({
     <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5">
       <div className="bg-white rounded-2xl max-w-5xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
         {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between gap-3 shrink-0">
+        <div className="p-4 sm:p-5 border-b border-slate-200 flex items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-xl border border-indigo-200 dark:border-indigo-800/60">
+            <div className="p-2.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-xl border border-indigo-200 dark:border-indigo-500/30">
               <Users className="w-5 h-5" />
             </div>
             <div>
@@ -313,7 +313,7 @@ export const ClassroomManager: React.FC<ClassroomManagerProps> = ({
               <button
                 type="button"
                 onClick={() => setIsCreatingClass(true)}
-                className="flex items-center gap-1 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 px-2 py-1 rounded hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition"
+                className="flex items-center gap-1 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 px-2 py-1 rounded hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition"
               >
                 <Plus className="w-3.5 h-3.5" /> Nova
               </button>
@@ -321,7 +321,7 @@ export const ClassroomManager: React.FC<ClassroomManagerProps> = ({
 
             {/* Input de criação rápida de turma */}
             {isCreatingClass && (
-              <div className="p-3 border-b border-indigo-100 dark:border-indigo-900/60 bg-indigo-50/40 dark:bg-indigo-950/30">
+              <div className="p-3 border-b border-indigo-100 dark:border-indigo-500/20 bg-indigo-50/40 dark:bg-indigo-500/10">
                 <input
                   type="text"
                   placeholder="Nome da turma (ex: 2º A)"
@@ -329,7 +329,7 @@ export const ClassroomManager: React.FC<ClassroomManagerProps> = ({
                   onChange={(e) => setNewClassName(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleCreateClass()}
                   autoFocus
-                  className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-indigo-300 dark:border-indigo-700 bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 mb-2"
+                  className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-indigo-300 dark:border-indigo-500/40 bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 mb-2"
                 />
                 <div className="flex items-center justify-end gap-1.5">
                   <button
@@ -390,7 +390,7 @@ export const ClassroomManager: React.FC<ClassroomManagerProps> = ({
                             <button
                               type="button"
                               onClick={handleSaveRename}
-                              className="p-1 text-emerald-600 hover:bg-emerald-50 rounded"
+                              className="p-1 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded"
                             >
                               <Check className="w-3.5 h-3.5" />
                             </button>
@@ -408,7 +408,7 @@ export const ClassroomManager: React.FC<ClassroomManagerProps> = ({
                             {isActive && (
                               <span
                                 className={`text-[9px] px-1.5 py-0.5 rounded font-extrabold uppercase ${
-                                  isSelected ? 'bg-indigo-700 text-on-accent' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
+                                  isSelected ? 'bg-indigo-700 text-on-accent' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300'
                                 }`}
                               >
                                 Ativa
@@ -479,7 +479,7 @@ export const ClassroomManager: React.FC<ClassroomManagerProps> = ({
                       <button
                         type="button"
                         onClick={() => onSelectActiveClass(currentClass.id)}
-                        className="text-xs px-2 py-0.5 rounded-lg border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 font-semibold transition"
+                        className="text-xs px-2 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 font-semibold transition"
                       >
                         Definir como Turma Ativa
                       </button>
@@ -506,7 +506,7 @@ export const ClassroomManager: React.FC<ClassroomManagerProps> = ({
                         setPastedText('');
                         setParsedPreview(null);
                       }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 rounded-lg border border-indigo-200 dark:border-indigo-800/60 transition"
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 rounded-lg border border-indigo-200 dark:border-indigo-500/30 transition"
                     >
                       <Upload className="w-3.5 h-3.5" /> Importar / Colar
                     </button>
@@ -572,7 +572,7 @@ export const ClassroomManager: React.FC<ClassroomManagerProps> = ({
                                     <button
                                       type="button"
                                       onClick={handleSaveEditStudent}
-                                      className="p-1 text-emerald-600 hover:bg-emerald-50 rounded"
+                                      className="p-1 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded"
                                     >
                                       <Check className="w-3.5 h-3.5" />
                                     </button>
@@ -669,7 +669,7 @@ export const ClassroomManager: React.FC<ClassroomManagerProps> = ({
         <div className="fixed inset-0 z-60 bg-black/70 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl border border-slate-200 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-rose-100 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 rounded-xl">
+              <div className="p-2.5 bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 rounded-xl">
                 <AlertTriangle className="w-5 h-5" />
               </div>
               <div>
@@ -682,7 +682,7 @@ export const ClassroomManager: React.FC<ClassroomManagerProps> = ({
               </div>
             </div>
 
-            <div className="text-xs text-slate-600 bg-amber-50 dark:bg-amber-950/40 p-3 rounded-xl border border-amber-200 dark:border-amber-800/60">
+            <div className="text-xs text-slate-600 bg-amber-50 dark:bg-amber-500/15 p-3 rounded-xl border border-amber-200 dark:border-amber-500/30">
               {recordsCountInDeletingClass > 0 ? (
                 <span>
                   <strong>{recordsCountInDeletingClass}</strong>{' '}
@@ -719,9 +719,9 @@ export const ClassroomManager: React.FC<ClassroomManagerProps> = ({
       {isImportModalOpen && (
         <div className="fixed inset-0 z-60 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-5">
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+            <div className="p-4 border-b border-slate-200 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <FileSpreadsheet className="w-5 h-5 text-indigo-600" />
+                <FileSpreadsheet className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                 <h3 className="text-sm font-bold text-slate-900">
                   Importar Alunos em Massa
                 </h3>
@@ -769,7 +769,7 @@ export const ClassroomManager: React.FC<ClassroomManagerProps> = ({
                 {importMode === 'new' && (
                   <input
                     type="text"
-                    placeholder="Nome da nova turma (ex: 1º Ano B — Matutino)"
+                    placeholder="Nome da nova turma (ex: 1º Ano B Matutino)"
                     value={importTargetName}
                     onChange={(e) => setImportTargetName(e.target.value)}
                     className="mt-2.5 w-full text-xs px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500"
@@ -824,10 +824,10 @@ export const ClassroomManager: React.FC<ClassroomManagerProps> = ({
 
               {/* Resumo da Análise */}
               {parsedPreview && (
-                <div className="bg-indigo-50/50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/60 rounded-xl p-3 text-xs space-y-2">
+                <div className="bg-indigo-50/50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 rounded-xl p-3 text-xs space-y-2">
                   <div className="flex items-center justify-between font-bold text-indigo-900 dark:text-indigo-200">
                     <span className="flex items-center gap-1.5">
-                      <UserCheck className="w-4 h-4 text-indigo-600" />
+                      <UserCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                       {parsedPreview.students.length} alunos válidos detectados
                     </span>
                     <span className="text-[11px] font-normal text-slate-500">

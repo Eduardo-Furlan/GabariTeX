@@ -98,7 +98,7 @@ export const QuestionList: React.FC<QuestionListProps> = ({ questions, onChange 
             }
             className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition ${
               isLimitReached
-                ? 'bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed shadow-none'
+                ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
                 : 'bg-indigo-600 hover:bg-indigo-700 text-on-accent'
             }`}
           >
@@ -115,7 +115,7 @@ export const QuestionList: React.FC<QuestionListProps> = ({ questions, onChange 
             }
             className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
               isLimitReached
-                ? 'bg-slate-100 dark:bg-slate-800 text-slate-300 dark:text-slate-600 cursor-not-allowed'
+                ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
                 : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
             }`}
           >
@@ -164,7 +164,7 @@ export const QuestionList: React.FC<QuestionListProps> = ({ questions, onChange 
           }
           className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition border ${
             isLimitReached
-              ? 'bg-slate-100 dark:bg-slate-800/40 text-slate-400 dark:text-slate-600 border-slate-200 dark:border-slate-800 cursor-not-allowed'
+              ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
               : 'bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-500/30'
           }`}
         >
@@ -181,7 +181,7 @@ export const QuestionList: React.FC<QuestionListProps> = ({ questions, onChange 
           }
           className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition border ${
             isLimitReached
-              ? 'bg-slate-50 dark:bg-slate-900/40 text-slate-300 dark:text-slate-700 border-slate-200 dark:border-slate-800 cursor-not-allowed'
+              ? 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed'
               : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200'
           }`}
         >

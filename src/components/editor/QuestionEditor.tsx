@@ -128,7 +128,7 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
 
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-1.5 text-xs">
-            <label htmlFor={`annulled-${question.id}`} className="font-medium text-slate-600 dark:text-slate-400">
+            <label htmlFor={`annulled-${question.id}`} className="font-medium text-slate-600">
               Situação:
             </label>
             <select
@@ -143,15 +143,15 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
               }}
               className={`border rounded px-2 py-1 text-xs font-medium transition ${
                 question.annulled === 'give_points'
-                  ? 'border-amber-400 bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-700'
+                  ? 'border-amber-200 bg-amber-50 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30'
                   : question.annulled === 'discard'
-                  ? 'border-red-400 bg-red-50 text-red-800 dark:bg-red-950/40 dark:text-red-300 dark:border-red-700'
-                  : 'border-slate-300 bg-white text-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:border-slate-700'
+                  ? 'border-rose-200 bg-rose-50 text-rose-800 dark:bg-rose-500/15 dark:text-rose-300 dark:border-rose-500/30'
+                  : 'border-slate-300 bg-white text-slate-700'
               }`}
             >
               <option value="">Válida</option>
-              <option value="give_points">Anulada — pontos para todos</option>
-              <option value="discard">Anulada — desconsiderar</option>
+              <option value="give_points">Anulada (pontos para todos)</option>
+              <option value="discard">Anulada (desconsiderar)</option>
             </select>
           </div>
 
@@ -171,7 +171,7 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
           <button
             type="button"
             onClick={onDelete}
-            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 dark:hover:text-red-400 rounded-lg transition"
+            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 dark:hover:text-rose-300 rounded-lg transition"
             title="Excluir questão"
           >
             <Trash2 className="w-4 h-4" />
@@ -183,8 +183,8 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
         <div
           className={`mb-3 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center justify-between ${
             question.annulled === 'give_points'
-              ? 'bg-amber-50 text-amber-900 border border-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-800'
-              : 'bg-red-50 text-red-900 border border-red-200 dark:bg-red-950/30 dark:text-red-300 dark:border-red-800'
+              ? 'bg-amber-50 text-amber-900 border border-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30'
+              : 'bg-rose-50 text-rose-900 border border-rose-200 dark:bg-rose-500/15 dark:text-rose-300 dark:border-rose-500/30'
           }`}
         >
           <span>

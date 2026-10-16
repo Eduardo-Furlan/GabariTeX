@@ -331,7 +331,7 @@ export const App: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsBackupPanelOpen(true)}
-              className="ml-auto shrink-0 px-3 py-1 bg-white text-rose-700 hover:bg-rose-50 rounded-lg text-xs font-bold transition shadow-sm"
+              className="ml-auto shrink-0 px-3 py-1 bg-white text-rose-700 dark:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg text-xs font-bold transition shadow-sm"
             >
               Abrir Painel de Backup
             </button>
@@ -419,7 +419,7 @@ export const App: React.FC = () => {
                     <div>
                       <h3 className="font-bold text-base text-slate-800 flex items-center gap-2">
                         <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                        Gabarito Oficial — Versão {currentVersion.versionLetter}
+                        Gabarito Oficial (Versão {currentVersion.versionLetter})
                       </h3>
                       <p className="text-xs text-slate-500 mt-0.5">
                         Chave de respostas codificada e protegida no QR Code da Versão {currentVersion.versionLetter}.
@@ -588,7 +588,7 @@ export const App: React.FC = () => {
                     }
                     className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-xl text-xs font-bold shadow-md transition ${
                       isSheetOverflowing || isExamCorrupted
-                        ? 'bg-slate-300 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed shadow-none'
+                        ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
                         : 'bg-indigo-600 hover:bg-indigo-700 text-on-accent'
                     }`}
                   >
@@ -722,7 +722,7 @@ export const App: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setShowTeacherPassword((prev) => !prev)}
-                          className="absolute right-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"
+                          className="absolute right-1 text-slate-400 hover:text-slate-600 p-1"
                           title={showTeacherPassword ? 'Ocultar senha' : 'Exibir senha'}
                           aria-label={showTeacherPassword ? 'Ocultar senha' : 'Exibir senha'}
                         >
