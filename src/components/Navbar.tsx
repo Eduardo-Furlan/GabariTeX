@@ -106,7 +106,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       {ex.name}
                     </option>
                   ))}
-                  <option value="__manage__">📁 Gerenciar Provas...</option>
+                  <option value="__manage__">Gerenciar Provas...</option>
                 </select>
                 {onOpenLibrary && (
                   <button

@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>GabariTeX — Câmera Remota</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --success: #059669;
+      --warning: #d97706;
+      --danger: #dc2626;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      padding-bottom: 32px;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 16px;
+    }
+    .brand { font-weight: 700; font-size: 1.15rem; display: flex; align-items: center; gap: 8px; }
+    .badge-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8rem;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      background: #064e3b;
+      color: #6ee7b7;
+      font-weight: 500;
+    }
+    .badge-status.disconnected { background: #7f1d1d; color: #fca5a5; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+    .actions-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 16px;
+      margin-bottom: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 16px;
+      font-size: 1.05rem;
+      font-weight: 600;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      text-decoration: none;
+      transition: filter 0.15s, transform 0.05s;
+      min-height: 52px;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-secondary { background: #334155; color: #f1f5f9; }
+    .btn:disabled { opacity: 0.5; pointer-events: none; }
+    .alert-error {
+      background: #450a0a;
+      border: 1px solid #7f1d1d;
+      color: #fecaca;
+      padding: 14px;
+      border-radius: var(--radius);
+      margin-bottom: 16px;
+      font-size: 0.9rem;
+      line-height: 1.4;
+      display: none;
+    }
+    .section-title {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .photo-list { display: flex; flex-direction: column; gap: 12px; flex: 1; }
+    .empty-state {
+      text-align: center;
+      padding: 32px 16px;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+    .photo-item {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      animation: fadeIn 0.2s ease-out;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    .photo-thumb {
+      width: 64px;
+      height: 64px;
+      border-radius: 8px;
+      object-fit: cover;
+      background: #0f172a;
+      flex-shrink: 0;
+    }
+    .photo-details { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+    .photo-time { font-size: 0.75rem; color: var(--text-muted); }
+    .photo-state-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 4px 8px;
+      border-radius: 6px;
+      width: fit-content;
+    }
+    .state-uploading { background: #1e3a8a; color: #93c5fd; }
+    .state-received { background: #312e81; color: #c7d2fe; }
+    .state-processing { background: #3730a3; color: #e0e7ff; }
+    .state-ok { background: #064e3b; color: #6ee7b7; }
+    .state-review { background: #78350f; color: #fde68a; }
+    .state-error { background: #7f1d1d; color: #fca5a5; }
+    .photo-message { font-size: 0.8rem; color: #cbd5e1; word-break: break-word; }
+    .btn-retry {
+      margin-top: 4px;
+      padding: 6px 12px;
+      background: #7f1d1d;
+      color: #fff;
+      font-size: 0.8rem;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      width: fit-content;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+      <span>GabariTeX</span>
+    </div>
+    <div id="statusBadge" class="badge-status">
+      <span class="dot"></span>
+      <span id="statusText">Conectado</span>
+    </div>
+  </header>
+
+  <div id="alertBox" class="alert-error"></div>
+
+  <div class="actions-card">
+    <button id="btnCapture" class="btn btn-primary">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+      Tirar Foto com Câmera
+    </button>
+    <button id="btnGallery" class="btn btn-secondary">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/><circle cx="9" cy="9" r="2"/></svg>
+      Escolher da Galeria
+    </button>
+    <input type="file" id="captureInput" accept="image/*" capture="environment" style="display:none">
+    <input type="file" id="galleryInput" accept="image/*" multiple style="display:none">
+  </div>
+
+  <div class="section-title">Fotos Enviadas</div>
+  <div id="photoList" class="photo-list">
+    <div id="emptyState" class="empty-state">
+      Nenhuma foto enviada nesta sessão.<br>Toque em <strong>Tirar Foto</strong> para começar.
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      // 1. Extração do token do fragmento da URL (#t=...)
+      function getToken() {
+        var hash = window.location.hash || '';
+        var match = hash.match(/[#&]t=([a-zA-Z0-9_-]+)/);
+        return match ? match[1] : null;
+      }
+
+      var token = getToken();
+      var alertBox = document.getElementById('alertBox');
+      var statusBadge = document.getElementById('statusBadge');
+      var statusText = document.getElementById('statusText');
+      var captureInput = document.getElementById('captureInput');
+      var galleryInput = document.getElementById('galleryInput');
+      var btnCapture = document.getElementById('btnCapture');
+      var btnGallery = document.getElementById('btnGallery');
+      var photoList = document.getElementById('photoList');
+      var emptyState = document.getElementById('emptyState');
+
+      function showError(msg) {
+        alertBox.textContent = msg;
+        alertBox.style.display = 'block';
+      }
+
+      function setDisconnected(msg) {
+        statusBadge.classList.add('disconnected');
+        statusText.textContent = 'Desconectado';
+        showError(msg || 'Sessão encerrada no computador. Leia o QR Code novamente.');
+        btnCapture.disabled = true;
+        btnGallery.disabled = true;
+      }
+
+      if (!token) {
+        setDisconnected('Token de sessão não encontrado na URL. Escaneie o QR Code no computador novamente.');
+        return;
+      }
+
+      btnCapture.addEventListener('click', function() { captureInput.click(); });
+      btnGallery.addEventListener('click', function() { galleryInput.click(); });
+
+      captureInput.addEventListener('change', handleFiles);
+      galleryInput.addEventListener('change', handleFiles);
+
+      function handleFiles(e) {
+        var files = e.target.files;
+        if (!files || files.length === 0) return;
+        for (var i = 0; i < files.length; i++) {
+          uploadPhoto(files[i]);
+        }
+        e.target.value = '';
+      }
+
+      function uploadPhoto(file) {
+        if (emptyState) {
+          emptyState.style.display = 'none';
+        }
+
+        var localId = 'p_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+        var timeStr = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        var thumbUrl = URL.createObjectURL(file);
+
+        var item = document.createElement('div');
+        item.className = 'photo-item';
+        item.id = localId;
+        item.innerHTML =
+          '<img class="photo-thumb" src="' + thumbUrl + '" alt="Miniatura">' +
+          '<div class="photo-details">' +
+            '<div class="photo-time">' + timeStr + ' (' + (file.size / 1024 / 1024).toFixed(1) + ' MB)</div>' +
+            '<div class="photo-state-badge state-uploading">Enviando...</div>' +
+            '<div class="photo-message"></div>' +
+          '</div>';
+
+        photoList.insertBefore(item, photoList.firstChild);
+
+        var badge = item.querySelector('.photo-state-badge');
+        var msgEl = item.querySelector('.photo-message');
+
+        function doUpload() {
+          badge.className = 'photo-state-badge state-uploading';
+          badge.textContent = 'Enviando...';
+          msgEl.textContent = '';
+
+          fetch('/api/photo', {
+            method: 'POST',
+            headers: {
+              'x-gabaritex-token': token,
+              'Content-Type': file.type || 'application/octet-stream'
+            },
+            body: file
+          })
+          .then(function(res) {
+            if (res.status === 401) {
+              setDisconnected();
+              throw new Error('Sessão encerrada ou token inválido');
+            }
+            if (res.status === 413) {
+              throw new Error('Foto muito grande (máximo 25 MB)');
+            }
+            if (res.status === 429) {
+              throw new Error('Fila cheia no computador. Aguarde o processamento.');
+            }
+            if (!res.ok) {
+              return res.json().catch(function() { return { error: 'Falha no envio HTTP ' + res.status }; })
+                .then(function(data) { throw new Error(data.error || 'Erro ' + res.status); });
+            }
+            return res.json();
+          })
+          .then(function(data) {
+            badge.className = 'photo-state-badge state-received';
+            badge.textContent = 'Recebida no computador';
+            startPolling(data.id, item, file);
+          })
+          .catch(function(err) {
+            badge.className = 'photo-state-badge state-error';
+            badge.textContent = 'Falha no envio';
+            msgEl.textContent = err.message || 'Erro de conexão';
+
+            var retryBtn = document.createElement('button');
+            retryBtn.className = 'btn-retry';
+            retryBtn.textContent = 'Tentar novamente';
+            retryBtn.onclick = function() {
+              retryBtn.remove();
+              doUpload();
+            };
+            msgEl.appendChild(document.createElement('br'));
+            msgEl.appendChild(retryBtn);
+          });
+        }
+
+        doUpload();
+      }
+
+      function startPolling(photoId, item, file) {
+        var badge = item.querySelector('.photo-state-badge');
+        var msgEl = item.querySelector('.photo-message');
+        var pollTimer = null;
+        var attempts = 0;
+
+        function checkStatus() {
+          attempts++;
+          fetch('/api/photo/' + encodeURIComponent(photoId), {
+            headers: { 'x-gabaritex-token': token }
+          })
+          .then(function(res) {
+            if (res.status === 401) {
+              setDisconnected();
+              clearInterval(pollTimer);
+              return null;
+            }
+            if (!res.ok) return null;
+            return res.json();
+          })
+          .then(function(data) {
+            if (!data) return;
+
+            if (data.status === 'processing') {
+              badge.className = 'photo-state-badge state-processing';
+              badge.textContent = 'Lendo folha no computador...';
+            } else if (data.status === 'ok') {
+              clearInterval(pollTimer);
+              badge.className = 'photo-state-badge state-ok';
+              badge.textContent = data.label || 'Lida';
+              msgEl.textContent = data.message || '';
+            } else if (data.status === 'review') {
+              clearInterval(pollTimer);
+              badge.className = 'photo-state-badge state-review';
+              badge.textContent = data.label || 'Revisar no computador';
+              msgEl.textContent = data.message || 'Contém dúvidas de leitura';
+            } else if (data.status === 'error') {
+              clearInterval(pollTimer);
+              badge.className = 'photo-state-badge state-error';
+              badge.textContent = 'Não consegui ler — tire outra';
+              msgEl.textContent = data.message || 'Falha ao processar';
+            }
+          })
+          .catch(function() {
+            // Falha transitória de rede, tenta novamente no próximo tick
+          });
+
+          // Timeout de polling após 10 minutos (600 tentativas a 1s)
+          if (attempts > 600) {
+            clearInterval(pollTimer);
+          }
+        }
+
+        pollTimer = setInterval(checkStatus, 1000);
+      }
+    })();
+  </script>
+</body>
+</html>
+

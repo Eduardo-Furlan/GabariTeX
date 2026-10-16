@@ -19,6 +19,7 @@ import {
   ChevronUp,
   RefreshCw,
   FileCheck,
+  Smartphone,
 } from 'lucide-react';
 
 import { PasswordModal } from './PasswordModal';
@@ -31,6 +32,8 @@ interface PhotoUploaderProps {
   onGraded: (record: GradingRecord, evidence?: GradingEvidence) => void;
   availableVersions?: ExamVersion[];
   onSelectExamVersion?: (v: ExamVersion) => void;
+  onOpenRemoteCamera?: () => void;
+  isRemoteConnected?: boolean;
 }
 
 export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
@@ -41,6 +44,8 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
   onGraded,
   availableVersions = [],
   onSelectExamVersion,
+  onOpenRemoteCamera,
+  isRemoteConnected = false,
 }) => {
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [scanTarget, setScanTarget] = useState<'qr' | 'sheet'>(activePayload ? 'sheet' : 'qr');
@@ -631,6 +636,26 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
 
         {/* Botões de Ação para Captura */}
         <div className="space-y-3">
+          {typeof __DESKTOP__ !== 'undefined' && __DESKTOP__ && onOpenRemoteCamera && (
+            <button
+              type="button"
+              onClick={onOpenRemoteCamera}
+              disabled={isProcessing}
+              className={`w-full py-4 px-5 font-extrabold text-sm rounded-xl border-2 transition flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50 active:scale-[0.99] shadow-xs ${
+                isRemoteConnected
+                  ? 'border-emerald-300 dark:border-emerald-500/40 bg-emerald-50/70 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100'
+                  : 'border-dashed border-indigo-300 dark:border-indigo-500/40 bg-indigo-50/70 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100'
+              }`}
+            >
+              <Smartphone className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+              <span>
+                {isRemoteConnected
+                  ? 'Celular Conectado — Ver QR Code / Instruções'
+                  : 'Tirar Foto com a Câmera do Celular (Parear por QR Code)'}
+              </span>
+            </button>
+          )}
+
           {!__DESKTOP__ && (
             <button
               type="button"

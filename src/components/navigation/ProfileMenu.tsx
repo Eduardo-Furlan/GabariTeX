@@ -126,7 +126,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ onOpenExportImport }) 
 
           <div className="mt-1 pt-2 border-t border-slate-100 px-4 pb-1">
             <p className="text-[11px] text-slate-500 leading-relaxed">
-              🔒 Seus dados ficam salvos localmente neste aparelho. Exporte um perfil para guardar uma cópia segura ou transferir para outro computador.
+              Seus dados ficam salvos localmente neste aparelho. Exporte um perfil para guardar uma cópia segura ou transferir para outro computador.
             </p>
           </div>
         </div>

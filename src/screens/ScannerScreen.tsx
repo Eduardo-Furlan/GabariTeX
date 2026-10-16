@@ -12,11 +12,24 @@ import {
   Monitor,
   FileText,
   Users,
+  Smartphone,
+  QrCode,
 } from 'lucide-react';
 import { useProfile } from '../context/ProfileContext';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { PhotoUploader } from '../components/scanner/PhotoUploader';
 import { BatchGrader } from '../components/scanner/BatchGrader';
+import { RemoteCameraPanel } from '../components/scanner/RemoteCameraPanel';
+import {
+  RemoteSessionInfo,
+  NetworkInterfaceInfo,
+  startRemoteCamera,
+  stopRemoteCamera,
+  getRemoteCameraStatus,
+  getNetworkInterfaces,
+  listenRemotePhotos,
+  listenRemoteStopped,
+} from '../platform/remoteCamera';
 import { Route } from '../router/hashRouter';
 
 interface ScannerScreenProps {
@@ -47,6 +60,75 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
   } = useProfile();
 
   const [showTeacherPassword, setShowTeacherPassword] = useState<boolean>(false);
+
+  // Estado e controle da Câmera Remota Desktop (Plano 13)
+  const [remotePanelOpen, setRemotePanelOpen] = useState<boolean>(false);
+  const [remoteSession, setRemoteSession] = useState<RemoteSessionInfo | null>(null);
+  const [isStartingRemote, setIsStartingRemote] = useState<boolean>(false);
+  const [remoteReceivedCount, setRemoteReceivedCount] = useState<number>(0);
+  const [availableInterfaces, setAvailableInterfaces] = useState<NetworkInterfaceInfo[]>([]);
+
+  React.useEffect(() => {
+    if (typeof __DESKTOP__ === 'undefined' || !__DESKTOP__) return;
+    getRemoteCameraStatus().then((s) => {
+      if (s) setRemoteSession(s);
+    });
+    getNetworkInterfaces().then((list) => {
+      setAvailableInterfaces(list);
+    });
+
+    let unlistenStopped: (() => void) | undefined;
+    listenRemoteStopped(() => {
+      setRemoteSession(null);
+    }).then((un) => {
+      unlistenStopped = un;
+    });
+
+    let unlistenPhotos: (() => void) | undefined;
+    listenRemotePhotos(() => {
+      setRemoteReceivedCount((c) => c + 1);
+    }).then((un) => {
+      unlistenPhotos = un;
+    });
+
+    return () => {
+      if (unlistenStopped) unlistenStopped();
+      if (unlistenPhotos) unlistenPhotos();
+    };
+  }, []);
+
+  const handleStartRemote = async (ip?: string) => {
+    setIsStartingRemote(true);
+    try {
+      const s = await startRemoteCamera(ip);
+      setRemoteSession(s);
+    } finally {
+      setIsStartingRemote(false);
+    }
+  };
+
+  const handleStopRemote = async () => {
+    await stopRemoteCamera();
+    setRemoteSession(null);
+  };
+
+  const handleChangeRemoteInterface = async (ip: string) => {
+    setIsStartingRemote(true);
+    try {
+      const s = await startRemoteCamera(ip);
+      setRemoteSession(s);
+    } finally {
+      setIsStartingRemote(false);
+    }
+  };
+
+  const handleOpenRemoteCamera = () => {
+    setScannerMode('batch');
+    setRemotePanelOpen(true);
+    if (!remoteSession) {
+      handleStartRemote();
+    }
+  };
 
   const activeClassName = activeClassId
     ? classes.find((c) => c.id === activeClassId)?.name || 'Sem turma fixa'
@@ -91,7 +173,27 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 self-end sm:self-auto">
+              <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
+                <button
+                  type="button"
+                  onClick={handleOpenRemoteCamera}
+                  className={`px-3 py-1 text-xs font-bold rounded-lg border flex items-center gap-1.5 transition ${
+                    remoteSession
+                      ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-500/30'
+                      : 'bg-indigo-600 hover:bg-indigo-700 text-on-accent border-indigo-700 shadow-xs'
+                  }`}
+                  title="Parear câmera do celular para fotografar provas"
+                >
+                  <Smartphone className="w-3.5 h-3.5" />
+                  {remoteSession ? (
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      Celular Conectado
+                    </span>
+                  ) : (
+                    'Câmera do Celular'
+                  )}
+                </button>
                 <button
                   type="button"
                   onClick={() => onNavigate({ type: 'exams' })}
@@ -107,6 +209,44 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
                   Trocar Turma
                 </button>
               </div>
+            </div>
+
+            {/* Banner de Acesso Rápido: Usar Celular como Câmera Sem Fio (Plano 13) */}
+            <div className="bg-gradient-to-r from-indigo-50 via-sky-50 to-emerald-50 dark:from-indigo-950/20 dark:via-sky-950/20 dark:to-emerald-950/20 border border-indigo-200/80 dark:border-indigo-500/30 rounded-xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-2xs">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-600 dark:bg-indigo-500 flex items-center justify-center text-on-accent shrink-0 shadow-xs">
+                  <Smartphone className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-sm font-bold text-slate-800">
+                      Usar Celular como Câmera Sem Fio
+                    </h3>
+                    {remoteSession ? (
+                      <span className="px-2 py-0.5 text-[11px] font-bold rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        Servidor Ativo (porta {remoteSession.port})
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-indigo-100 dark:bg-indigo-500/20 text-indigo-800 dark:text-indigo-300">
+                        Wi-Fi Local
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-600 mt-1 max-w-2xl leading-relaxed">
+                    Fotografe gabaritos diretamente com a câmera do seu smartphone. As fotos são transferidas e corrigidas instantaneamente na sua tela pelo Wi-Fi, sem instalar nenhum aplicativo no celular.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleOpenRemoteCamera}
+                className="px-4 py-2 text-xs font-bold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-on-accent shadow-xs flex items-center gap-2 shrink-0 transition cursor-pointer"
+              >
+                <QrCode className="w-4 h-4" />
+                {remoteSession ? 'Ver QR Code / Conexão' : 'Conectar Celular via QR Code'}
+              </button>
             </div>
 
             {/* Banner de Operação Autônoma e Senha da Prova */}
@@ -294,6 +434,8 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
                   onGraded={handlePhotoGraded}
                   availableVersions={versions}
                   onSelectExamVersion={handleSelectExamVersion}
+                  onOpenRemoteCamera={handleOpenRemoteCamera}
+                  isRemoteConnected={Boolean(remoteSession)}
                 />
               ) : (
                 <BatchGrader
@@ -309,9 +451,24 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
                   records={records}
                   onOpenClassManager={() => onNavigate({ type: 'classes' })}
                   onAddStudentToClass={handleAddStudentToClass}
+                  onOpenRemoteCamera={handleOpenRemoteCamera}
                 />
               )}
             </div>
+
+            {typeof __DESKTOP__ !== 'undefined' && __DESKTOP__ && (
+              <RemoteCameraPanel
+                isOpen={remotePanelOpen}
+                onClose={() => setRemotePanelOpen(false)}
+                session={remoteSession}
+                isStarting={isStartingRemote}
+                receivedCount={remoteReceivedCount}
+                availableInterfaces={availableInterfaces}
+                onStart={handleStartRemote}
+                onStop={handleStopRemote}
+                onChangeInterface={handleChangeRemoteInterface}
+              />
+            )}
           </div>
         ) : (
           <div className="max-w-2xl mx-auto my-8">

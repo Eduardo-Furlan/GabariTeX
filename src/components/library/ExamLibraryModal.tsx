@@ -294,7 +294,7 @@ export const ExamLibraryModal: React.FC<ExamLibraryModalProps> = ({
 
       {/* Confirmação de Exclusão */}
       {examToDelete && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 p-6 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-start gap-3.5 mb-4">
               <div className="w-10 h-10 rounded-full bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 flex items-center justify-center text-rose-600 dark:text-rose-300 shrink-0">

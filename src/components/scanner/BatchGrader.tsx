@@ -23,7 +23,22 @@ import {
   Check,
   AlertCircle,
   FileCheck,
+  Smartphone,
 } from 'lucide-react';
+import {
+  RemoteSessionInfo,
+  NetworkInterfaceInfo,
+  startRemoteCamera,
+  stopRemoteCamera,
+  getRemoteCameraStatus,
+  getNetworkInterfaces,
+  reportRemotePhoto,
+  mapPhotoResultToReport,
+  listenRemotePhotos,
+  listenRemoteStopped,
+} from '../../platform/remoteCamera';
+import { getFileSignature } from '../../utils/batchQueue';
+import { RemoteCameraPanel } from './RemoteCameraPanel';
 
 export interface BatchGraderProps {
   teacherPassword: string;
@@ -38,6 +53,7 @@ export interface BatchGraderProps {
   records?: GradingRecord[];
   onOpenClassManager?: () => void;
   onAddStudentToClass?: (classId: string, student: { name: string; registration?: string }) => void;
+  onOpenRemoteCamera?: () => void;
 }
 
 export const BatchGrader: React.FC<BatchGraderProps> = ({
@@ -53,11 +69,20 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
   records = [],
   onOpenClassManager,
   onAddStudentToClass,
+  onOpenRemoteCamera,
 }) => {
   const [state, dispatch] = useReducer(batchReducer, initialBatchState);
   const [reviewingItem, setReviewingItem] = useState<BatchItem | null>(null);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [confirmSaveAllOpen, setConfirmSaveAllOpen] = useState<boolean>(false);
+
+  // Estado da Câmera Remota Desktop (Plano 13)
+  const [remotePanelOpen, setRemotePanelOpen] = useState<boolean>(false);
+  const [remoteSession, setRemoteSession] = useState<RemoteSessionInfo | null>(null);
+  const [isStartingRemote, setIsStartingRemote] = useState<boolean>(false);
+  const [remoteReceivedCount, setRemoteReceivedCount] = useState<number>(0);
+  const [availableInterfaces, setAvailableInterfaces] = useState<NetworkInterfaceInfo[]>([]);
+  const remoteIdBySignatureRef = useRef<Map<string, string>>(new Map());
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cancelRequestedRef = useRef<boolean>(false);
@@ -84,6 +109,69 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
 
   const currentClass = classes.find((c) => c.id === activeClassId) || null;
   const summary = getBatchSummary(state.items);
+
+  const handleStartRemote = async (ip?: string) => {
+    setIsStartingRemote(true);
+    try {
+      const s = await startRemoteCamera(ip);
+      setRemoteSession(s);
+    } finally {
+      setIsStartingRemote(false);
+    }
+  };
+
+  const handleStopRemote = async () => {
+    await stopRemoteCamera();
+    setRemoteSession(null);
+  };
+
+  const handleChangeRemoteInterface = async (ip: string) => {
+    setIsStartingRemote(true);
+    try {
+      const s = await startRemoteCamera(ip);
+      setRemoteSession(s);
+    } finally {
+      setIsStartingRemote(false);
+    }
+  };
+
+  useEffect(() => {
+    if (typeof __DESKTOP__ === 'undefined' || !__DESKTOP__) return;
+
+    getRemoteCameraStatus().then((s) => {
+      if (s) setRemoteSession(s);
+    });
+    getNetworkInterfaces().then((list) => {
+      setAvailableInterfaces(list);
+    });
+
+    let unlistenPhoto: (() => void) | undefined;
+    let unlistenStopped: (() => void) | undefined;
+
+    listenRemotePhotos((file, remoteId) => {
+      const sig = getFileSignature(file);
+      remoteIdBySignatureRef.current.set(sig, remoteId);
+      setRemoteReceivedCount((c) => c + 1);
+
+      dispatch({ type: 'ADD_FILES', files: [file] });
+      cancelRequestedRef.current = false;
+      inFlightIdsRef.current.clear();
+      dispatch({ type: 'START_PROCESSING' });
+    }).then((unlisten) => {
+      unlistenPhoto = unlisten;
+    });
+
+    listenRemoteStopped(() => {
+      setRemoteSession(null);
+    }).then((unlisten) => {
+      unlistenStopped = unlisten;
+    });
+
+    return () => {
+      unlistenPhoto?.();
+      unlistenStopped?.();
+    };
+  }, []);
 
   const runQueue = useCallback(async () => {
     if (isRunningRef.current) return;
@@ -124,6 +212,15 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
 
         dispatch({ type: 'FINISH_ITEM', id: nextItem.id, result });
 
+        // Reporta resultado de volta para o celular se a foto veio da câmera remota
+        if (typeof __DESKTOP__ !== 'undefined' && __DESKTOP__) {
+          const remoteId = remoteIdBySignatureRef.current.get(nextItem.signature);
+          if (remoteId) {
+            const report = mapPhotoResultToReport(result);
+            reportRemotePhoto(remoteId, report.status, report.label, report.message).catch(() => {});
+          }
+        }
+
         // Pequeno intervalo entre fotos para manter responsividade
         await new Promise((resolve) => setTimeout(resolve, 40));
       }
@@ -138,7 +235,7 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
     }
   }, [state.isProcessing, runQueue]);
 
-  const handleAddFiles = (fileList: FileList | null) => {
+  const handleAddFiles = (fileList: FileList | File[] | null) => {
     if (!fileList || fileList.length === 0) return;
     const filesArray = Array.from(fileList).sort((a, b) =>
       a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
@@ -257,9 +354,52 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
               Correção em Lote de Cartões-Resposta
             </h3>
           </div>
-          <span className="text-xs text-slate-500 font-medium">
-            Selecione dezenas de fotos de uma vez para processamento sequencial.
-          </span>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            {typeof __DESKTOP__ !== 'undefined' && __DESKTOP__ && (
+              remoteSession ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onOpenRemoteCamera) {
+                      onOpenRemoteCamera();
+                    } else {
+                      setRemotePanelOpen(true);
+                    }
+                  }}
+                  className="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30 flex items-center gap-2 shadow-2xs hover:bg-emerald-100 transition cursor-pointer"
+                  title="Abrir painel da câmera do celular"
+                >
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  <span>Celular Conectado</span>
+                  <span className="font-mono text-[11px] opacity-75">(:{remoteSession.port})</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onOpenRemoteCamera) {
+                      onOpenRemoteCamera();
+                    } else {
+                      setRemotePanelOpen(true);
+                      if (!remoteSession) {
+                        handleStartRemote();
+                      }
+                    }
+                  }}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Smartphone className="w-3.5 h-3.5" />
+                  <span>Usar câmera do celular</span>
+                </button>
+              )
+            )}
+            <span className="text-xs text-slate-500 font-medium hidden sm:inline">
+              Selecione dezenas de fotos de uma vez para processamento sequencial.
+            </span>
+          </div>
         </div>
 
         <input
@@ -734,6 +874,20 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
             setReviewingItem(null);
           }}
           onCancel={() => setReviewingItem(null)}
+        />
+      )}
+
+      {typeof __DESKTOP__ !== 'undefined' && __DESKTOP__ && !onOpenRemoteCamera && (
+        <RemoteCameraPanel
+          isOpen={remotePanelOpen}
+          onClose={() => setRemotePanelOpen(false)}
+          session={remoteSession}
+          isStarting={isStartingRemote}
+          receivedCount={remoteReceivedCount}
+          availableInterfaces={availableInterfaces}
+          onStart={handleStartRemote}
+          onStop={handleStopRemote}
+          onChangeInterface={handleChangeRemoteInterface}
         />
       )}
     </div>
