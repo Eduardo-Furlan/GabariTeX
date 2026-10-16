@@ -70,7 +70,8 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: powershell
         run: |
-          choco install llvm opencv -y --no-progress
+          choco install llvm -y --no-progress
+          choco install opencv --version 4.9.0 -y --no-progress
           $opencv_vc = Get-ChildItem "C:\tools\opencv\build\x64" -Directory | Where-Object { $_.Name -like "vc*" } | Select-Object -Last 1
           if (-not $opencv_vc) {
             throw "Diretório de build do OpenCV não encontrado em C:\tools\opencv\build\x64"
@@ -78,8 +79,16 @@ jobs:
           $opencv_vc_path = $opencv_vc.FullName
           Write-Host "OpenCV localizado em: $opencv_vc_path"
 
+          $lib_file = (Get-ChildItem "$opencv_vc_path\lib\opencv_world*.lib" | Select-Object -First 1)
+          if (-not $lib_file) {
+            throw "opencv_world .lib não encontrado em $opencv_vc_path\lib"
+          }
+          $lib_name = $lib_file.BaseName
+          Write-Host "OpenCV link lib: $lib_name"
+
           "LIBCLANG_PATH=C:\Program Files\LLVM\bin" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           "OPENCV_LINK_PATHS=$opencv_vc_path\lib" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "OPENCV_LINK_LIBS=$lib_name" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           "OPENCV_INCLUDE_PATHS=C:\tools\opencv\build\include" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           "OpenCV_DIR=$opencv_vc_path" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           "$opencv_vc_path\bin" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8

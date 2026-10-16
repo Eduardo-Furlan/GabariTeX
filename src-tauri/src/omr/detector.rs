@@ -1,7 +1,5 @@
-use opencv::core::{
-    AlgorithmHint, Mat, MatTraitConst, Point, Point2f, Rect, Scalar, Size, Vector,
-};
-use opencv::geometry;
+use super::cv_compat::{self, geometry};
+use opencv::core::{Mat, MatTraitConst, Point, Point2f, Rect, Scalar, Size, Vector};
 use opencv::imgproc;
 
 #[derive(Debug, Clone, Copy)]
@@ -251,7 +249,7 @@ pub fn warp_perspective_to_canonical(
     let m = geometry::get_perspective_transform_def(&src, &dst).map_err(|e| e.to_string())?;
 
     let mut warped = Mat::default();
-    imgproc::warp_perspective(
+    cv_compat::warp_perspective(
         gray,
         &mut warped,
         &m,
@@ -259,7 +257,6 @@ pub fn warp_perspective_to_canonical(
         imgproc::INTER_LINEAR,
         opencv::core::BORDER_CONSTANT,
         Scalar::all(255.0),
-        AlgorithmHint::ALGO_HINT_DEFAULT,
     )
     .map_err(|e| e.to_string())?;
 

@@ -1,6 +1,6 @@
+use super::cv_compat::geometry;
 use super::layout::{get_column_layout, OPTION_OFFSETS_PX};
 use opencv::core::{Mat, Point, Rect, Scalar, Size, Vector};
-use opencv::geometry;
 use opencv::imgproc;
 use opencv::prelude::*;
 use serde::{Deserialize, Serialize};

@@ -1,10 +1,11 @@
+pub mod cv_compat;
 pub mod debug_overlay;
 pub mod detector;
 pub mod layout;
 pub mod qr;
 pub mod reader;
 
-use opencv::core::{AlgorithmHint, Vector};
+use opencv::core::Vector;
 use opencv::imgcodecs;
 use opencv::imgproc;
 use opencv::prelude::*;
@@ -73,14 +74,8 @@ pub fn process_image_bytes(
     }
 
     let mut gray = Mat::default();
-    imgproc::cvt_color(
-        &bgr,
-        &mut gray,
-        imgproc::COLOR_BGR2GRAY,
-        0,
-        AlgorithmHint::ALGO_HINT_DEFAULT,
-    )
-    .map_err(|e| e.to_string())?;
+    cv_compat::cvt_color(&bgr, &mut gray, imgproc::COLOR_BGR2GRAY)
+        .map_err(|e| e.to_string())?;
 
     // 1. QR Code decoding
     let qr_text = if req.read_qr {
@@ -180,13 +175,7 @@ pub fn process_image_bytes(
     };
 
     let mut warped_bgr = Mat::default();
-    let _ = imgproc::cvt_color(
-        &warped,
-        &mut warped_bgr,
-        imgproc::COLOR_GRAY2BGR,
-        0,
-        AlgorithmHint::ALGO_HINT_DEFAULT,
-    );
+    let _ = cv_compat::cvt_color(&warped, &mut warped_bgr, imgproc::COLOR_GRAY2BGR);
 
     let canonical_fid = detector::canonical_fiducials();
 
