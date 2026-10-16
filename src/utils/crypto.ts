@@ -149,3 +149,75 @@ export async function decryptAnswerKey(
     throw new Error('Senha incorreta ou gabarito inválido.');
   }
 }
+
+/**
+ * Alfabeto sem caracteres ambíguos (exclui 0, O, 1, I, l, o).
+ */
+export const UNAMBIGUOUS_PASSWORD_ALPHABET =
+  '23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz';
+
+/**
+ * Gera senha aleatória de 8 caracteres a partir de alfabeto sem ambiguidades
+ * usando crypto.getRandomValues().
+ */
+export function generateExamPassword(length = 8): string {
+  const cryptoObj = getCrypto();
+  const bytes = new Uint8Array(length);
+  cryptoObj.getRandomValues(bytes);
+  let res = '';
+  for (let i = 0; i < length; i++) {
+    res += UNAMBIGUOUS_PASSWORD_ALPHABET[bytes[i] % UNAMBIGUOUS_PASSWORD_ALPHABET.length];
+  }
+  return res;
+}
+
+/**
+ * Calcula o hash SHA-256 de um buffer ou string e retorna em hexadecimal minúsculo.
+ */
+export async function sha256Hex(data: Uint8Array | string): Promise<string> {
+  const cryptoObj = getCrypto();
+  const bytes = typeof data === 'string' ? new TextEncoder().encode(data) : data;
+  const hashBuffer = await cryptoObj.subtle.digest('SHA-256', bytes as unknown as BufferSource);
+  return bytesToHex(new Uint8Array(hashBuffer));
+}
+
+export interface DecryptCandidatesResult {
+  payload: DecryptedQrPayload;
+  passwordUsed: string;
+  attemptIndex: number;
+}
+
+/**
+ * Tenta descriptografar um QR Code iterando sobre uma lista ordenada de senhas candidatas.
+ * A ordem deve priorizar a prova ativa, seguida pelas demais provas do perfil (até maxAttempts, padrão 30).
+ */
+export async function decryptWithCandidatePasswords(
+  qrString: string,
+  passwords: string[],
+  maxAttempts = 30
+): Promise<DecryptCandidatesResult> {
+  const seen = new Set<string>();
+  const candidates: string[] = [];
+
+  for (const p of passwords) {
+    const trimmed = p ? p.trim() : '';
+    if (trimmed && !seen.has(trimmed)) {
+      seen.add(trimmed);
+      candidates.push(trimmed);
+      if (candidates.length >= maxAttempts) break;
+    }
+  }
+
+  for (let i = 0; i < candidates.length; i++) {
+    const pwd = candidates[i];
+    try {
+      const payload = await decryptAnswerKey(qrString, pwd);
+      return { payload, passwordUsed: pwd, attemptIndex: i };
+    } catch {
+      // Tenta a próxima senha
+    }
+  }
+
+  throw new Error('Não consegui abrir este QR com as senhas das provas deste perfil.');
+}
+

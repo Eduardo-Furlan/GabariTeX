@@ -13,7 +13,7 @@ export interface AutosaveState {
  */
 export class AutosaveManager<T> {
   private value: T;
-  private saveFn: (val: T) => SaveResult;
+  private saveFn: (val: T) => SaveResult | Promise<SaveResult>;
   private delay: number;
   private timer: ReturnType<typeof setTimeout> | null = null;
   public hasPendingSave = false;
@@ -21,7 +21,7 @@ export class AutosaveManager<T> {
 
   constructor(
     initialValue: T,
-    saveFn: (val: T) => SaveResult,
+    saveFn: (val: T) => SaveResult | Promise<SaveResult>,
     delay = 400,
     onStateChange?: (state: AutosaveState) => void
   ) {
@@ -31,7 +31,7 @@ export class AutosaveManager<T> {
     this.onStateChange = onStateChange;
   }
 
-  public setSaveFn(saveFn: (val: T) => SaveResult) {
+  public setSaveFn(saveFn: (val: T) => SaveResult | Promise<SaveResult>) {
     this.saveFn = saveFn;
   }
 
@@ -61,17 +61,53 @@ export class AutosaveManager<T> {
     if (!this.hasPendingSave) return;
     this.hasPendingSave = false;
 
-    const result = this.saveFn(this.value);
-    if (result.ok) {
-      this.onStateChange?.({
-        status: 'saved',
-        savedAt: new Date(),
-        reason: undefined,
-      });
-    } else {
+    try {
+      const resultOrPromise = this.saveFn(this.value);
+      if (
+        resultOrPromise &&
+        typeof (resultOrPromise as Promise<SaveResult>).then === 'function'
+      ) {
+        (resultOrPromise as Promise<SaveResult>).then(
+          (result) => {
+            if (result.ok) {
+              this.onStateChange?.({
+                status: 'saved',
+                savedAt: new Date(),
+                reason: undefined,
+              });
+            } else {
+              this.onStateChange?.({
+                status: 'error',
+                reason: result.reason,
+              });
+            }
+          },
+          () => {
+            this.onStateChange?.({
+              status: 'error',
+              reason: 'unknown',
+            });
+          }
+        );
+      } else {
+        const result = resultOrPromise as SaveResult;
+        if (result.ok) {
+          this.onStateChange?.({
+            status: 'saved',
+            savedAt: new Date(),
+            reason: undefined,
+          });
+        } else {
+          this.onStateChange?.({
+            status: 'error',
+            reason: result.reason,
+          });
+        }
+      }
+    } catch {
       this.onStateChange?.({
         status: 'error',
-        reason: result.reason,
+        reason: 'unknown',
       });
     }
   }
@@ -102,7 +138,7 @@ export class AutosaveManager<T> {
  */
 export function useAutosave<T>(
   value: T,
-  saveFn: (val: T) => SaveResult,
+  saveFn: (val: T) => SaveResult | Promise<SaveResult>,
   delay = 400
 ): AutosaveState & { flush: () => void } {
   const [state, setState] = useState<AutosaveState>({

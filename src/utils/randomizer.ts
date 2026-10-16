@@ -142,7 +142,7 @@ export async function generateExamVersions(exam: Exam): Promise<ExamVersion[]> {
       examFingerprint: fingerprint,
     });
 
-    const qrPayload = await encryptAnswerKey(payload, exam.password || 'senha123');
+    const qrPayload = await encryptAnswerKey(payload, exam.password);
 
     versions.push({
       versionLetter: layout.versionLetter,

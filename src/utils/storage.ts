@@ -3,7 +3,7 @@ import { saveFile } from '../platform/files';
 
 export type SaveResult =
   | { ok: true }
-  | { ok: false; reason: 'quota' | 'disk_full' | 'permission' | 'unknown' };
+  | { ok: false; reason: 'quota' | 'disk_full' | 'permission' | 'unknown'; error?: unknown };
 
 export const EXAM_STORAGE_KEY = 'mcorr_exam_data';
 export const GRADEBOOK_STORAGE_KEY = 'mcorr_gradebook_data';

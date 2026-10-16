@@ -1,6 +1,18 @@
 import React, { useState } from 'react';
 import { Exam } from '../../types/exam';
-import { Shield, FileText, Shuffle, Columns, Eye, EyeOff } from 'lucide-react';
+import {
+  Shield,
+  FileText,
+  Shuffle,
+  Columns,
+  Eye,
+  EyeOff,
+  Copy,
+  Check,
+  RefreshCw,
+  AlertTriangle,
+} from 'lucide-react';
+import { generateExamPassword } from '../../utils/crypto';
 
 interface ExamHeaderEditorProps {
   exam: Exam;
@@ -9,6 +21,42 @@ interface ExamHeaderEditorProps {
 
 export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChange }) => {
   const [showPassword, setShowPassword] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [pendingPassword, setPendingPassword] = useState<string>('');
+
+  const handleCopyPassword = async () => {
+    try {
+      await navigator.clipboard.writeText(exam.password);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback
+    }
+  };
+
+  const handleRequestRegeneratePassword = () => {
+    const newPwd = generateExamPassword();
+    if (exam.questions && exam.questions.length > 0) {
+      setPendingPassword(newPwd);
+      setConfirmModalOpen(true);
+    } else {
+      onChange({ ...exam, password: newPwd });
+    }
+  };
+
+  const handleConfirmPasswordChange = () => {
+    if (pendingPassword) {
+      onChange({ ...exam, password: pendingPassword });
+    }
+    setConfirmModalOpen(false);
+    setPendingPassword('');
+  };
+
+  const handlePasswordInputChange = (value: string) => {
+    onChange({ ...exam, password: value });
+  };
+
   const updateHeader = (field: keyof Exam['header'], value: string) => {
     onChange({
       ...exam,
@@ -107,17 +155,39 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-600 uppercase mb-1 flex items-center gap-1 text-amber-700 dark:text-amber-400">
-            <Shield className="w-3.5 h-3.5" /> Senha do Gabarito (QR Code)
+          <label className="block text-xs font-semibold uppercase mb-1 flex items-center justify-between text-amber-700 dark:text-amber-300">
+            <span className="flex items-center gap-1">
+              <Shield className="w-3.5 h-3.5" /> Senha da Prova (QR Code)
+            </span>
+            <div className="flex items-center gap-1 normal-case font-normal text-[11px]">
+              <button
+                type="button"
+                onClick={handleCopyPassword}
+                className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-500/20 transition"
+                title="Copiar senha para a área de transferência"
+              >
+                {copied ? <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                <span>{copied ? 'Copiada' : 'Copiar'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleRequestRegeneratePassword}
+                className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-500/20 transition"
+                title="Gerar nova senha aleatória"
+              >
+                <RefreshCw className="w-3 h-3" />
+                <span>Gerar outra</span>
+              </button>
+            </div>
           </label>
           <div className="relative flex items-center">
             <input
               type={showPassword ? 'text' : 'password'}
-              className="w-full pl-3 pr-10 py-2 border border-amber-300 bg-amber-50/40 dark:border-amber-700/60 dark:bg-amber-950/30 rounded-lg text-sm font-mono focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400 focus:outline-none"
-              placeholder="Senha para proteger o gabarito"
+              className="w-full pl-3 pr-10 py-2 border border-amber-300 dark:border-amber-500/40 bg-white text-slate-800 rounded-lg text-sm font-mono focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400 focus:outline-none"
+              placeholder="Senha de 8 caracteres"
               value={exam.password}
-              onChange={(e) => onChange({ ...exam, password: e.target.value })}
-              title="Esta senha protege o QR code impresso na folha de respostas para que os alunos não possam ver o gabarito."
+              onChange={(e) => handlePasswordInputChange(e.target.value)}
+              title="Esta senha protege o QR code impresso na folha de respostas."
             />
             <button
               type="button"
@@ -195,6 +265,46 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
           </label>
         </div>
       </div>
+
+      {confirmModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full border border-slate-200 p-6 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-start gap-3.5 mb-4">
+              <div className="w-10 h-10 rounded-full bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-300 shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-800">Alterar senha da prova?</h3>
+                <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                  Folhas de resposta que já foram impressas com a senha anterior <strong>deixarão de abrir no corretor</strong>. Deseja realmente aplicar a nova senha?
+                </p>
+                <div className="mt-2.5 p-2 rounded-lg bg-slate-50 border border-slate-200 text-xs font-mono font-bold text-slate-800">
+                  Nova senha: {pendingPassword}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirmModalOpen(false);
+                  setPendingPassword('');
+                }}
+                className="px-3.5 py-1.5 text-xs font-semibold border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg transition"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmPasswordChange}
+                className="px-3.5 py-1.5 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-on-accent rounded-lg transition shadow-sm"
+              >
+                Sim, alterar senha
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

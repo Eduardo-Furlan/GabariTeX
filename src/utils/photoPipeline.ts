@@ -1,6 +1,6 @@
 import { ExamVersion, GradingRecord, GradedAnswer, SubjectiveAnswer } from '../types/exam';
 import { DecryptedQrPayload, OmrDebugInfo, GradingEvidence } from '../types/omr';
-import { decryptAnswerKey } from './crypto';
+import { decryptWithCandidatePasswords } from './crypto';
 import { gradeCanvasWithPayloadDebug } from './omrProcessor';
 import { buildObjectiveAnswer, recomputeTotals } from './grading';
 import { processExamPhotoNative, convertNativeResponse } from '../platform/omrBackend';
@@ -15,12 +15,14 @@ export interface PhotoResult {
   error?: string;
   debugInfo?: OmrDebugInfo;
   debugCanvasUrl?: string;
+  needsManualPassword?: boolean;
 }
 
 export type ScanTarget = 'auto' | 'qr' | 'sheet';
 
 export interface GradePhotoOptions {
   teacherPassword?: string;
+  candidatePasswords?: string[];
   lockedPayload: DecryptedQrPayload | null;
   scanTarget?: ScanTarget; // 'qr' | 'sheet' | 'auto'
   alwaysReadQr?: boolean; // false no fluxo de uma foto (comportamento atual); true no lote
@@ -43,6 +45,19 @@ function getOrCreateHiddenQrElement(): HTMLElement {
     document.body.appendChild(el);
   }
   return el;
+}
+
+function resolveCandidatePasswords(opts: GradePhotoOptions): string[] {
+  const list: string[] = [];
+  if (opts.candidatePasswords && opts.candidatePasswords.length > 0) {
+    for (const p of opts.candidatePasswords) {
+      if (p && p.trim()) list.push(p.trim());
+    }
+  }
+  if (opts.teacherPassword && opts.teacherPassword.trim()) {
+    list.push(opts.teacherPassword.trim());
+  }
+  return Array.from(new Set(list));
 }
 
 function enrichSubjectivePoints(payload: DecryptedQrPayload, availableVersions?: ExamVersion[]): void {
@@ -248,6 +263,7 @@ function buildRecordFromNativeResponse(
     studentName: '',
     studentId: '',
     versionLetter: targetPayload.version,
+    examId: targetPayload.examId,
     totalScore: 0,
     maxScore: 0,
     percentage: 0,
@@ -321,8 +337,19 @@ export async function gradePhotoFile(
           };
         }
 
+        const passwords = resolveCandidatePasswords(opts);
+        if (passwords.length === 0) {
+          return {
+            status: 'error',
+            payloadSource: 'none',
+            error: 'Nenhuma senha de prova informada para decodificar o QR Code.',
+            needsManualPassword: true,
+          };
+        }
+
         try {
-          const qrPayload = await decryptAnswerKey(nativeRes.qrRawText, opts.teacherPassword!.trim());
+          const decRes = await decryptWithCandidatePasswords(nativeRes.qrRawText, passwords);
+          const qrPayload = decRes.payload;
           enrichSubjectivePoints(qrPayload, opts.availableVersions);
           return {
             status: 'qr_only',
@@ -334,7 +361,8 @@ export async function gradePhotoFile(
             status: 'error',
             payloadSource: 'none',
             error:
-              'QR Code detectado na folha, porém a senha informada não confere com a senha da prova. Verifique a senha do professor.',
+              'Não consegui abrir este QR com as senhas das provas deste perfil. A folha pode ser de outra prova ou de outro perfil.',
+            needsManualPassword: true,
           };
         }
       }
@@ -397,9 +425,11 @@ export async function gradePhotoFile(
       let versionMismatch = false;
 
       if (nativeRes.qrRawText) {
-        if (opts.teacherPassword && opts.teacherPassword.trim()) {
+        const passwords = resolveCandidatePasswords(opts);
+        if (passwords.length > 0) {
           try {
-            const qrPayload = await decryptAnswerKey(nativeRes.qrRawText, opts.teacherPassword.trim());
+            const decRes = await decryptWithCandidatePasswords(nativeRes.qrRawText, passwords);
+            const qrPayload = decRes.payload;
             enrichSubjectivePoints(qrPayload, opts.availableVersions);
 
             if (opts.lockedPayload) {
@@ -417,14 +447,16 @@ export async function gradePhotoFile(
               status: 'error',
               payloadSource: 'none',
               error:
-                'QR Code detectado na folha, porém a senha informada não confere com a senha da prova. Verifique a senha do professor.',
+                'Não consegui abrir este QR com as senhas das provas deste perfil. A folha pode ser de outra prova ou de outro perfil.',
+              needsManualPassword: true,
             };
           }
         } else {
           return {
             status: 'error',
             payloadSource: 'none',
-            error: 'QR Code detectado na folha! Por favor, informe a senha da prova para desbloquear a correção.',
+            error: 'Nenhuma senha de prova informada para decodificar o QR Code.',
+            needsManualPassword: true,
           };
         }
       }
@@ -527,8 +559,19 @@ export async function gradePhotoFile(
             'Nenhum QR Code detectado na foto. Aproxime a câmera do QR Code e verifique o enquadramento.',
         };
       }
+      const passwords = resolveCandidatePasswords(opts);
+      if (passwords.length === 0) {
+        return {
+          status: 'error',
+          payloadSource: 'none',
+          error: 'Nenhuma senha de prova informada para decodificar o QR Code.',
+          needsManualPassword: true,
+        };
+      }
+
       try {
-        const qrPayload = await decryptAnswerKey(decodedText, opts.teacherPassword!.trim());
+        const decRes = await decryptWithCandidatePasswords(decodedText, passwords);
+        const qrPayload = decRes.payload;
         enrichSubjectivePoints(qrPayload, opts.availableVersions);
         return {
           status: 'qr_only',
@@ -540,7 +583,8 @@ export async function gradePhotoFile(
           status: 'error',
           payloadSource: 'none',
           error:
-            'QR Code detectado na folha, porém a senha informada não confere com a senha da prova.',
+            'Não consegui abrir este QR com as senhas das provas deste perfil. A folha pode ser de outra prova ou de outro perfil.',
+          needsManualPassword: true,
         };
       }
     }
@@ -585,9 +629,11 @@ export async function gradePhotoFile(
       const decodedText = await scanQrFromImageOrCanvas(file, canvas);
 
       if (decodedText) {
-        if (opts.teacherPassword && opts.teacherPassword.trim()) {
+        const passwords = resolveCandidatePasswords(opts);
+        if (passwords.length > 0) {
           try {
-            const qrPayload = await decryptAnswerKey(decodedText, opts.teacherPassword.trim());
+            const decRes = await decryptWithCandidatePasswords(decodedText, passwords);
+            const qrPayload = decRes.payload;
             enrichSubjectivePoints(qrPayload, opts.availableVersions);
 
             if (opts.lockedPayload) {
@@ -606,14 +652,16 @@ export async function gradePhotoFile(
               status: 'error',
               payloadSource: 'none',
               error:
-                'QR Code detectado na folha, porém a senha informada não confere com a senha da prova. Verifique a senha do professor.',
+                'Não consegui abrir este QR com as senhas das provas deste perfil. A folha pode ser de outra prova ou de outro perfil.',
+              needsManualPassword: true,
             };
           }
         } else {
           return {
             status: 'error',
             payloadSource: 'none',
-            error: 'QR Code detectado na folha! Por favor, informe a senha da prova para desbloquear a correção.',
+            error: 'Nenhuma senha de prova informada para decodificar o QR Code.',
+            needsManualPassword: true,
           };
         }
       }

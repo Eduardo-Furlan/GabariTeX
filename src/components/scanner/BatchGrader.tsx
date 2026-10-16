@@ -27,6 +27,7 @@ import {
 
 export interface BatchGraderProps {
   teacherPassword: string;
+  candidatePasswords?: string[];
   activePayload: DecryptedQrPayload | null;
   availableVersions?: ExamVersion[];
   onSaveRecords: (records: GradingRecord[]) => void;
@@ -41,6 +42,7 @@ export interface BatchGraderProps {
 
 export const BatchGrader: React.FC<BatchGraderProps> = ({
   teacherPassword,
+  candidatePasswords,
   activePayload,
   availableVersions = [],
   onSaveRecords,
@@ -67,6 +69,9 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
 
   const teacherPasswordRef = useRef(teacherPassword);
   teacherPasswordRef.current = teacherPassword;
+
+  const candidatePasswordsRef = useRef(candidatePasswords);
+  candidatePasswordsRef.current = candidatePasswords;
 
   const activePayloadRef = useRef(activePayload);
   activePayloadRef.current = activePayload;
@@ -106,6 +111,7 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
 
         const result = await gradePhotoFile(nextItem.file, {
           teacherPassword: teacherPasswordRef.current,
+          candidatePasswords: candidatePasswordsRef.current,
           lockedPayload: activePayloadRef.current,
           alwaysReadQr: true,
           availableVersions: availableVersionsRef.current,
@@ -447,7 +453,7 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
                   {/* Identificação do Aluno (Turma / Nome / Matrícula) */}
                   {item.status !== 'error' && item.status !== 'queued' && (
                     <div className="flex flex-col gap-1.5 flex-1 max-w-sm">
-                      {currentClass && currentClass.students.length > 0 && (
+                      {currentClass && currentClass.students && currentClass.students.length > 0 && (
                         <select
                           aria-label="Selecionar aluno da turma"
                           disabled={item.status === 'saved' || item.status === 'discarded'}
@@ -462,7 +468,7 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
                               });
                               return;
                             }
-                            const st = currentClass.students.find((s) => s.id === selectedId);
+                            const st = currentClass.students?.find((s) => s.id === selectedId);
                             if (st) {
                               dispatch({
                                 type: 'UPDATE_STUDENT_INFO',

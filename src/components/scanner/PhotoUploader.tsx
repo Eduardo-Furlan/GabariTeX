@@ -21,8 +21,11 @@ import {
   FileCheck,
 } from 'lucide-react';
 
+import { PasswordModal } from './PasswordModal';
+
 interface PhotoUploaderProps {
   teacherPassword: string;
+  candidatePasswords?: string[];
   activePayload: DecryptedQrPayload | null;
   onLockPayload?: (payload: DecryptedQrPayload | null) => void;
   onGraded: (record: GradingRecord, evidence?: GradingEvidence) => void;
@@ -32,6 +35,7 @@ interface PhotoUploaderProps {
 
 export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
   teacherPassword,
+  candidatePasswords,
   activePayload,
   onLockPayload,
   onGraded,
@@ -41,6 +45,8 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [scanTarget, setScanTarget] = useState<'qr' | 'sheet'>(activePayload ? 'sheet' : 'qr');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [needsManualPassword, setNeedsManualPassword] = useState<boolean>(false);
+  const [showManualPasswordModal, setShowManualPasswordModal] = useState<boolean>(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const isDebugAllowed = Boolean(
     import.meta.env.DEV ||
@@ -60,6 +66,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const lastProcessedFileRef = useRef<File | null>(null);
 
   useEffect(() => {
     if (activePayload && scanTarget === 'qr') {
@@ -69,14 +76,21 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
     }
   }, [activePayload]);
 
-  const handleProcessImage = async (file: File) => {
+  const handleProcessImage = async (file: File, overridePassword?: string) => {
+    lastProcessedFileRef.current = file;
     setIsProcessing(true);
     setErrorMessage(null);
+    setNeedsManualPassword(false);
     setSuccessMessage(null);
     setErrorDebugUrl(null);
 
+    const passwordsToTry = overridePassword
+      ? [overridePassword, ...(candidatePasswords || [])]
+      : candidatePasswords;
+
     const result = await gradePhotoFile(file, {
       teacherPassword,
+      candidatePasswords: passwordsToTry,
       lockedPayload: activePayload,
       scanTarget,
       alwaysReadQr: false,
@@ -87,6 +101,9 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
 
     if (result.status === 'error') {
       setErrorMessage(result.error || 'Não foi possível processar a imagem.');
+      if (result.needsManualPassword) {
+        setNeedsManualPassword(true);
+      }
       if (result.debugCanvasUrl) {
         setErrorDebugUrl(result.debugCanvasUrl);
       }
@@ -216,14 +233,14 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
               </div>
               {availableVersions.length > 0 && onSelectExamVersion && (
                 <div className="flex items-center gap-1.5">
-                  {availableVersions.map((v) => (
+                  {availableVersions.map((v, idx) => (
                     <button
-                      key={v.versionLetter}
+                      key={v?.versionLetter || idx}
                       type="button"
                       onClick={() => onSelectExamVersion(v)}
                       className="px-3 py-1 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-600 hover:text-on-accent text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 rounded-lg font-bold text-xs transition active:scale-95 shadow-sm"
                     >
-                      Versão {v.versionLetter}
+                      Versão {v?.versionLetter || '?'}
                     </button>
                   ))}
                 </div>
@@ -591,24 +608,26 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
             }
           }}
         />
-        <input
-          ref={cameraInputRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          className="hidden"
-          disabled={isProcessing}
-          onClick={(e) => {
-            (e.target as HTMLInputElement).value = '';
-          }}
-          onChange={(e) => {
-            if (e.target.files && e.target.files[0]) {
-              const file = e.target.files[0];
-              e.target.value = '';
-              handleProcessImage(file);
-            }
-          }}
-        />
+        {!__DESKTOP__ && (
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            disabled={isProcessing}
+            onClick={(e) => {
+              (e.target as HTMLInputElement).value = '';
+            }}
+            onChange={(e) => {
+              if (e.target.files && e.target.files[0]) {
+                const file = e.target.files[0];
+                e.target.value = '';
+                handleProcessImage(file);
+              }
+            }}
+          />
+        )}
 
         {/* Botões de Ação para Captura */}
         <div className="space-y-3">
@@ -684,9 +703,22 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
         )}
 
         {errorMessage && (
-          <div className="mt-4 p-3.5 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 rounded-xl text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 shrink-0 text-rose-500 dark:text-rose-400" />
-            <span className="font-medium">{errorMessage}</span>
+          <div className="mt-4 p-3.5 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 rounded-xl text-xs text-rose-700 dark:text-rose-300 space-y-2">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0 text-rose-500 dark:text-rose-400" />
+              <span className="font-medium">{errorMessage}</span>
+            </div>
+            {needsManualPassword && lastProcessedFileRef.current && (
+              <div className="pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowManualPasswordModal(true)}
+                  className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-on-accent text-xs font-bold rounded-lg shadow-sm transition"
+                >
+                  Digitar senha manualmente
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -772,6 +804,18 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {showManualPasswordModal && (
+        <PasswordModal
+          onSubmitPassword={(typedPass) => {
+            setShowManualPasswordModal(false);
+            if (lastProcessedFileRef.current) {
+              handleProcessImage(lastProcessedFileRef.current, typedPass);
+            }
+          }}
+          onClose={() => setShowManualPasswordModal(false)}
+        />
       )}
     </div>
   );

@@ -37,6 +37,7 @@ export interface Exam {
   shuffleQuestions: boolean;
   shuffleOptions: boolean;
   twoColumns: boolean;
+  updatedAt?: string;
 }
 
 export interface ExamVersion {

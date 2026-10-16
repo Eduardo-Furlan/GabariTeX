@@ -130,7 +130,7 @@ export const StudentPicker: React.FC<StudentPickerProps> = ({
             <option value="">Sem turma vinculada</option>
             {classes.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.name} ({c.students.length} alunos)
+                {c.name} ({c.students?.length ?? 0} alunos)
               </option>
             ))}
           </select>

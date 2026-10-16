@@ -2,17 +2,15 @@ import React, { useState } from 'react';
 import { Lock, KeyRound, Eye, EyeOff } from 'lucide-react';
 
 interface PasswordModalProps {
-  currentPassword: string;
-  onSavePassword: (password: string) => void;
+  onSubmitPassword: (password: string) => void;
   onClose: () => void;
 }
 
 export const PasswordModal: React.FC<PasswordModalProps> = ({
-  currentPassword,
-  onSavePassword,
+  onSubmitPassword,
   onClose,
 }) => {
-  const [inputVal, setInputVal] = useState(currentPassword);
+  const [inputVal, setInputVal] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -21,21 +19,21 @@ export const PasswordModal: React.FC<PasswordModalProps> = ({
       alert('Por favor, informe a senha da prova.');
       return;
     }
-    onSavePassword(inputVal.trim());
+    onSubmitPassword(inputVal.trim());
     onClose();
   };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-950/70 dark:text-amber-300 flex items-center justify-center text-amber-700">
+      <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+        <div className="flex items-start gap-3 mb-4">
+          <div className="w-10 h-10 rounded-full bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-300 shrink-0">
             <Lock className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-slate-800">Senha do Gabarito Protegido</h3>
-            <p className="text-xs text-slate-500">
-              Necessária para decodificar o QR Code da prova e calcular as notas.
+            <h3 className="text-base font-bold text-slate-800">Senha não encontrada neste perfil</h3>
+            <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+              Não consegui abrir este QR Code com as senhas das provas deste perfil. A folha pode ser de outra prova ou de outro perfil.
             </p>
           </div>
         </div>
@@ -43,14 +41,14 @@ export const PasswordModal: React.FC<PasswordModalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-              Senha Mestra da Prova
+              Digitar senha apenas desta vez
             </label>
             <div className="relative flex items-center">
               <KeyRound className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
               <input
                 type={showPassword ? 'text' : 'password'}
                 className="w-full pl-9 pr-10 py-2 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:outline-none"
-                placeholder="Ex: senha123"
+                placeholder="Senha da prova"
                 value={inputVal}
                 onChange={(e) => setInputVal(e.target.value)}
                 autoFocus
@@ -65,12 +63,12 @@ export const PasswordModal: React.FC<PasswordModalProps> = ({
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">
-              Esta é a mesma senha definida nas configurações do cabeçalho ao gerar a prova.
+            <p className="text-[11px] text-slate-500 mt-1">
+              Esta senha será usada apenas para ler esta folha e não será salva permanentemente.
             </p>
           </div>
 
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
             <button
               type="button"
               onClick={onClose}
@@ -82,7 +80,7 @@ export const PasswordModal: React.FC<PasswordModalProps> = ({
               type="submit"
               className="px-4 py-2 text-xs font-bold text-on-accent bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition"
             >
-              Confirmar Senha
+              Tentar esta senha
             </button>
           </div>
         </form>

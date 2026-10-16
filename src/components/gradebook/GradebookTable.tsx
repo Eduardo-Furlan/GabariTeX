@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { GradingRecord, OptionLabel, Classroom, Exam } from '../../types/exam';
+import { ExamMeta } from '../../types/profile';
 import { exportGradebookToCsv, loadLastBackupDate } from '../../utils/storage';
 import { missingStudents } from '../../utils/classrooms';
 import {
@@ -39,6 +40,7 @@ import {
   BarChart2,
   AlertTriangle,
   Undo2,
+  BookOpen,
 } from 'lucide-react';
 
 interface GradebookTableProps {
@@ -52,6 +54,9 @@ interface GradebookTableProps {
   onClearAll: () => void;
   onOpenBackupPanel?: () => void;
   exam?: Exam;
+  exams?: ExamMeta[];
+  activeExamId?: string;
+  onSelectActiveExam?: (id: string) => void;
   onUpdateRecords?: (records: GradingRecord[]) => void;
 }
 
@@ -66,11 +71,15 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
   onClearAll,
   onOpenBackupPanel,
   exam,
+  exams = [],
+  activeExamId,
+  onSelectActiveExam,
   onUpdateRecords,
 }) => {
   const [viewMode, setViewMode] = useState<'table' | 'items'>('table');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [filterOnlyPending, setFilterOnlyPending] = useState<boolean>(false);
+  const [selectedExamFilter, setSelectedExamFilter] = useState<string>('current');
   const [selectedFilterClassId, setSelectedFilterClassId] = useState<string>('all');
   const [showMissingModal, setShowMissingModal] = useState<boolean>(false);
   const [copiedFeedback, setCopiedFeedback] = useState<boolean>(false);
@@ -95,8 +104,25 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
     setExpandedId(expandedId === id ? null : id);
   };
 
+  const knownIds = new Set(exams.map((e) => e.id));
+  if (exam?.id) knownIds.add(exam.id);
+  const orphanRecordsCount = records.filter((r) => r.examId && !knownIds.has(r.examId)).length;
+
+  const effectiveExamId =
+    selectedExamFilter === 'current' ? (activeExamId || exam?.id) : selectedExamFilter;
+
+  // Filtro por prova (Plano 08 §2.2 e §4)
+  const examFilteredRecords = records.filter((r) => {
+    if (selectedExamFilter === 'all') return true;
+    if (selectedExamFilter === 'orphan') {
+      return r.examId && !knownIds.has(r.examId);
+    }
+    if (!effectiveExamId) return true;
+    return r.examId === effectiveExamId || (!r.examId && exam?.id === effectiveExamId);
+  });
+
   // Filtro por turma
-  const classFilteredRecords = records.filter((r) => {
+  const classFilteredRecords = examFilteredRecords.filter((r) => {
     if (selectedFilterClassId === 'all') return true;
     if (selectedFilterClassId === 'none') return !r.classId;
     return r.classId === selectedFilterClassId;
@@ -118,7 +144,7 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
       ? classes.find((c) => c.id === activeClassId)
       : undefined;
 
-  const missingList = currentBannerClass ? missingStudents(currentBannerClass, records) : [];
+  const missingList = currentBannerClass ? missingStudents(currentBannerClass, examFilteredRecords) : [];
   const bannerTotalInClass = currentBannerClass ? currentBannerClass.students.length : 0;
   const bannerGradedCount = bannerTotalInClass - missingList.length;
 
@@ -225,6 +251,39 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Seletor de Filtro de Prova (Plano 08 §2.2) */}
+          {(exams.length > 1 || orphanRecordsCount > 0) && (
+            <div className="flex items-center gap-1.5">
+              <BookOpen className="w-3.5 h-3.5 text-slate-400" />
+              <select
+                value={selectedExamFilter}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSelectedExamFilter(val);
+                  if (val !== 'current' && val !== 'all' && val !== 'orphan' && onSelectActiveExam) {
+                    onSelectActiveExam(val);
+                  }
+                }}
+                className="text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-800 font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              >
+                <option value="current">
+                  Prova Atual ({exam?.header.examTitle || 'Ativa'})
+                </option>
+                {exams.map((ex) => (
+                  <option key={ex.id} value={ex.id}>
+                    {ex.name} ({ex.recordCount})
+                  </option>
+                ))}
+                <option value="all">Todas as provas ({records.length})</option>
+                {orphanRecordsCount > 0 && (
+                  <option value="orphan">
+                    Provas não encontradas neste aparelho ({orphanRecordsCount})
+                  </option>
+                )}
+              </select>
+            </div>
+          )}
+
           {/* Seletor de Filtro de Turma */}
           <div className="flex items-center gap-1.5">
             <select

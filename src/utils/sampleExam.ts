@@ -15,6 +15,7 @@ export const emptyExam: Exam = {
   shuffleQuestions: true,
   shuffleOptions: true,
   twoColumns: true,
+  updatedAt: '2026-10-10T00:00:00.000Z',
   questions: [],
 };
 
@@ -34,6 +35,7 @@ export const initialSampleExam: Exam = {
   shuffleQuestions: true,
   shuffleOptions: true,
   twoColumns: true,
+  updatedAt: '2026-10-10T00:00:00.000Z',
   questions: [
     {
       id: 'q1',

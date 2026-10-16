@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { AutosaveState } from '../hooks/useAutosave';
+import { ExamMeta } from '../types/profile';
 
 export type ActiveTab = 'editor' | 'versions' | 'print' | 'scanner' | 'gradebook';
 
@@ -33,6 +34,10 @@ interface NavbarProps {
   hasQuestions: boolean;
   gradedCount: number;
   autosaveState?: AutosaveState;
+  exams?: ExamMeta[];
+  activeExamId?: string;
+  onSelectActiveExam?: (id: string) => void;
+  onOpenLibrary?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -45,6 +50,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenBackup,
   gradedCount,
   autosaveState,
+  exams = [],
+  activeExamId,
+  onSelectActiveExam,
+  onOpenLibrary,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
@@ -76,10 +85,41 @@ export const Navbar: React.FC<NavbarProps> = ({
               <h1 className="font-extrabold text-slate-900 text-sm sm:text-base lg:text-lg leading-tight truncate">
                 GabariTeX
               </h1>
-              <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium hidden sm:block truncate">
-                Avaliações, LaTeX, Gabarito e Leitura Óptica
-              </p>
             </div>
+
+            {exams.length > 0 && (
+              <div className="hidden md:flex items-center gap-1.5 ml-4 pl-4 border-l border-slate-200">
+                <span className="text-xs text-slate-500 font-medium">Prova ativa:</span>
+                <select
+                  value={activeExamId || ''}
+                  onChange={(e) => {
+                    if (e.target.value === '__manage__') {
+                      onOpenLibrary?.();
+                    } else if (onSelectActiveExam) {
+                      onSelectActiveExam(e.target.value);
+                    }
+                  }}
+                  className="text-xs font-bold text-slate-800 bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1 focus:ring-1 focus:ring-indigo-500 focus:outline-none max-w-[200px] truncate"
+                >
+                  {exams.map((ex) => (
+                    <option key={ex.id} value={ex.id}>
+                      {ex.name}
+                    </option>
+                  ))}
+                  <option value="__manage__">📁 Gerenciar Provas...</option>
+                </select>
+                {onOpenLibrary && (
+                  <button
+                    type="button"
+                    onClick={onOpenLibrary}
+                    className="p-1 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 rounded-md transition"
+                    title="Abrir Biblioteca de Provas"
+                  >
+                    <BookOpen className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Botão de Menu para Telas Menores (< lg) */}
@@ -138,14 +178,26 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
             )}
 
+            {onOpenLibrary && (
+              <button
+                type="button"
+                onClick={onOpenLibrary}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 rounded-lg text-xs font-bold transition shadow-sm"
+                title="Abrir Biblioteca de Provas do Perfil"
+              >
+                <BookOpen className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                <span>Provas ({exams.length})</span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={onOpenBackup}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 rounded-lg text-xs font-bold transition shadow-sm"
-              title="Gerenciar backups completos, sincronizar notas e verificar armazenamento"
+              title="Gerenciar backups completos, exportar ou importar perfil em ZIP"
             >
               <Database className="w-3.5 h-3.5" />
-              <span>Dados & Backup</span>
+              <span>Perfil (ZIP)</span>
             </button>
 
             <input
@@ -207,6 +259,20 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Menu Retrátil Mobile (< lg) */}
         {mobileMenuOpen && (
           <div className="lg:hidden py-3 border-t border-slate-100 flex flex-col gap-2 bg-slate-50/90 -mx-4 px-4 sm:-mx-6 sm:px-6">
+            {onOpenLibrary && (
+              <button
+                type="button"
+                onClick={() => {
+                  onOpenLibrary();
+                  setMobileMenuOpen(false);
+                }}
+                className="flex items-center justify-center gap-2 px-3 py-2 bg-white border border-slate-300 text-slate-800 font-bold rounded-lg text-xs shadow-sm transition"
+              >
+                <BookOpen className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                <span>Biblioteca de Provas ({exams.length})</span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => {
@@ -216,7 +282,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="flex items-center justify-center gap-2 px-3 py-2 bg-indigo-600 text-on-accent font-bold rounded-lg text-xs shadow-sm transition"
             >
               <Database className="w-4 h-4" />
-              <span>Dados & Backup Completo</span>
+              <span>Perfil (ZIP)</span>
             </button>
 
             <div className="grid grid-cols-2 gap-2">
