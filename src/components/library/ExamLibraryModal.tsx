@@ -175,7 +175,7 @@ export const ExamLibraryModal: React.FC<ExamLibraryModalProps> = ({
                           <button
                             type="button"
                             onClick={() => handleSaveRename(exam.id)}
-                            className="p-1 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded"
+                            className="p-1 text-emerald-600 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded"
                             title="Salvar"
                           >
                             <Check className="w-4 h-4" />
@@ -297,7 +297,7 @@ export const ExamLibraryModal: React.FC<ExamLibraryModalProps> = ({
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 p-6 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-start gap-3.5 mb-4">
-              <div className="w-10 h-10 rounded-full bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 flex items-center justify-center text-rose-600 dark:text-rose-400 shrink-0">
+              <div className="w-10 h-10 rounded-full bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 flex items-center justify-center text-rose-600 dark:text-rose-300 shrink-0">
                 <AlertTriangle className="w-5 h-5" />
               </div>
               <div>

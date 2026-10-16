@@ -185,7 +185,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 rounded-lg text-xs font-bold transition shadow-sm"
                 title="Abrir Biblioteca de Provas do Perfil"
               >
-                <BookOpen className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                <BookOpen className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-300" />
                 <span>Provas ({exams.length})</span>
               </button>
             )}
@@ -238,7 +238,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-lg text-xs font-medium transition"
               title="Carregar exemplo completo de prova de cálculo/matemática com questões objetivas e dissertativa"
             >
-              <BookOpen className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+              <BookOpen className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-300" />
               <span>Exemplo Matemática</span>
             </button>
 
@@ -268,7 +268,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 }}
                 className="flex items-center justify-center gap-2 px-3 py-2 bg-white border border-slate-300 text-slate-800 font-bold rounded-lg text-xs shadow-sm transition"
               >
-                <BookOpen className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                <BookOpen className="w-4 h-4 text-indigo-600 dark:text-indigo-300" />
                 <span>Biblioteca de Provas ({exams.length})</span>
               </button>
             )}

@@ -249,7 +249,15 @@ export class IndexedDbProfileStore implements ProfileStore {
         const tx = db.transaction(STORE_CLASSES, 'readonly');
         const store = tx.objectStore(STORE_CLASSES);
         const req = store.getAll();
-        req.onsuccess = () => resolve(req.result || []);
+        req.onsuccess = () => {
+          const raw = (req.result || []) as Classroom[];
+          resolve(
+            raw.map((c) => ({
+              ...c,
+              students: Array.isArray(c.students) ? c.students : [],
+            }))
+          );
+        };
         req.onerror = () => reject(req.error);
       });
     } catch {

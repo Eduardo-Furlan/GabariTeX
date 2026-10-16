@@ -161,7 +161,11 @@ export class TauriProfileStore implements ProfileStore {
       const invoke = await this.getInvoke();
       const resp = await invoke<ArrayBuffer>('store_get', { key: 'classes', source: 'main' });
       const text = new TextDecoder().decode(new Uint8Array(resp));
-      return JSON.parse(text) as Classroom[];
+      const raw = JSON.parse(text) as Classroom[];
+      return (raw || []).map((c) => ({
+        ...c,
+        students: Array.isArray(c.students) ? c.students : [],
+      }));
     } catch {
       return [];
     }

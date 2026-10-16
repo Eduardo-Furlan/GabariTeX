@@ -133,7 +133,11 @@ export function saveClassroomsToStorage(classes: Classroom[]): SaveResult {
 export function loadClassroomsFromStorage(): Classroom[] {
   try {
     const raw = localStorage.getItem(CLASSES_STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as Classroom[]) : [];
+    const parsed = raw ? (JSON.parse(raw) as Classroom[]) : [];
+    return (parsed || []).map((c) => ({
+      ...c,
+      students: Array.isArray(c.students) ? c.students : [],
+    }));
   } catch (e) {
     console.error('Falha ao carregar turmas do localStorage', e);
     return [];

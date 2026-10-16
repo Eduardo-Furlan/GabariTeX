@@ -145,7 +145,7 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
       : undefined;
 
   const missingList = currentBannerClass ? missingStudents(currentBannerClass, examFilteredRecords) : [];
-  const bannerTotalInClass = currentBannerClass ? currentBannerClass.students.length : 0;
+  const bannerTotalInClass = currentBannerClass ? (currentBannerClass.students?.length ?? 0) : 0;
   const bannerGradedCount = bannerTotalInClass - missingList.length;
 
   const handleCopyMissingList = async () => {

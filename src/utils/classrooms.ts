@@ -49,9 +49,11 @@ export function addStudent(
     registration: input.registration ? input.registration.trim() : undefined,
   };
 
+  const students = Array.isArray(c.students) ? c.students : [];
+
   return {
     ...c,
-    students: [...c.students, newStudent],
+    students: [...students, newStudent],
     updatedAt: new Date().toISOString(),
   };
 }
@@ -61,7 +63,8 @@ export function updateStudent(
   studentId: string,
   patch: Partial<Omit<Student, 'id'>>
 ): Classroom {
-  const updatedStudents = c.students.map((st) => {
+  const students = Array.isArray(c.students) ? c.students : [];
+  const updatedStudents = students.map((st) => {
     if (st.id !== studentId) return st;
     const nextName = patch.name !== undefined ? patch.name.trim() : st.name;
     if (!nextName) {
@@ -85,22 +88,24 @@ export function updateStudent(
 }
 
 export function removeStudent(c: Classroom, studentId: string): Classroom {
+  const students = Array.isArray(c.students) ? c.students : [];
   return {
     ...c,
-    students: c.students.filter((st) => st.id !== studentId),
+    students: students.filter((st) => st.id !== studentId),
     updatedAt: new Date().toISOString(),
   };
 }
 
 export function searchStudents(c: Classroom, query: string): Student[] {
+  const students = Array.isArray(c.students) ? c.students : [];
   if (!query || !query.trim()) {
-    return [...c.students];
+    return [...students];
   }
 
   const normQuery = normalizeText(query);
   const normReg = normalizeRegistration(query);
 
-  return c.students.filter((st) => {
+  return students.filter((st) => {
     const nameMatch = normalizeText(st.name).includes(normQuery);
     const regMatch = st.registration
       ? normalizeRegistration(st.registration).startsWith(normReg) ||
@@ -295,8 +300,9 @@ export function mergeIntoClassroom(
 ): { classroom: Classroom; added: number; skipped: number } {
   const existingRegs = new Set<string>();
   const existingNames = new Set<string>();
+  const students = Array.isArray(c.students) ? c.students : [];
 
-  for (const st of c.students) {
+  for (const st of students) {
     if (st.registration) {
       existingRegs.add(normalizeRegistration(st.registration));
     }
@@ -305,7 +311,7 @@ export function mergeIntoClassroom(
 
   let added = 0;
   let skipped = 0;
-  const newStudents: Student[] = [...c.students];
+  const newStudents: Student[] = [...students];
 
   for (const item of list) {
     const normName = normalizeText(item.name);
@@ -376,6 +382,7 @@ export function findDuplicateRecord(
 export function missingStudents(c: Classroom, records: GradingRecord[]): Student[] {
   const coveredRefs = new Set<string>();
   const coveredRegs = new Set<string>();
+  const students = Array.isArray(c.students) ? c.students : [];
 
   for (const r of records) {
     if (r.classId === c.id || !r.classId) {
@@ -386,7 +393,7 @@ export function missingStudents(c: Classroom, records: GradingRecord[]): Student
     }
   }
 
-  return c.students.filter((st) => {
+  return students.filter((st) => {
     if (coveredRefs.has(st.id)) return false;
     if (st.registration && coveredRegs.has(normalizeRegistration(st.registration))) {
       return false;

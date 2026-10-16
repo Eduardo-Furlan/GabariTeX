@@ -327,5 +327,38 @@ Maria-Eduarda Ferreira - 2026-002`;
       expect(text).toBe('João');
     });
   });
+
+  describe('Resiliência a dados legados/malformados (students undefined)', () => {
+    it('searchStudents e missingStudents não devem lançar erro quando students for undefined', () => {
+      const malformedClass = {
+        id: 'c-legacy',
+        name: 'Turma Legada',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      } as unknown as Classroom;
+
+      expect(() => searchStudents(malformedClass, 'teste')).not.toThrow();
+      expect(searchStudents(malformedClass, 'teste')).toEqual([]);
+
+      expect(() => missingStudents(malformedClass, [])).not.toThrow();
+      expect(missingStudents(malformedClass, [])).toEqual([]);
+    });
+
+    it('addStudent, updateStudent e removeStudent tratam students undefined graciosamente', () => {
+      const malformedClass = {
+        id: 'c-legacy',
+        name: 'Turma Legada',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      } as unknown as Classroom;
+
+      const added = addStudent(malformedClass, { name: 'Novo Aluno' });
+      expect(added.students.length).toBe(1);
+      expect(added.students[0].name).toBe('Novo Aluno');
+
+      const removed = removeStudent(malformedClass, 'non-existent');
+      expect(removed.students).toEqual([]);
+    });
+  });
 });
 

@@ -201,7 +201,7 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
             onClick={() => setActiveTab('export')}
             className={`flex-1 py-3 text-xs font-bold text-center border-b-2 transition flex items-center justify-center gap-2 ${
               activeTab === 'export'
-                ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
+                ? 'border-indigo-600 text-indigo-600 dark:text-indigo-300'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -213,7 +213,7 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
             onClick={() => setActiveTab('import')}
             className={`flex-1 py-3 text-xs font-bold text-center border-b-2 transition flex items-center justify-center gap-2 ${
               activeTab === 'import'
-                ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
+                ? 'border-indigo-600 text-indigo-600 dark:text-indigo-300'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -227,7 +227,7 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
           <div className="p-6 overflow-y-auto space-y-5 flex-1">
             {/* Aviso de Segurança */}
             <div className="p-3.5 rounded-xl border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/15 text-xs text-amber-800 dark:text-amber-300 flex items-start gap-2.5">
-              <Lock className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+              <Lock className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-300 mt-0.5" />
               <p className="leading-relaxed">
                 <strong>Aviso de privacidade e segurança:</strong> este arquivo contém as senhas das provas e dados pessoais dos alunos para que você não precise redigitá-las. Armazene o arquivo ZIP em local seguro e de acesso restrito.
               </p>
@@ -353,7 +353,7 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
 
             {exportSuccess && (
               <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-xs text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-300 shrink-0" />
                 <span>{exportSuccess}</span>
               </div>
             )}
@@ -392,7 +392,7 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
                   onClick={() => fileInputRef.current?.click()}
                   className="border-2 border-dashed border-slate-300 hover:border-indigo-400 dark:hover:border-indigo-500/50 rounded-2xl p-8 text-center cursor-pointer bg-slate-50 hover:bg-indigo-50/20 dark:hover:bg-indigo-500/5 transition flex flex-col items-center justify-center gap-3"
                 >
-                  <div className="w-12 h-12 rounded-full bg-white border border-slate-200 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-sm">
+                  <div className="w-12 h-12 rounded-full bg-white border border-slate-200 flex items-center justify-center text-indigo-600 dark:text-indigo-300 shadow-sm">
                     {isImporting ? <Loader2 className="w-6 h-6 animate-spin" /> : <Upload className="w-6 h-6" />}
                   </div>
                   <div>
@@ -407,7 +407,7 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
 
                 {importError && (
                   <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 text-xs text-rose-800 dark:text-rose-300 flex items-start gap-2.5">
-                    <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                    <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-300 shrink-0 mt-0.5" />
                     <div>
                       <strong className="block font-bold">Falha na importação</strong>
                       <p className="mt-0.5">{importError}</p>
@@ -420,7 +420,7 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
                 {/* Resumo da Importação */}
                 <div className="p-4 rounded-xl border border-indigo-200 dark:border-indigo-500/30 bg-indigo-50/30 dark:bg-indigo-500/5 space-y-3">
                   <h3 className="text-xs font-bold text-indigo-900 dark:text-indigo-300 uppercase flex items-center gap-1.5">
-                    <FileCheck2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                    <FileCheck2 className="w-4 h-4 text-indigo-600 dark:text-indigo-300" />
                     <span>Conteúdo Identificado no Arquivo</span>
                   </h3>
                   <div className="grid grid-cols-3 gap-2 text-center">
@@ -501,7 +501,7 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
                         className="text-rose-600 mt-0.5"
                       />
                       <div>
-                        <span className="text-xs font-bold text-slate-800 block text-rose-700 dark:text-rose-400">
+                        <span className="text-xs font-bold text-slate-800 block text-rose-700 dark:text-rose-300">
                           Substituir tudo (Apaga o perfil atual)
                         </span>
                         <span className="text-[11px] text-slate-500">

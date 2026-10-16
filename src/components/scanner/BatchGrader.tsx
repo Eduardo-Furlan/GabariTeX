@@ -485,7 +485,7 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
                           <option value="">
                             -- Selecionar de {currentClass.name} (ou digite abaixo) --
                           </option>
-                          {currentClass.students.map((st) => {
+                          {(currentClass.students || []).map((st) => {
                             const alreadyGradedInBook = records.some(
                               (r) =>
                                 r.studentRef === st.id ||

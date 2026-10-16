@@ -463,7 +463,7 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({
                   <div className="flex justify-between">
                     <span className="text-slate-500">Turmas cadastradas:</span>
                     <span className="font-semibold text-slate-900">
-                      {restoreCandidate.classes.length} {restoreCandidate.classes.length === 1 ? 'turma' : 'turmas'} ({restoreCandidate.classes.reduce((acc, c) => acc + c.students.length, 0)} alunos)
+                      {restoreCandidate.classes.length} {restoreCandidate.classes.length === 1 ? 'turma' : 'turmas'} ({restoreCandidate.classes.reduce((acc, c) => acc + (c.students?.length ?? 0), 0)} alunos)
                     </span>
                   </div>
                 )}

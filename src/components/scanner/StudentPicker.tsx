@@ -47,7 +47,7 @@ export const StudentPicker: React.FC<StudentPickerProps> = ({
 
   // Modo: 'select' (busca na turma) ou 'manual' (digitar campos soltos)
   const [mode, setMode] = useState<'select' | 'manual'>(() => {
-    return currentClass && currentClass.students.length > 0 && !studentName ? 'select' : 'manual';
+    return currentClass && (currentClass.students?.length ?? 0) > 0 && !studentName ? 'select' : 'manual';
   });
 
   const [query, setQuery] = useState<string>('');
@@ -145,7 +145,7 @@ export const StudentPicker: React.FC<StudentPickerProps> = ({
           )}
         </div>
 
-        {currentClass && currentClass.students.length > 0 && (
+        {currentClass && (currentClass.students?.length ?? 0) > 0 && (
           <div className="inline-flex p-0.5 bg-slate-200/80 rounded-lg text-[11px] font-semibold">
             <button
               type="button"
