@@ -455,16 +455,16 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
 
         {/* Seletor de Etapa: QR Code vs Folha de Gabarito */}
         <div className="mb-5">
-          <div className="text-xs font-bold text-slate-700 mb-2 flex items-center justify-between">
+          <div className="text-xs font-bold text-slate-800 mb-2 flex items-center justify-between">
             <span>O que você deseja escanear agora?</span>
             {!activePayload && (
-              <span className="text-[11px] font-normal text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+              <span className="text-[11px] font-medium text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-800/80">
                 Trave uma versão antes de ler o gabarito
               </span>
             )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-1.5 bg-slate-100 dark:bg-slate-800/60 rounded-xl border border-slate-200">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-1.5 bg-slate-100 rounded-xl border border-slate-200">
             {/* Opção 1: Ler QR Code */}
             <button
               type="button"
@@ -475,22 +475,34 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
               }}
               className={`flex items-center gap-2.5 p-3 rounded-lg text-left transition ${
                 scanTarget === 'qr'
-                  ? 'bg-white dark:bg-slate-900 text-indigo-700 dark:text-indigo-300 shadow-sm font-bold border border-indigo-200 dark:border-indigo-800/60'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                  ? 'bg-white shadow-sm font-bold border border-indigo-400 dark:border-indigo-500/60'
+                  : 'text-slate-700 hover:text-slate-900 hover:bg-white/50'
               }`}
             >
               <div
                 className={`p-2 rounded-lg ${
                   scanTarget === 'qr'
-                    ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600'
-                    : 'bg-slate-200/60 text-slate-500'
+                    ? 'bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300'
+                    : 'bg-slate-200/80 text-slate-700'
                 }`}
               >
                 <QrCode className="w-4 h-4" />
               </div>
               <div className="min-w-0">
-                <div className="text-xs font-bold leading-tight">1. Ler QR Code da Prova</div>
-                <div className="text-[10px] text-slate-500 font-medium leading-tight mt-0.5">
+                <div
+                  className={`text-xs font-bold leading-tight ${
+                    scanTarget === 'qr'
+                      ? 'text-indigo-700 dark:text-indigo-300'
+                      : 'text-slate-800'
+                  }`}
+                >
+                  1. Ler QR Code da Prova
+                </div>
+                <div
+                  className={`text-[10px] font-medium leading-tight mt-0.5 ${
+                    scanTarget === 'qr' ? 'text-slate-600' : 'text-slate-500'
+                  }`}
+                >
                   Identifica a versão e desbloqueia com a senha
                 </div>
               </div>
@@ -509,10 +521,10 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
               }}
               className={`flex items-center gap-2.5 p-3 rounded-lg text-left transition ${
                 !activePayload
-                  ? 'opacity-50 cursor-not-allowed text-slate-400 bg-transparent'
+                  ? 'opacity-40 cursor-not-allowed bg-transparent'
                   : scanTarget === 'sheet'
-                  ? 'bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-300 shadow-sm font-bold border border-emerald-200 dark:border-emerald-800/60'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                  ? 'bg-white shadow-sm font-bold border border-emerald-400 dark:border-emerald-500/60'
+                  : 'text-slate-700 hover:text-slate-900 hover:bg-white/50'
               }`}
             >
               <div
@@ -520,22 +532,38 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
                   !activePayload
                     ? 'bg-slate-200/40 text-slate-400'
                     : scanTarget === 'sheet'
-                    ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600'
-                    : 'bg-slate-200/60 text-slate-500'
+                    ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300'
+                    : 'bg-slate-200/80 text-slate-700'
                 }`}
               >
                 <FileCheck className="w-4 h-4" />
               </div>
               <div className="min-w-0">
-                <div className="text-xs font-bold leading-tight flex items-center gap-1.5">
-                  2. Ler Folha de Gabarito
+                <div
+                  className={`text-xs font-bold leading-tight flex items-center gap-1.5 ${
+                    !activePayload
+                      ? 'text-slate-400'
+                      : scanTarget === 'sheet'
+                      ? 'text-emerald-700 dark:text-emerald-300'
+                      : 'text-slate-800'
+                  }`}
+                >
+                  <span>2. Ler Folha de Gabarito</span>
                   {activePayload && (
-                    <span className="text-[10px] px-1.5 py-0.2 bg-emerald-100 text-emerald-800 rounded font-black">
+                    <span className="text-[10px] px-1.5 py-0.2 bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 rounded font-black">
                       Versão {activePayload.version}
                     </span>
                   )}
                 </div>
-                <div className="text-[10px] text-slate-500 font-medium leading-tight mt-0.5">
+                <div
+                  className={`text-[10px] font-medium leading-tight mt-0.5 ${
+                    !activePayload
+                      ? 'text-slate-400'
+                      : scanTarget === 'sheet'
+                      ? 'text-slate-600'
+                      : 'text-slate-500'
+                  }`}
+                >
                   {activePayload
                     ? 'Corrige o cartão-resposta e marcações'
                     : 'Bloqueado (trave a versão primeiro)'}
