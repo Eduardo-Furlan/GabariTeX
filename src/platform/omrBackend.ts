@@ -1,9 +1,16 @@
-import { OmrRawDetection, OmrDebugInfo, GradingEvidence } from '../types/omr';
+import {
+  OmrRawDetection,
+  OmrDebugInfo,
+  OmrTimingMarkDebug,
+  OmrBubbleDebug,
+  GradingEvidence,
+} from '../types/omr';
 
 export interface NativeOmrRequest {
   totalQuestions: number;
   subjectiveQuestions: number[];
   readQr: boolean;
+  readOmr?: boolean;
   generateDebugImage: boolean;
 }
 
@@ -21,6 +28,8 @@ export interface NativeOmrResponse {
   debugInfo: {
     method: string;
     logs: string[];
+    timingMarks?: OmrTimingMarkDebug[];
+    bubbles?: OmrBubbleDebug[];
   };
   debugImageDataUrl: string;
   rowCrops: Record<number, string>;
@@ -31,9 +40,13 @@ export async function processExamPhotoNative(
   req: NativeOmrRequest
 ): Promise<NativeOmrResponse> {
   const { invoke } = await import('@tauri-apps/api/core');
+  const payload = {
+    ...req,
+    readOmr: req.readOmr ?? true,
+  };
   return await invoke<NativeOmrResponse>('process_exam_photo', imageBytes, {
     headers: {
-      'x-omr-options': JSON.stringify(req),
+      'x-omr-options': JSON.stringify(payload),
     },
   });
 }
@@ -54,7 +67,8 @@ export function convertNativeResponse(
 
   const debugInfo: OmrDebugInfo = {
     method: 'fiducials_timing_marks',
-    bubbles: [],
+    timingMarks: res.debugInfo.timingMarks ?? [],
+    bubbles: res.debugInfo.bubbles ?? [],
     logs: res.debugInfo.logs,
   };
 
@@ -65,4 +79,3 @@ export function convertNativeResponse(
 
   return { detections, debugInfo, evidence };
 }
-

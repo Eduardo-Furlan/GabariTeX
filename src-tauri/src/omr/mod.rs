@@ -14,10 +14,24 @@ use std::collections::{HashMap, HashSet};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NativeOmrRequest {
+    #[serde(default = "default_total_questions")]
     pub total_questions: usize,
+    #[serde(default)]
     pub subjective_questions: Vec<usize>,
+    #[serde(default = "default_true")]
     pub read_qr: bool,
+    #[serde(default = "default_true")]
+    pub read_omr: bool,
+    #[serde(default = "default_true")]
     pub generate_debug_image: bool,
+}
+
+fn default_total_questions() -> usize {
+    20
+}
+
+fn default_true() -> bool {
+    true
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -32,6 +46,8 @@ pub struct OmrError {
 pub struct OmrDebugInfoPayload {
     pub method: String,
     pub logs: Vec<String>,
+    pub timing_marks: Vec<reader::TimingMarkDebugItem>,
+    pub bubbles: Vec<reader::BubbleDebugItem>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -73,6 +89,42 @@ pub fn process_image_bytes(
         None
     };
 
+    // Se o modo OMR estiver desativado, o usuário está lendo exclusivamente o QR Code
+    if !req.read_omr {
+        if qr_text.is_none() {
+            return Ok(NativeOmrResponse {
+                qr_raw_text: None,
+                omr_error: Some(OmrError {
+                    code: "NO_QR".to_string(),
+                    message: "Nenhum QR Code detectado na imagem. Aproxime a câmera do QR Code e verifique o enquadramento.".to_string(),
+                }),
+                detections: Vec::new(),
+                debug_info: OmrDebugInfoPayload {
+                    method: "qr_only".to_string(),
+                    logs: vec!["Modo QR Code ativo: nenhum código decodificado na imagem.".to_string()],
+                    timing_marks: Vec::new(),
+                    bubbles: Vec::new(),
+                },
+                debug_image_data_url: String::new(),
+                row_crops: HashMap::new(),
+            });
+        }
+
+        return Ok(NativeOmrResponse {
+            qr_raw_text: qr_text,
+            omr_error: None,
+            detections: Vec::new(),
+            debug_info: OmrDebugInfoPayload {
+                method: "qr_only".to_string(),
+                logs: vec!["QR Code detectado e decodificado com sucesso.".to_string()],
+                timing_marks: Vec::new(),
+                bubbles: Vec::new(),
+            },
+            debug_image_data_url: String::new(),
+            row_crops: HashMap::new(),
+        });
+    }
+
     // 2. Fiducial detection
     let mut logs = vec![format!(
         "Dimensões originais: {}x{}px",
@@ -92,6 +144,7 @@ pub fn process_image_bytes(
                     &mut bgr,
                     None,
                     &[],
+                    &[],
                     &format!("Erro na detecção: {err_msg}"),
                     true,
                 )
@@ -109,6 +162,8 @@ pub fn process_image_bytes(
                 debug_info: OmrDebugInfoPayload {
                     method: "none".to_string(),
                     logs,
+                    timing_marks: Vec::new(),
+                    bubbles: Vec::new(),
                 },
                 debug_image_data_url: debug_url,
                 row_crops: HashMap::new(),
@@ -133,20 +188,58 @@ pub fn process_image_bytes(
         AlgorithmHint::ALGO_HINT_DEFAULT,
     );
 
-    // 4. Read bubbles with morphological opening
+    let canonical_fid = detector::canonical_fiducials();
+
+    // 4. Read bubbles with timing marks and morphological opening
     let subj_set: HashSet<usize> = req.subjective_questions.into_iter().collect();
-    let read_res = reader::read_bubbles_on_warped(&warped, req.total_questions, &subj_set)?;
+    let read_res = match reader::read_bubbles_on_warped(&warped, req.total_questions, &subj_set) {
+        Ok(r) => r,
+        Err(err_msg) => {
+            logs.push(format!("Erro ao ler linhas/bolinhas: {err_msg}"));
+            let debug_url = if req.generate_debug_image {
+                debug_overlay::draw_debug_overlay_base64(
+                    &mut warped_bgr,
+                    Some(&canonical_fid),
+                    &[],
+                    &[],
+                    &format!("Erro na leitura: {err_msg}"),
+                    true,
+                )
+            } else {
+                String::new()
+            };
+
+            return Ok(NativeOmrResponse {
+                qr_raw_text: qr_text,
+                omr_error: Some(OmrError {
+                    code: "NO_MARK_COLUMNS".to_string(),
+                    message: err_msg,
+                }),
+                detections: Vec::new(),
+                debug_info: OmrDebugInfoPayload {
+                    method: "fiducials_timing_marks".to_string(),
+                    logs,
+                    timing_marks: Vec::new(),
+                    bubbles: Vec::new(),
+                },
+                debug_image_data_url: debug_url,
+                row_crops: HashMap::new(),
+            });
+        }
+    };
 
     logs.push(format!(
-        "OMR processado: {} questões lidas com morfologia OpenCV",
+        "Sincronizadores detectados: {} linhas | Questões objetivas lidas: {}",
+        read_res.timing_marks_debug.len(),
         read_res.detections.len()
     ));
 
-    // 5. Generate debug overlay image
+    // 5. Generate debug overlay image on rectified canvas using canonical fiducials
     let debug_url = if req.generate_debug_image {
         debug_overlay::draw_debug_overlay_base64(
             &mut warped_bgr,
-            Some(&fid),
+            Some(&canonical_fid),
+            &read_res.timing_marks_debug,
             &read_res.bubbles_debug,
             "OMR OpenCV Nativo - Folha retificada e lida com sucesso",
             false,
@@ -160,8 +253,10 @@ pub fn process_image_bytes(
         omr_error: None,
         detections: read_res.detections,
         debug_info: OmrDebugInfoPayload {
-            method: "opencv_native_homography".to_string(),
+            method: "fiducials_timing_marks".to_string(),
             logs,
+            timing_marks: read_res.timing_marks_debug,
+            bubbles: read_res.bubbles_debug,
         },
         debug_image_data_url: debug_url,
         row_crops: read_res.row_crops_base64,
@@ -198,38 +293,130 @@ mod tests {
     use std::path::Path;
 
     #[test]
-    fn test_decode_qr_4qr_png() {
+    fn test_decode_qr_4qr_png_and_1_jpg() {
         let manifest_dir = env!("CARGO_MANIFEST_DIR");
-        let path = Path::new(manifest_dir).join("../tests/4qr.png");
-        if let Ok(bytes) = fs::read(&path) {
-            let req = NativeOmrRequest {
+        for file in ["../tests/4qr.png", "../tests/1.jpg"] {
+            let path = Path::new(manifest_dir).join(file);
+            let bytes = fs::read(&path).expect("arquivo QR deve existir");
+
+            // Modo 1: apenas QR (read_omr = false). Não procura fiduciais, sem erro de OMR.
+            let req_qr_only = NativeOmrRequest {
                 total_questions: 13,
                 subjective_questions: vec![7, 9, 10],
                 read_qr: true,
+                read_omr: false,
                 generate_debug_image: false,
             };
-            let res = process_image_bytes(&bytes, req).unwrap();
-            assert!(res.qr_raw_text.is_some());
-            assert!(res.qr_raw_text.as_ref().unwrap().starts_with("MCORR:"));
+            let res_qr = process_image_bytes(&bytes, req_qr_only).unwrap();
+            assert!(res_qr.qr_raw_text.is_some(), "QR não lido em {file}");
+            assert!(res_qr.qr_raw_text.as_ref().unwrap().starts_with("MCORR:"));
+            assert!(res_qr.omr_error.is_none(), "Não deve retornar erro de OMR no modo QR puro");
+
+            // Modo 2: combinado (read_qr = true, read_omr = true). Lê QR mas rejeita fiduciais no close-up.
+            let req_both = NativeOmrRequest {
+                total_questions: 13,
+                subjective_questions: vec![7, 9, 10],
+                read_qr: true,
+                read_omr: true,
+                generate_debug_image: true,
+            };
+            let res_both = process_image_bytes(&bytes, req_both).unwrap();
+            assert!(res_both.qr_raw_text.is_some());
+            assert!(res_both.omr_error.is_some(), "Deveria rejeitar fiduciais no close-up de {file}");
         }
     }
 
     #[test]
-    fn test_process_sheet_4gb_png() {
+    fn test_process_sheet_4gb_png_exact_answers() {
         let manifest_dir = env!("CARGO_MANIFEST_DIR");
         let path = Path::new(manifest_dir).join("../tests/4gb.png");
-        if let Ok(bytes) = fs::read(&path) {
+        let bytes = fs::read(&path).expect("tests/4gb.png deve existir");
+        let req = NativeOmrRequest {
+            total_questions: 13,
+            subjective_questions: vec![7, 9, 10],
+            read_qr: false,
+            read_omr: true,
+            generate_debug_image: true,
+        };
+        let res = process_image_bytes(&bytes, req).unwrap();
+        assert!(res.omr_error.is_none(), "omr_error: {:?}", res.omr_error);
+        assert_eq!(res.detections.len(), 10);
+
+        let expected: Vec<(usize, &str)> = vec![
+            (1, "A"),
+            (2, "B"),
+            (3, "C"),
+            (4, "D"),
+            (5, "E"),
+            (6, "E"),
+            (8, "A"),
+            (11, "A"),
+            (12, "A"),
+            (13, "B"),
+        ];
+
+        for (q, exp) in expected {
+            let det = res
+                .detections
+                .iter()
+                .find(|d| d.question_number == q)
+                .unwrap_or_else(|| panic!("Questão {q} não encontrada"));
+            assert_eq!(
+                det.detected_mark.as_deref(),
+                Some(exp),
+                "Questão {q} lida incorretamente: {:?} (ratios: {:?})",
+                det.detected_mark,
+                det.fill_ratios
+            );
+        }
+    }
+
+    #[test]
+    fn test_process_sheets_2_jpg_and_3_jpg_exact_answers() {
+        let manifest_dir = env!("CARGO_MANIFEST_DIR");
+        for filename in ["../tests/2.jpg", "../tests/3.jpg"] {
+            let path = Path::new(manifest_dir).join(filename);
+            let bytes = fs::read(&path).expect("arquivo de teste deve existir");
             let req = NativeOmrRequest {
-                total_questions: 13,
-                subjective_questions: vec![7, 9, 10],
-                read_qr: true,
+                total_questions: 10,
+                subjective_questions: vec![3, 6],
+                read_qr: false,
+                read_omr: true,
                 generate_debug_image: true,
             };
             let res = process_image_bytes(&bytes, req).unwrap();
-            assert!(res.omr_error.is_none());
-            assert_eq!(res.detections.len(), 10); // 13 - 3 subjective = 10 objective
-            assert!(!res.debug_image_data_url.is_empty());
+            assert!(
+                res.omr_error.is_none(),
+                "{filename} omr_error: {:?}",
+                res.omr_error
+            );
+            assert_eq!(res.detections.len(), 8);
+
+            let expected: Vec<(usize, &str)> = vec![
+                (1, "A"),
+                (2, "B"),
+                (4, "C"),
+                (5, "D"),
+                (7, "E"),
+                (8, "A"),
+                (9, "B"),
+                (10, "C"),
+            ];
+
+            for (q, exp) in expected {
+                let det = res
+                    .detections
+                    .iter()
+                    .find(|d| d.question_number == q)
+                    .unwrap_or_else(|| panic!("{filename}: Questão {q} não encontrada"));
+                assert_eq!(
+                    det.detected_mark.as_deref(),
+                    Some(exp),
+                    "{filename}: Questão {q} lida incorretamente: {:?} (ratios: {:?})",
+                    det.detected_mark,
+                    det.fill_ratios
+                );
+            }
         }
     }
 }
-

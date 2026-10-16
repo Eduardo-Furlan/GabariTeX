@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { ExamVersion, GradingRecord } from '../../types/exam';
 import { DecryptedQrPayload, OmrDebugInfo, GradingEvidence } from '../../types/omr';
 import { gradePhotoFile } from '../../utils/photoPipeline';
@@ -18,12 +18,13 @@ import {
   ChevronDown,
   ChevronUp,
   RefreshCw,
+  FileCheck,
 } from 'lucide-react';
 
 interface PhotoUploaderProps {
   teacherPassword: string;
   activePayload: DecryptedQrPayload | null;
-  onLockPayload?: (payload: DecryptedQrPayload) => void;
+  onLockPayload?: (payload: DecryptedQrPayload | null) => void;
   onGraded: (record: GradingRecord, evidence?: GradingEvidence) => void;
   availableVersions?: ExamVersion[];
   onSelectExamVersion?: (v: ExamVersion) => void;
@@ -38,6 +39,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
   onSelectExamVersion,
 }) => {
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [scanTarget, setScanTarget] = useState<'qr' | 'sheet'>(activePayload ? 'sheet' : 'qr');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const isDebugAllowed = Boolean(
@@ -54,18 +56,29 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
   } | null>(null);
   const [showLogs, setShowLogs] = useState<boolean>(false);
   const [isImageModalOpen, setIsImageModalOpen] = useState<boolean>(false);
+  const [errorDebugUrl, setErrorDebugUrl] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (activePayload && scanTarget === 'qr') {
+      setScanTarget('sheet');
+    } else if (!activePayload && scanTarget === 'sheet') {
+      setScanTarget('qr');
+    }
+  }, [activePayload]);
 
   const handleProcessImage = async (file: File) => {
     setIsProcessing(true);
     setErrorMessage(null);
     setSuccessMessage(null);
+    setErrorDebugUrl(null);
 
     const result = await gradePhotoFile(file, {
       teacherPassword,
       lockedPayload: activePayload,
+      scanTarget,
       alwaysReadQr: false,
       availableVersions,
     });
@@ -73,15 +86,19 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
     setIsProcessing(false);
 
     if (result.status === 'error') {
-      setErrorMessage(result.error || 'Não foi possível ler o gabarito na foto.');
+      setErrorMessage(result.error || 'Não foi possível processar a imagem.');
+      if (result.debugCanvasUrl) {
+        setErrorDebugUrl(result.debugCanvasUrl);
+      }
       return;
     }
 
     if (result.status === 'qr_only') {
       if (result.payload) {
         onLockPayload?.(result.payload);
+        setScanTarget('sheet');
         setSuccessMessage(
-          `Versão ${result.payload.version} detectada e travada com sucesso! Agora fotografe a folha de respostas.`
+          `Versão ${result.payload.version} detectada e travada com sucesso! Agora você pode fotografar ou selecionar a folha de respostas.`
         );
       }
       return;
@@ -89,6 +106,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
 
     if (result.payload && result.payloadSource === 'qr') {
       onLockPayload?.(result.payload);
+      setScanTarget('sheet');
       setSuccessMessage(
         `QR Code identificado! Gabarito da Versão ${result.payload.version} carregado com sucesso.`
       );
@@ -107,9 +125,10 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
   };
 
   const handleDownloadDebugImage = () => {
-    if (!debugResult?.debugCanvasUrl) return;
+    const url = debugResult?.debugCanvasUrl || errorDebugUrl;
+    if (!url) return;
     const a = document.createElement('a');
-    a.href = debugResult.debugCanvasUrl;
+    a.href = url;
     a.download = `omr-debug-diagnostico-${Date.now()}.jpg`;
     a.click();
   };
@@ -174,8 +193,19 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
                   Pronto! Enquadre e fotografe a folha de respostas.
                 </span>
               </div>
-              <div className="flex items-center gap-1 text-[11px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                <Sparkles className="w-3.5 h-3.5" /> OMR com auto-alinhamento ativo
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 text-[11px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                  <Sparkles className="w-3.5 h-3.5" /> OMR com auto-alinhamento ativo
+                </div>
+                {onLockPayload && (
+                  <button
+                    type="button"
+                    onClick={() => onLockPayload(null)}
+                    className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-slate-600 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 rounded-lg transition border border-slate-200 bg-white"
+                  >
+                    <RefreshCw className="w-3 h-3" /> Destravar
+                  </button>
+                )}
               </div>
             </div>
           ) : (
@@ -423,6 +453,98 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
           </div>
         )}
 
+        {/* Seletor de Etapa: QR Code vs Folha de Gabarito */}
+        <div className="mb-5">
+          <div className="text-xs font-bold text-slate-700 mb-2 flex items-center justify-between">
+            <span>O que você deseja escanear agora?</span>
+            {!activePayload && (
+              <span className="text-[11px] font-normal text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                Trave uma versão antes de ler o gabarito
+              </span>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-1.5 bg-slate-100 dark:bg-slate-800/60 rounded-xl border border-slate-200">
+            {/* Opção 1: Ler QR Code */}
+            <button
+              type="button"
+              onClick={() => {
+                setScanTarget('qr');
+                setErrorMessage(null);
+                setSuccessMessage(null);
+              }}
+              className={`flex items-center gap-2.5 p-3 rounded-lg text-left transition ${
+                scanTarget === 'qr'
+                  ? 'bg-white dark:bg-slate-900 text-indigo-700 dark:text-indigo-300 shadow-sm font-bold border border-indigo-200 dark:border-indigo-800/60'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+              }`}
+            >
+              <div
+                className={`p-2 rounded-lg ${
+                  scanTarget === 'qr'
+                    ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600'
+                    : 'bg-slate-200/60 text-slate-500'
+                }`}
+              >
+                <QrCode className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-xs font-bold leading-tight">1. Ler QR Code da Prova</div>
+                <div className="text-[10px] text-slate-500 font-medium leading-tight mt-0.5">
+                  Identifica a versão e desbloqueia com a senha
+                </div>
+              </div>
+            </button>
+
+            {/* Opção 2: Ler Gabarito (OMR) */}
+            <button
+              type="button"
+              disabled={!activePayload}
+              onClick={() => {
+                if (activePayload) {
+                  setScanTarget('sheet');
+                  setErrorMessage(null);
+                  setSuccessMessage(null);
+                }
+              }}
+              className={`flex items-center gap-2.5 p-3 rounded-lg text-left transition ${
+                !activePayload
+                  ? 'opacity-50 cursor-not-allowed text-slate-400 bg-transparent'
+                  : scanTarget === 'sheet'
+                  ? 'bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-300 shadow-sm font-bold border border-emerald-200 dark:border-emerald-800/60'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+              }`}
+            >
+              <div
+                className={`p-2 rounded-lg ${
+                  !activePayload
+                    ? 'bg-slate-200/40 text-slate-400'
+                    : scanTarget === 'sheet'
+                    ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600'
+                    : 'bg-slate-200/60 text-slate-500'
+                }`}
+              >
+                <FileCheck className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-xs font-bold leading-tight flex items-center gap-1.5">
+                  2. Ler Folha de Gabarito
+                  {activePayload && (
+                    <span className="text-[10px] px-1.5 py-0.2 bg-emerald-100 text-emerald-800 rounded font-black">
+                      Versão {activePayload.version}
+                    </span>
+                  )}
+                </div>
+                <div className="text-[10px] text-slate-500 font-medium leading-tight mt-0.5">
+                  {activePayload
+                    ? 'Corrige o cartão-resposta e marcações'
+                    : 'Bloqueado (trave a versão primeiro)'}
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+
         {/* Inputs de Arquivo Ocultos */}
         <input
           ref={fileInputRef}
@@ -430,9 +552,14 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
           accept="image/*"
           className="hidden"
           disabled={isProcessing}
+          onClick={(e) => {
+            (e.target as HTMLInputElement).value = '';
+          }}
           onChange={(e) => {
             if (e.target.files && e.target.files[0]) {
-              handleProcessImage(e.target.files[0]);
+              const file = e.target.files[0];
+              e.target.value = '';
+              handleProcessImage(file);
             }
           }}
         />
@@ -443,9 +570,14 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
           capture="environment"
           className="hidden"
           disabled={isProcessing}
+          onClick={(e) => {
+            (e.target as HTMLInputElement).value = '';
+          }}
           onChange={(e) => {
             if (e.target.files && e.target.files[0]) {
-              handleProcessImage(e.target.files[0]);
+              const file = e.target.files[0];
+              e.target.value = '';
+              handleProcessImage(file);
             }
           }}
         />
@@ -456,9 +588,9 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
             <button
               type="button"
               onClick={() => cameraInputRef.current?.click()}
-              disabled={isProcessing}
+              disabled={isProcessing || (scanTarget === 'sheet' && !activePayload)}
               className={`w-full py-4 px-5 text-on-accent font-extrabold text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50 active:scale-[0.99] ${
-                activePayload
+                scanTarget === 'sheet'
                   ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-700/20'
                   : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-700/20'
               }`}
@@ -466,28 +598,51 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
               <Camera className="w-5 h-5" />
               <span>
                 {isProcessing
-                  ? 'Processando imagem com OMR...'
-                  : activePayload
+                  ? scanTarget === 'qr'
+                    ? 'Lendo QR Code...'
+                    : 'Processando folha com OMR...'
+                  : scanTarget === 'sheet' && activePayload
                   ? `Tirar Foto da Folha de Respostas (Versão ${activePayload.version})`
-                  : 'Tirar Foto com Câmera do Celular'}
+                  : 'Tirar Foto do QR Code'}
               </span>
             </button>
           )}
 
           <div
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => {
+              if (!isProcessing && !(scanTarget === 'sheet' && !activePayload)) {
+                if (fileInputRef.current) fileInputRef.current.value = '';
+                fileInputRef.current?.click();
+              }
+            }}
             className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition ${
-              isProcessing
+              scanTarget === 'sheet' && !activePayload
+                ? 'opacity-50 cursor-not-allowed border-slate-200 bg-slate-50'
+                : isProcessing
                 ? 'border-indigo-400 bg-indigo-50/50'
+                : scanTarget === 'sheet'
+                ? 'border-slate-300 hover:border-emerald-400 hover:bg-emerald-50/30'
                 : 'border-slate-300 hover:border-indigo-400 hover:bg-indigo-50/30'
             }`}
           >
             <div className="flex flex-col items-center justify-center">
-              <ImageIcon className="w-6 h-6 text-slate-400 mb-1.5" />
+              {scanTarget === 'qr' ? (
+                <QrCode className="w-6 h-6 text-indigo-500 mb-1.5" />
+              ) : (
+                <ImageIcon className="w-6 h-6 text-emerald-500 mb-1.5" />
+              )}
               <span className="text-xs font-semibold text-slate-700">
-                Ou selecionar foto já tirada da galeria / arquivos
+                {scanTarget === 'qr'
+                  ? 'Selecionar foto do QR Code da prova'
+                  : activePayload
+                  ? `Selecionar foto da folha de respostas (Versão ${activePayload.version})`
+                  : 'Trave uma versão antes de ler o gabarito'}
               </span>
-              <span className="text-[10px] text-slate-400 mt-0.5">Formatos suportados: JPG, PNG, WEBP</span>
+              <span className="text-[10px] text-slate-400 mt-0.5">
+                {scanTarget === 'qr'
+                  ? 'Busca estritamente o QR Code para destravar a versão com a senha'
+                  : 'Busca estritamente os fiduciais e marcações das bolinhas'}
+              </span>
             </div>
           </div>
         </div>
@@ -506,6 +661,40 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
             <span className="font-medium">{errorMessage}</span>
           </div>
         )}
+
+        {isDebugAllowed && isDebugMode && errorDebugUrl && !debugResult && (
+          <div className="keep-light-palette mt-4 p-4 bg-slate-900 text-slate-100 rounded-2xl border border-slate-800 space-y-3">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <span className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                <Bug className="w-4 h-4" /> Diagnóstico Visual da Imagem (Falha na Detecção)
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleDownloadDebugImage}
+                  className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1 transition"
+                >
+                  <Download className="w-3.5 h-3.5" /> Baixar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsImageModalOpen(true)}
+                  className="px-2.5 py-1 bg-sky-600 hover:bg-sky-500 text-on-accent rounded-lg text-xs font-semibold flex items-center gap-1 transition"
+                >
+                  <Maximize2 className="w-3.5 h-3.5" /> Ampliar
+                </button>
+              </div>
+            </div>
+            <div className="bg-black rounded-xl overflow-hidden border border-slate-800 flex justify-center">
+              <img
+                src={errorDebugUrl}
+                alt="Diagnóstico de Erro OMR"
+                onClick={() => setIsImageModalOpen(true)}
+                className="max-h-80 object-contain cursor-zoom-in"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="mt-6 p-4 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 space-y-1.5">
@@ -513,7 +702,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
           <Sparkles className="w-3.5 h-3.5 text-indigo-600" /> Como funciona o alinhamento OMR:
         </p>
         <p>
-          • Os <strong>sincronizadores de linha (timing marks)</strong> mapeiam cada linha de resposta de forma independente, compensando inclinações e distorções de lente.
+          • Os <strong>fiduciais de canto</strong> mapeiam a folha e retificam a perspectiva em tempo real, compensando inclinações e distorções de lente.
         </p>
         <p>
           • O <strong>Modo Diagnóstico OMR</strong> permite inspecionar cada círculo lido, seus índices de escuridão e visualizar com clareza qualquer marcação duvidosa.
@@ -521,7 +710,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
       </div>
 
       {/* Modal de Zoom da Imagem Anotada */}
-      {isImageModalOpen && debugResult?.debugCanvasUrl && (
+      {isImageModalOpen && (debugResult?.debugCanvasUrl || errorDebugUrl) && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="keep-light-palette bg-slate-900 border border-slate-700 rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
             <div className="p-4 border-b border-slate-800 flex items-center justify-between">
@@ -538,7 +727,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
             </div>
             <div className="p-4 overflow-auto flex-1 flex items-center justify-center bg-black">
               <img
-                src={debugResult.debugCanvasUrl}
+                src={debugResult?.debugCanvasUrl || errorDebugUrl || ''}
                 alt="OMR Debug Full View"
                 className="max-w-full max-h-[75vh] object-contain"
               />

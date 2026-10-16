@@ -17,10 +17,13 @@ export interface PhotoResult {
   debugCanvasUrl?: string;
 }
 
+export type ScanTarget = 'auto' | 'qr' | 'sheet';
+
 export interface GradePhotoOptions {
   teacherPassword?: string;
   lockedPayload: DecryptedQrPayload | null;
-  alwaysReadQr: boolean; // false no fluxo de uma foto (comportamento atual); true no lote
+  scanTarget?: ScanTarget; // 'qr' | 'sheet' | 'auto'
+  alwaysReadQr?: boolean; // false no fluxo de uma foto (comportamento atual); true no lote
   maxSide?: number; // padrão 2400
   availableVersions?: ExamVersion[];
 }
@@ -181,27 +184,211 @@ async function scanQrFromImageOrCanvas(file: File, canvas: HTMLCanvasElement): P
   return decodedText;
 }
 
+function buildRecordFromNativeResponse(
+  nativeRes: import('../platform/omrBackend').NativeOmrResponse,
+  targetPayload: DecryptedQrPayload,
+  payloadSource: 'qr' | 'locked' | 'none',
+  versionMismatch: boolean
+): PhotoResult {
+  const { detections, debugInfo, evidence } = convertNativeResponse(nativeRes);
+
+  const answers: GradedAnswer[] = [];
+  const objectiveQuestionNumbers = Object.keys(targetPayload.key)
+    .map(Number)
+    .sort((a, b) => a - b);
+
+  for (const i of objectiveQuestionNumbers) {
+    const correctOpt = targetPayload.key[i] || 'A';
+    const qPoint = targetPayload.points?.[i] ?? 1.0;
+    const detected = detections.find((d) => d.questionNumber === i);
+
+    answers.push(
+      buildObjectiveAnswer({
+        questionNumber: i,
+        correctOption: correctOpt,
+        maxPoints: qPoint,
+        detection: detected,
+      })
+    );
+  }
+
+  const subjectiveAnswers: SubjectiveAnswer[] = [];
+  const subjMap: Record<number, number> = {};
+
+  if (targetPayload.subjectivePoints) {
+    Object.entries(targetPayload.subjectivePoints).forEach(([q, pts]) => {
+      subjMap[Number(q)] = pts;
+    });
+  }
+
+  if (targetPayload.subjectiveQuestions && Array.isArray(targetPayload.subjectiveQuestions)) {
+    for (const qNum of targetPayload.subjectiveQuestions) {
+      if (subjMap[qNum] === undefined) {
+        const fallbackPts = targetPayload.points?.[qNum];
+        subjMap[qNum] = typeof fallbackPts === 'number' && fallbackPts > 0 ? fallbackPts : 1.0;
+      }
+    }
+  }
+
+  const sortedSubj = Object.entries(subjMap)
+    .map(([q, pts]) => ({ qNum: Number(q), pts }))
+    .sort((a, b) => a.qNum - b.qNum);
+
+  for (const item of sortedSubj) {
+    subjectiveAnswers.push({
+      questionNumber: item.qNum,
+      maxPoints: item.pts > 0 ? item.pts : 1.0,
+      pointsEarned: null,
+    });
+  }
+
+  const initialRecord: GradingRecord = {
+    id: `rec-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+    timestamp: Date.now(),
+    studentName: '',
+    studentId: '',
+    versionLetter: targetPayload.version,
+    totalScore: 0,
+    maxScore: 0,
+    percentage: 0,
+    answers,
+    subjectiveAnswers: subjectiveAnswers.length > 0 ? subjectiveAnswers : undefined,
+  };
+
+  const record = recomputeTotals(initialRecord);
+
+  return {
+    status: 'graded',
+    record,
+    evidence,
+    payload: targetPayload,
+    payloadSource,
+    versionMismatch,
+    debugInfo,
+    debugCanvasUrl: nativeRes.debugImageDataUrl,
+  };
+}
+
 export async function gradePhotoFile(
   file: File,
   opts: GradePhotoOptions
 ): Promise<PhotoResult> {
+  const scanTarget: ScanTarget =
+    opts.scanTarget ??
+    (opts.alwaysReadQr ? 'auto' : (opts.lockedPayload ? 'sheet' : 'qr'));
+
+  if (scanTarget === 'sheet' && !opts.lockedPayload) {
+    return {
+      status: 'error',
+      payloadSource: 'none',
+      error:
+        'Nenhuma versão de prova está travada. Selecione uma versão manualmente ou escaneie o QR Code antes de corrigir a folha.',
+    };
+  }
+
+  if (scanTarget === 'qr' && (!opts.teacherPassword || !opts.teacherPassword.trim())) {
+    return {
+      status: 'error',
+      payloadSource: 'none',
+      error:
+        'Por favor, informe a senha da prova para desbloquear e ler o QR Code.',
+    };
+  }
+
   // Se estiver no ambiente desktop, processa via OpenCV nativo no Tauri
   if (__DESKTOP__) {
     try {
       const buffer = await file.arrayBuffer();
       const imageBytes = new Uint8Array(buffer);
 
-      const totalQuestions =
-        opts.lockedPayload?.totalQuestions ||
-        (opts.lockedPayload?.key ? Object.keys(opts.lockedPayload.key).length : 20);
+      // MODO 1: LER EXCLUSIVAMENTE QR CODE
+      if (scanTarget === 'qr') {
+        const nativeRes = await processExamPhotoNative(imageBytes, {
+          totalQuestions: 20,
+          subjectiveQuestions: [],
+          readQr: true,
+          readOmr: false,
+          generateDebugImage: false,
+        });
 
-      const subjectiveQuestions = opts.lockedPayload?.subjectiveQuestions || [];
+        if (nativeRes.omrError || !nativeRes.qrRawText) {
+          return {
+            status: 'error',
+            payloadSource: 'none',
+            error:
+              nativeRes.omrError?.message ||
+              'Nenhum QR Code detectado na foto. Aproxime a câmera do QR Code e verifique o enquadramento.',
+          };
+        }
+
+        try {
+          const qrPayload = await decryptAnswerKey(nativeRes.qrRawText, opts.teacherPassword!.trim());
+          enrichSubjectivePoints(qrPayload, opts.availableVersions);
+          return {
+            status: 'qr_only',
+            payload: qrPayload,
+            payloadSource: 'qr',
+          };
+        } catch {
+          return {
+            status: 'error',
+            payloadSource: 'none',
+            error:
+              'QR Code detectado na folha, porém a senha informada não confere com a senha da prova. Verifique a senha do professor.',
+          };
+        }
+      }
+
+      // MODO 2: LER EXCLUSIVAMENTE FOLHA DE RESPOSTAS (GABARITO)
+      if (scanTarget === 'sheet') {
+        const targetPayload = opts.lockedPayload!;
+        const totalQuestions =
+          targetPayload.totalQuestions ??
+          Math.max(...Object.keys(targetPayload.key).map(Number), 0);
+        const subjectiveQuestions = targetPayload.subjectiveQuestions ?? [];
+
+        const nativeRes = await processExamPhotoNative(imageBytes, {
+          totalQuestions,
+          subjectiveQuestions,
+          readQr: false,
+          readOmr: true,
+          generateDebugImage: true,
+        });
+
+        if (nativeRes.omrError) {
+          return {
+            status: 'error',
+            payloadSource: 'locked',
+            error: `Não foi possível detectar o cartão-resposta na imagem: ${nativeRes.omrError.message}`,
+            debugCanvasUrl: nativeRes.debugImageDataUrl,
+          };
+        }
+
+        return buildRecordFromNativeResponse(nativeRes, targetPayload, 'locked', false);
+      }
+
+      // MODO 3: AUTOMÁTICO / COMBINADO (usado em correções em lote)
+      const initialTotalQuestions =
+        opts.lockedPayload?.totalQuestions ??
+        (opts.lockedPayload?.key
+          ? Math.max(...Object.keys(opts.lockedPayload.key).map(Number), 0)
+          : opts.availableVersions?.[0]?.questions.length || 20);
+
+      const initialSubjectiveQuestions =
+        opts.lockedPayload?.subjectiveQuestions ??
+        (opts.availableVersions?.[0]
+          ? opts.availableVersions[0].questions
+              .map((q, idx) => (q.type === 'subjective' ? idx + 1 : -1))
+              .filter((idx) => idx !== -1)
+          : []);
+
       const shouldReadQr = opts.alwaysReadQr || !opts.lockedPayload;
 
-      const nativeRes = await processExamPhotoNative(imageBytes, {
-        totalQuestions,
-        subjectiveQuestions,
+      let nativeRes = await processExamPhotoNative(imageBytes, {
+        totalQuestions: initialTotalQuestions,
+        subjectiveQuestions: initialSubjectiveQuestions,
         readQr: shouldReadQr,
+        readOmr: true,
         generateDebugImage: true,
       });
 
@@ -212,7 +399,7 @@ export async function gradePhotoFile(
       if (nativeRes.qrRawText) {
         if (opts.teacherPassword && opts.teacherPassword.trim()) {
           try {
-            const qrPayload = await decryptAnswerKey(nativeRes.qrRawText, opts.teacherPassword);
+            const qrPayload = await decryptAnswerKey(nativeRes.qrRawText, opts.teacherPassword.trim());
             enrichSubjectivePoints(qrPayload, opts.availableVersions);
 
             if (opts.lockedPayload) {
@@ -271,83 +458,25 @@ export async function gradePhotoFile(
         };
       }
 
-      const { detections, debugInfo, evidence } = convertNativeResponse(nativeRes);
+      const finalTotalQuestions =
+        targetPayload.totalQuestions ??
+        Math.max(...Object.keys(targetPayload.key).map(Number), 0);
+      const finalSubjectiveQuestions = targetPayload.subjectiveQuestions ?? [];
 
-      const answers: GradedAnswer[] = [];
-      const objectiveQuestionNumbers = Object.keys(targetPayload.key)
-        .map(Number)
-        .sort((a, b) => a - b);
-
-      for (const i of objectiveQuestionNumbers) {
-        const correctOpt = targetPayload.key[i] || 'A';
-        const qPoint = targetPayload.points?.[i] ?? 1.0;
-        const detected = detections.find((d) => d.questionNumber === i);
-
-        answers.push(
-          buildObjectiveAnswer({
-            questionNumber: i,
-            correctOption: correctOpt,
-            maxPoints: qPoint,
-            detection: detected,
-          })
-        );
-      }
-
-      const subjectiveAnswers: SubjectiveAnswer[] = [];
-      const subjMap: Record<number, number> = {};
-
-      if (targetPayload.subjectivePoints) {
-        Object.entries(targetPayload.subjectivePoints).forEach(([q, pts]) => {
-          subjMap[Number(q)] = pts;
+      if (
+        finalTotalQuestions !== initialTotalQuestions ||
+        JSON.stringify(finalSubjectiveQuestions) !== JSON.stringify(initialSubjectiveQuestions)
+      ) {
+        nativeRes = await processExamPhotoNative(imageBytes, {
+          totalQuestions: finalTotalQuestions,
+          subjectiveQuestions: finalSubjectiveQuestions,
+          readQr: false,
+          readOmr: true,
+          generateDebugImage: true,
         });
       }
 
-      if (targetPayload.subjectiveQuestions && Array.isArray(targetPayload.subjectiveQuestions)) {
-        for (const qNum of targetPayload.subjectiveQuestions) {
-          if (subjMap[qNum] === undefined) {
-            const fallbackPts = targetPayload.points?.[qNum];
-            subjMap[qNum] = typeof fallbackPts === 'number' && fallbackPts > 0 ? fallbackPts : 1.0;
-          }
-        }
-      }
-
-      const sortedSubj = Object.entries(subjMap)
-        .map(([q, pts]) => ({ qNum: Number(q), pts }))
-        .sort((a, b) => a.qNum - b.qNum);
-
-      for (const item of sortedSubj) {
-        subjectiveAnswers.push({
-          questionNumber: item.qNum,
-          maxPoints: item.pts > 0 ? item.pts : 1.0,
-          pointsEarned: null,
-        });
-      }
-
-      const initialRecord: GradingRecord = {
-        id: `rec-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-        timestamp: Date.now(),
-        studentName: '',
-        studentId: '',
-        versionLetter: targetPayload.version,
-        totalScore: 0,
-        maxScore: 0,
-        percentage: 0,
-        answers,
-        subjectiveAnswers: subjectiveAnswers.length > 0 ? subjectiveAnswers : undefined,
-      };
-
-      const record = recomputeTotals(initialRecord);
-
-      return {
-        status: 'graded',
-        record,
-        evidence,
-        payload: targetPayload,
-        payloadSource,
-        versionMismatch,
-        debugInfo,
-        debugCanvasUrl: nativeRes.debugImageDataUrl,
-      };
+      return buildRecordFromNativeResponse(nativeRes, targetPayload, payloadSource, versionMismatch);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Falha ao processar arquivo no motor nativo OpenCV.';
       return {
@@ -387,11 +516,69 @@ export async function gradePhotoFile(
     URL.revokeObjectURL(imgUrl);
     imgUrl = null;
 
+    // BROWSER: MODO 1: LER EXCLUSIVAMENTE QR CODE
+    if (scanTarget === 'qr') {
+      const decodedText = await scanQrFromImageOrCanvas(file, canvas);
+      if (!decodedText) {
+        return {
+          status: 'error',
+          payloadSource: 'none',
+          error:
+            'Nenhum QR Code detectado na foto. Aproxime a câmera do QR Code e verifique o enquadramento.',
+        };
+      }
+      try {
+        const qrPayload = await decryptAnswerKey(decodedText, opts.teacherPassword!.trim());
+        enrichSubjectivePoints(qrPayload, opts.availableVersions);
+        return {
+          status: 'qr_only',
+          payload: qrPayload,
+          payloadSource: 'qr',
+        };
+      } catch {
+        return {
+          status: 'error',
+          payloadSource: 'none',
+          error:
+            'QR Code detectado na folha, porém a senha informada não confere com a senha da prova.',
+        };
+      }
+    }
+
+    // BROWSER: MODO 2: LER EXCLUSIVAMENTE FOLHA DE RESPOSTAS (GABARITO)
+    if (scanTarget === 'sheet') {
+      const targetPayload = opts.lockedPayload!;
+      try {
+        const omrRes = gradeCanvasWithPayloadDebug(canvas, targetPayload);
+        return {
+          status: 'graded',
+          record: omrRes.record,
+          evidence: omrRes.evidence,
+          payload: targetPayload,
+          payloadSource: 'locked',
+          versionMismatch: false,
+          debugInfo: omrRes.debugInfo,
+          debugCanvasUrl: omrRes.debugCanvasUrl,
+        };
+      } catch (omrErr) {
+        const msg =
+          omrErr instanceof Error
+            ? omrErr.message
+            : 'Falha na detecção da folha de respostas.';
+        return {
+          status: 'error',
+          payloadSource: 'locked',
+          versionMismatch: false,
+          error: `Não foi possível detectar o cartão-resposta na imagem: ${msg}`,
+        };
+      }
+    }
+
+    // BROWSER: MODO 3: AUTOMÁTICO / COMBINADO
     let targetPayload: DecryptedQrPayload | null = opts.lockedPayload;
     let payloadSource: 'qr' | 'locked' | 'none' = opts.lockedPayload ? 'locked' : 'none';
     let versionMismatch = false;
 
-    // Se alwaysReadQr=true ou não temos payload travado, tentamos ler o QR
     const shouldReadQr = opts.alwaysReadQr || !opts.lockedPayload;
 
     if (shouldReadQr) {
@@ -400,7 +587,7 @@ export async function gradePhotoFile(
       if (decodedText) {
         if (opts.teacherPassword && opts.teacherPassword.trim()) {
           try {
-            const qrPayload = await decryptAnswerKey(decodedText, opts.teacherPassword);
+            const qrPayload = await decryptAnswerKey(decodedText, opts.teacherPassword.trim());
             enrichSubjectivePoints(qrPayload, opts.availableVersions);
 
             if (opts.lockedPayload) {
@@ -441,7 +628,6 @@ export async function gradePhotoFile(
       };
     }
 
-    // 2. Executa OMR e extrai evidências
     let record: GradingRecord;
     let debugInfo: OmrDebugInfo;
     let debugCanvasUrl: string = '';
@@ -454,7 +640,6 @@ export async function gradePhotoFile(
       debugCanvasUrl = omrRes.debugCanvasUrl;
       evidence = omrRes.evidence;
     } catch (omrErr) {
-      // Se a foto teve QR Code lido com sucesso, mas a folha/fiduciais não foram encontrados (ex: close-up do QR Code)
       if (payloadSource === 'qr') {
         return {
           status: 'qr_only',
@@ -475,7 +660,6 @@ export async function gradePhotoFile(
       };
     }
 
-    // 3. Se a foto teve QR Code lido, mas não contém a grade de respostas com fiduciais (apenas close-up do QR Code)
     if (payloadSource === 'qr' && debugInfo.method !== 'fiducials_timing_marks') {
       return {
         status: 'qr_only',
