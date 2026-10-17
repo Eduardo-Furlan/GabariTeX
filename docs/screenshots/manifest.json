@@ -183,5 +183,171 @@
     ],
     "alt": "Menu do Perfil aberto com contador de dados e opções de backup",
     "caption": "Menu do Perfil com contador de provas, turmas e notas salvas no aparelho."
+  },
+  {
+    "id": "criar-prova-01-cabecalho",
+    "page": "criar-prova",
+    "after": "Preencha as informações da sua instituição no painel **Cabeçalho & Configurações da Prova** e configure as opções de embaralhamento.",
+    "target": "desktop",
+    "window": "1280x800",
+    "screen": "Editor Screen - Header Editor",
+    "state": "Header editor filled with Escola Exemplo metadata and 2 versions selected",
+    "setup": "Open the demo exam and view the top header editor in step Criar",
+    "mustShow": [
+      "Cabeçalho & Configurações da Prova",
+      "Instituição / Universidade",
+      "Disciplina",
+      "Título da Avaliação",
+      "Senha da Prova (QR Code)",
+      "Qtd. Versões:",
+      "Embaralhar Questões",
+      "Embaralhar Alternativas"
+    ],
+    "mustNotShow": ["OS taskbar", "external windows"],
+    "crop": "Header editor panel at 1280x800",
+    "callouts": [
+      {
+        "n": 1,
+        "target": "Senha da Prova field",
+        "label": "Senha da Prova (QR Code)"
+      },
+      {
+        "n": 2,
+        "target": "Qtd. Versões selector",
+        "label": "Seleção de quantidade de versões"
+      },
+      {
+        "n": 3,
+        "target": "Embaralhar Questões checkbox",
+        "label": "Embaralhar Questões"
+      }
+    ],
+    "alt": "Painel de cabeçalho e configurações gerais da avaliação",
+    "caption": "Configuração do cabeçalho institucional, senha e parâmetros de embaralhamento."
+  },
+  {
+    "id": "criar-prova-02-questao-objetiva",
+    "page": "criar-prova",
+    "after": "Clique em **Nova Objetiva** para adicionar uma questão de múltipla escolha e marque o círculo da resposta correta.",
+    "target": "desktop",
+    "window": "1280x800",
+    "screen": "Editor Screen - QuestionEditor Objective",
+    "state": "Question 1 card with four alternatives and option A marked as correct",
+    "setup": "Scroll to Question 1 in the demo exam",
+    "mustShow": [
+      "Questão 1",
+      "Objetiva",
+      "Enunciado da Questão",
+      "Alternativas (Selecione a correta para o gabarito)",
+      "Valor:"
+    ],
+    "mustNotShow": ["OS clutter"],
+    "crop": "Question card for Question 1",
+    "callouts": [
+      {
+        "n": 1,
+        "target": "Objetiva type button",
+        "label": "Tipo Objetiva"
+      },
+      {
+        "n": 2,
+        "target": "Correct option checkmark on alternative A",
+        "label": "Marcação da alternativa correta"
+      }
+    ],
+    "alt": "Editor de questão objetiva com quatro alternativas e gabarito definido",
+    "caption": "Editor de questão de múltipla escolha com gabarito definido."
+  },
+  {
+    "id": "criar-prova-03-formula-latex",
+    "page": "criar-prova",
+    "after": "Digite expressões matemáticas delimitadas por cifrões no campo **Enunciado da Questão** para acompanhar a visualização imediata.",
+    "target": "desktop",
+    "window": "1280x800",
+    "screen": "Editor Screen - QuestionEditor with LaTeX",
+    "state": "Question 2 card with LaTeX prompt and KaTeX live preview",
+    "setup": "Scroll to Question 2 in the demo exam",
+    "mustShow": [
+      "Enunciado da Questão",
+      "Atalhos LaTeX:",
+      "Pré-visualização do Enunciado:"
+    ],
+    "mustNotShow": ["OS clutter"],
+    "crop": "Prompt and MathView preview area of Question 2",
+    "callouts": [
+      {
+        "n": 1,
+        "target": "LaTeX toolbar shortcut buttons",
+        "label": "Atalhos rápidos para fórmulas LaTeX"
+      },
+      {
+        "n": 2,
+        "target": "Pré-visualização do Enunciado box",
+        "label": "Pré-visualização renderizada com KaTeX"
+      }
+    ],
+    "alt": "Enunciado com fórmulas em LaTeX e pré-visualização matemática em tempo real",
+    "caption": "Digitação de equações em LaTeX com visualização matemática em tempo real."
+  },
+  {
+    "id": "criar-prova-04-upload-imagem",
+    "page": "criar-prova",
+    "after": "No bloco de anexo de imagem, carregue uma figura ou gráfico e preencha a legenda correspondente.",
+    "target": "desktop",
+    "window": "1280x800",
+    "screen": "Editor Screen - Image Uploader",
+    "state": "Question 3 with attached parabola diagram and figure caption",
+    "setup": "Scroll to Question 3 in the demo exam",
+    "mustShow": [
+      "Figura da questão",
+      "Legenda da figura (ex: Figura 1: Esboço da curva)"
+    ],
+    "mustNotShow": ["OS clutter"],
+    "crop": "Image uploader area of Question 3",
+    "callouts": [
+      {
+        "n": 1,
+        "target": "Attached image thumbnail preview",
+        "label": "Figura otimizada anexada à questão"
+      },
+      {
+        "n": 2,
+        "target": "Image caption input",
+        "label": "Legenda da figura impressa no caderno"
+      }
+    ],
+    "alt": "Bloco de anexo de imagem com figura carregada e campo de legenda preenchido",
+    "caption": "Anexo de diagramas e figuras com legenda para impressão."
+  },
+  {
+    "id": "criar-prova-05-questao-dissertativa",
+    "page": "criar-prova",
+    "after": "Clique em **Nova Dissertativa** para inserir uma questão discursiva e ajuste o campo **Linhas pautadas para resposta:**.",
+    "target": "desktop",
+    "window": "1280x800",
+    "screen": "Editor Screen - QuestionEditor Subjective",
+    "state": "Question 5 card configured as Dissertativa with 8 lines",
+    "setup": "Scroll to Question 5 in the demo exam",
+    "mustShow": [
+      "Dissertativa",
+      "Linhas pautadas para resposta:",
+      "(Esta questão não entrará no gabarito óptico de bolinhas)"
+    ],
+    "mustNotShow": ["OS clutter"],
+    "crop": "Question card for Question 5",
+    "callouts": [
+      {
+        "n": 1,
+        "target": "Dissertativa type button",
+        "label": "Tipo Dissertativa"
+      },
+      {
+        "n": 2,
+        "target": "Linhas pautadas input",
+        "label": "Configuração de linhas pautadas para a resposta"
+      }
+    ],
+    "alt": "Editor de questão dissertativa com configuração de linhas pautadas",
+    "caption": "Configuração de questão dissertativa com linhas pautadas no caderno de prova."
   }
 ]
