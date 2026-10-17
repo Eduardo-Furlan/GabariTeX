@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+import pkg from './package.json' with { type: 'json' };
 
 const isDesktop =
   process.env.VITE_TARGET === 'web'
@@ -44,6 +45,7 @@ export default defineConfig({
   clearScreen: false,
   define: {
     __DESKTOP__: JSON.stringify(isDesktop),
+    __APP_VERSION__: JSON.stringify(pkg.version),
   },
   envPrefix: ['VITE_', 'TAURI_ENV_*'],
   server: {

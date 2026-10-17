@@ -141,7 +141,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ onOpenExportImport }) 
               </div>
               <div>
                 <h3 className="text-base font-bold text-slate-800">GabariTeX</h3>
-                <span className="text-xs text-slate-500">Versão 0.3.0 • Criador & Corretor Óptico</span>
+                <span className="text-xs text-slate-500">Versão {__APP_VERSION__} • Criador & Corretor Óptico</span>
               </div>
             </div>
 
