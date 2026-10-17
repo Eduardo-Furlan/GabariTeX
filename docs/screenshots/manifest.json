@@ -35,5 +35,87 @@
     ],
     "alt": "Visão geral da tela inicial do GabariTeX",
     "caption": "Tela inicial do GabariTeX com acesso às avaliações, turmas e corretor."
+  },
+  {
+    "id": "instalacao-01-smartscreen",
+    "page": "instalacao",
+    "after": "No Windows, dê um duplo clique no instalador baixado; quando o aviso de fornecedor não reconhecido for exibido pelo sistema, clique em `Mais informações`.",
+    "target": "windows",
+    "window": "1280x800",
+    "screen": "Windows SmartScreen Dialog",
+    "state": "SmartScreen blue overlay with Mais informações text link",
+    "setup": "Run the GabariTeX_Setup.exe installer on Windows",
+    "mustShow": [
+      "O Windows protegeu o seu computador",
+      "Mais informações"
+    ],
+    "mustNotShow": ["personal files", "desktop icons"],
+    "crop": "Centered crop around the SmartScreen dialog box",
+    "callouts": [
+      {
+        "n": 1,
+        "target": "Mais informações link",
+        "label": "Link Mais informações"
+      }
+    ],
+    "alt": "Aviso inicial do Windows SmartScreen com o link Mais informações destacado",
+    "caption": "Aviso de fornecedor não reconhecido no Windows com o link Mais informações."
+  },
+  {
+    "id": "instalacao-02-executar",
+    "page": "instalacao",
+    "after": "Em seguida, confirme a inicialização clicando no botão `Executar assim mesmo` para concluir a instalação normalmente.",
+    "target": "windows",
+    "window": "1280x800",
+    "screen": "Windows SmartScreen Expanded Dialog",
+    "state": "SmartScreen dialog displaying Executar assim mesmo action button",
+    "setup": "Click Mais informações in the SmartScreen prompt",
+    "mustShow": [
+      "Executar assim mesmo",
+      "Não executar",
+      "Aplicativo: GabariTeX"
+    ],
+    "mustNotShow": ["desktop clutter", "taskbar notifications"],
+    "crop": "Centered crop around the expanded SmartScreen dialog",
+    "callouts": [
+      {
+        "n": 1,
+        "target": "Executar assim mesmo button",
+        "label": "Botão Executar assim mesmo"
+      }
+    ],
+    "alt": "Janela expandida do Windows SmartScreen com o botão Executar assim mesmo",
+    "caption": "Confirmação de execução no Windows SmartScreen."
+  },
+  {
+    "id": "instalacao-03-web-pwa",
+    "page": "instalacao",
+    "after": "Na versão web, para criar um atalho direto na área de trabalho e usar o programa sem abrir o navegador, clique no botão **Perfil** no canto superior direito e selecione a opção **Instalar Aplicativo**.",
+    "target": "web",
+    "window": "1280x800",
+    "screen": "Web App Header and Profile Menu",
+    "state": "Profile menu open displaying Instalar Aplicativo option",
+    "setup": "Open the web app in Chrome and click the Perfil menu button",
+    "mustShow": [
+      "Perfil",
+      "Instalar Aplicativo",
+      "Usar direto da tela inicial e operar offline"
+    ],
+    "mustNotShow": ["browser extensions", "bookmarks bar"],
+    "crop": "Top-right header and profile dropdown menu",
+    "callouts": [
+      {
+        "n": 1,
+        "target": "Perfil menu trigger",
+        "label": "Menu Perfil"
+      },
+      {
+        "n": 2,
+        "target": "Instalar Aplicativo menu option",
+        "label": "Opção Instalar Aplicativo"
+      }
+    ],
+    "alt": "Menu de perfil na versão web exibindo a opção Instalar Aplicativo",
+    "caption": "Instalação da versão web como aplicativo independente no navegador."
   }
 ]
