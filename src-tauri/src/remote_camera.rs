@@ -194,14 +194,11 @@ pub fn list_network_interfaces() -> Vec<NetworkInterfaceInfo> {
     result
 }
 
-pub fn generate_session_token() -> String {
+pub fn generate_session_token() -> Result<String, String> {
     let mut buf = [0u8; 16];
-    if getrandom::getrandom(&mut buf).is_err() {
-        // Fallback defensivo com timestamp
-        let now = current_epoch_seconds();
-        buf[0..8].copy_from_slice(&now.to_le_bytes());
-    }
-    URL_SAFE_NO_PAD.encode(buf)
+    getrandom::getrandom(&mut buf)
+        .map_err(|_| "Não foi possível gerar um token seguro para a sessão.".to_string())?;
+    Ok(URL_SAFE_NO_PAD.encode(buf))
 }
 
 pub(crate) fn build_remote_router(server_state: AppServerState) -> Router {
@@ -337,6 +334,7 @@ async fn handle_get_photo_status(
     }
 }
 
+// Photo IDs are not secrets, so a fallback to zeroed bytes on getrandom failure is acceptable.
 fn rand_u32() -> u32 {
     let mut b = [0u8; 4];
     let _ = getrandom::getrandom(&mut b);
@@ -384,6 +382,7 @@ pub async fn remote_start(
     state: State<'_, RemoteCameraState>,
     ip: Option<String>,
 ) -> Result<RemoteSessionInfo, String> {
+    let token = generate_session_token()?;
     let mut guard = state.session.lock().await;
 
     // Se já houver sessão ativa, interrompe
@@ -421,7 +420,6 @@ pub async fn remote_start(
         }
     };
 
-    let token = generate_session_token();
     let photos = Arc::new(RwLock::new(HashMap::new()));
     let last_activity = Arc::new(AtomicU64::new(current_epoch_seconds()));
     let (shutdown_tx, shutdown_rx) = oneshot::channel::<()>();
@@ -767,6 +765,15 @@ mod tests {
         assert!(is_monitored_session(Some(&session_a), &arc_a));
         assert!(!is_monitored_session(Some(&session_a), &arc_b));
         assert!(!is_monitored_session(None, &arc_a));
+    }
+
+    #[test]
+    fn test_generate_session_token_length_and_charset() {
+        let token = generate_session_token().expect("token generation should succeed");
+        assert_eq!(token.len(), 22);
+        assert!(token
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_'));
     }
 }
 
