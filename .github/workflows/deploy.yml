@@ -39,6 +39,11 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Validate documentation
+        run: |
+          npm run docs:check
+          npm run docs:build
+
   build-and-deploy:
     needs: test
     environment:
@@ -58,8 +63,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
+      - name: Build Web App
         run: npm run build
+
+      - name: Build Documentation
+        run: npm run docs:build
+
+      - name: Copy Documentation to Web Dist
+        run: cp -r docs/.vitepress/dist dist/docs
 
       - name: Setup Pages
         uses: actions/configure-pages@v4

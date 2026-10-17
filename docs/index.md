@@ -31,7 +31,7 @@ A elaboração de provas, diagramação com fórmulas, embaralhamento de versõe
 
 2. Na barra superior, identifique as três áreas principais de trabalho: **Provas** (onde você gerencia suas avaliações), **Turmas** (onde você organiza a lista de estudantes) e **Corretor** (onde as folhas são lidas).
 
-3. Para experimentar o editor imediatamente sem digitar nada, clique no botão **Modelo Matemática** para carregar uma avaliação completa com fórmulas e gráficos.
+3. Para experimentar o editor imediatamente sem digitar nada, clique no botão **Modelo Matemática** para carregar uma avaliação completa com fórmulas.
 
 4. Se preferir começar uma prova em branco, clique no cartão **Criar Prova do Zero** e preencha as informações do cabeçalho da sua instituição.
 
