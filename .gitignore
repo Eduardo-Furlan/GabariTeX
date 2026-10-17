@@ -28,4 +28,6 @@ src-tauri/target
 src-tauri/gen/schemas
 src-tauri/resources/windows/*.dll
 
-
+# VitePress
+docs/.vitepress/dist
+docs/.vitepress/cache
