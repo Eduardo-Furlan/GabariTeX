@@ -174,15 +174,55 @@ export async function buildProfileZip(
   return zipSync(zipEntries);
 }
 
+export interface ZipLimits {
+  maxEntries: number;
+  maxEntryBytes: number;
+  maxTotalBytes: number;
+}
+
+export const DEFAULT_ZIP_LIMITS: ZipLimits = {
+  maxEntries: 5000,
+  maxEntryBytes: 50 * 1024 * 1024,
+  maxTotalBytes: 500 * 1024 * 1024,
+};
+
 /**
  * Lê e valida um contêiner ZIP de perfil, validando integridade SHA-256 e reconstruindo imagens.
  */
-export async function parseProfileZip(zipBytes: Uint8Array): Promise<ProfileZipPayload> {
+export async function parseProfileZip(
+  zipBytes: Uint8Array,
+  limits: ZipLimits = DEFAULT_ZIP_LIMITS
+): Promise<ProfileZipPayload> {
   let unzipped: Record<string, Uint8Array>;
+  let entryCount = 0;
+  let totalBytes = 0;
+  let limitError: Error | null = null;
+
   try {
-    unzipped = unzipSync(zipBytes);
+    unzipped = unzipSync(zipBytes, {
+      filter(file) {
+        entryCount++;
+        totalBytes += file.originalSize;
+        if (
+          entryCount > limits.maxEntries ||
+          file.originalSize > limits.maxEntryBytes ||
+          totalBytes > limits.maxTotalBytes
+        ) {
+          limitError = new Error('Arquivo de perfil grande demais ou com arquivos demais.');
+          return false;
+        }
+        return true;
+      },
+    });
   } catch (err) {
+    if (limitError) {
+      throw limitError;
+    }
     throw new Error('Arquivo corrompido ou formato ZIP inválido.');
+  }
+
+  if (limitError) {
+    throw limitError;
   }
 
   const manifestBytes = unzipped['manifest.json'];

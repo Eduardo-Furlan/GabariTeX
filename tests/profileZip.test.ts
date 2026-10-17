@@ -349,5 +349,37 @@ describe('Profile ZIP Container e Senhas (Plano 08 §5 e §6)', () => {
       ).rejects.toThrow('Não consegui abrir este QR com as senhas das provas deste perfil');
     });
   });
+
+  describe('Limites de tamanho e entradas do ZIP', () => {
+    it('deve rejeitar arquivo com entradas demais', async () => {
+      const zipBytes = zipSync({
+        'a.txt': strToU8('123'),
+        'b.txt': strToU8('456'),
+        'c.txt': strToU8('789'),
+      });
+      await expect(
+        parseProfileZip(zipBytes, { maxEntries: 2, maxEntryBytes: 1000, maxTotalBytes: 10000 })
+      ).rejects.toThrow('Arquivo de perfil grande demais ou com arquivos demais.');
+    });
+
+    it('deve rejeitar arquivo com uma entrada grande demais', async () => {
+      const zipBytes = zipSync({
+        'big.txt': new Uint8Array(200),
+      });
+      await expect(
+        parseProfileZip(zipBytes, { maxEntries: 10, maxEntryBytes: 100, maxTotalBytes: 10000 })
+      ).rejects.toThrow('Arquivo de perfil grande demais ou com arquivos demais.');
+    });
+
+    it('deve rejeitar arquivo com tamanho total descompactado grande demais', async () => {
+      const zipBytes = zipSync({
+        'a.txt': new Uint8Array(80),
+        'b.txt': new Uint8Array(80),
+      });
+      await expect(
+        parseProfileZip(zipBytes, { maxEntries: 10, maxEntryBytes: 100, maxTotalBytes: 120 })
+      ).rejects.toThrow('Arquivo de perfil grande demais ou com arquivos demais.');
+    });
+  });
 });
 
