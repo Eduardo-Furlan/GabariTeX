@@ -11,7 +11,7 @@ import {
   BookOpen,
 } from 'lucide-react';
 import { useProfile } from '../../context/ProfileContext';
-import { ThemeToggle } from '../ThemeToggle';
+import { ThemeSelector } from '../ThemeSelector';
 import { usePwaInstall } from '../../hooks/usePwaInstall';
 
 interface ProfileMenuProps {
@@ -109,9 +109,9 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ onOpenExportImport }) 
             )}
           </div>
 
-          <div className="border-t border-slate-100 px-4 py-2 flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-600">Tema Visual:</span>
-            <ThemeToggle />
+          <div className="border-t border-slate-100 px-4 py-3">
+            <span className="text-xs font-medium text-slate-600 block mb-2">Tema Visual:</span>
+            <ThemeSelector />
           </div>
 
           <div className="border-t border-slate-100 py-1">

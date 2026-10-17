@@ -78,4 +78,24 @@
   body {
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
+
+  /* Transição uniforme de tema: ativada por applyThemeAnimated() por ~250 ms. */
+  html.theme-transitioning,
+  html.theme-transitioning *,
+  html.theme-transitioning *::before,
+  html.theme-transitioning *::after {
+    transition-property: background-color, border-color, color, fill, stroke, box-shadow !important;
+    transition-duration: 220ms !important;
+    transition-timing-function: ease !important;
+  }
+
+  @media (prefers-reduced-motion: reduce), print {
+    html.theme-transitioning,
+    html.theme-transitioning *,
+    html.theme-transitioning *::before,
+    html.theme-transitioning *::after {
+      transition: none !important;
+    }
+  }
 }
+

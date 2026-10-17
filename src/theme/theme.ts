@@ -32,3 +32,37 @@ export function applyTheme(resolved: ResolvedTheme): void {
   }
 }
 
+export const THEME_TRANSITION_CLASS = 'theme-transitioning';
+export const THEME_TRANSITION_MS = 220;
+
+let transitionTimer: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * Aplica o tema com uma transição uniforme de cores.
+ * Sem animação quando: SSR, usuário prefere menos movimento ou o tema não mudou.
+ */
+export function applyThemeAnimated(resolved: ResolvedTheme): void {
+  if (typeof document === 'undefined') return;
+  const root = document.documentElement;
+  const isDark = root.classList.contains('dark');
+  if (isDark === (resolved === 'dark')) {
+    applyTheme(resolved);
+    return;
+  }
+  const reduce =
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) {
+    applyTheme(resolved);
+    return;
+  }
+  if (transitionTimer) clearTimeout(transitionTimer);
+  root.classList.add(THEME_TRANSITION_CLASS);
+  applyTheme(resolved);
+  transitionTimer = setTimeout(() => {
+    root.classList.remove(THEME_TRANSITION_CLASS);
+    transitionTimer = null;
+  }, THEME_TRANSITION_MS + 30);
+}
+
