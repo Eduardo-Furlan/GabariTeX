@@ -966,5 +966,36 @@
     ],
     "alt": "Pasta de documentos do computador com arquivos de backup diários do GabariTeX",
     "caption": "Pasta de backups automáticos diários em Documentos/GabariTeX/Backups."
+  },
+  {
+    "id": "problemas-comuns-01-aviso-web",
+    "page": "problemas-comuns",
+    "after": "Ao acessar o corretor pela versão web do GabariTeX, o sistema apresenta o painel informativo destacando as vantagens do aplicativo para computador.",
+    "target": "web",
+    "window": "1280x800",
+    "screen": "Scanner Web Fallback Card",
+    "state": "Web fallback card showing Corretor Óptico (OMR) no GabariTeX Desktop presentation and download button",
+    "setup": "Open Corretor in browser web version",
+    "mustShow": [
+      "Corretor Óptico (OMR) no GabariTeX Desktop",
+      "Baixar GabariTeX Desktop (GitHub Releases)",
+      "Continuar na Versão Web"
+    ],
+    "mustNotShow": ["OS clutter"],
+    "crop": "Web fallback presentation card",
+    "callouts": [
+      {
+        "n": 1,
+        "target": "Download button",
+        "label": "Botão para baixar o GabariTeX Desktop"
+      },
+      {
+        "n": 2,
+        "target": "Benefit cards",
+        "label": "Destaque dos benefícios do motor nativo: OpenCV, câmera sem fio e criptografia"
+      }
+    ],
+    "alt": "Painel informativo do corretor óptico na versão web convidando a baixar o aplicativo para computador",
+    "caption": "Apresentação do corretor óptico e link para download do aplicativo desktop no GitHub."
   }
 ]
