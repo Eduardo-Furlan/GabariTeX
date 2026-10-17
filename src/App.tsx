@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { ProfileProvider, useProfile } from './context/ProfileContext';
 import { useHashRouter } from './router/hashRouter';
+import { decideRouteSync } from './router/examSync';
 import { AppHeader } from './components/navigation/AppHeader';
 import { ContextBar } from './components/navigation/ContextBar';
 import { StepTabs } from './components/navigation/StepTabs';
@@ -53,19 +54,26 @@ const AppContent: React.FC = () => {
   const [exportImportMode, setExportImportMode] = useState<'export' | 'import'>('export');
   const { route, navigate } = useHashRouter();
 
-  // Redireciona se a rota for exam_step mas a prova não existir, e garante modo autônomo em /corretor
+  const lastSyncedExamIdRef = useRef<string | null>(null);
+
+  // Sincroniza rota e prova ativa sem disputa ou vai-e-volta
   useEffect(() => {
     if (isLoadingProfile) return;
+    const { action, nextLastSyncedExamId } = decideRouteSync({
+      route,
+      exams,
+      lastSyncedExamId: lastSyncedExamIdRef.current,
+      currentExamId: exam.id,
+      activeExamId,
+    });
+    lastSyncedExamIdRef.current = nextLastSyncedExamId;
 
-    if (route.type === 'exam_step') {
-      const exists = exams.some((e) => e.id === route.examId);
-      if (!exists && exams.length > 0) {
-        navigate({ type: 'exams' });
-      } else if (exists && exam.id !== route.examId) {
-        selectActiveExam(route.examId);
-      }
-    } else if (route.type === 'scanner' && (exam.id || activeExamId)) {
-      selectActiveExam(null);
+    if (action.type === 'redirect_to_exams') {
+      navigate({ type: 'exams' });
+    } else if (action.type === 'select_exam') {
+      void selectActiveExam(action.examId);
+    } else if (action.type === 'select_none') {
+      void selectActiveExam(null);
     }
   }, [isLoadingProfile, route, exams, exam.id, activeExamId, selectActiveExam, navigate]);
 

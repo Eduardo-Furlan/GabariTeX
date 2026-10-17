@@ -1,9 +1,10 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Exam, ExamVersion, GradingRecord, Classroom, Question } from '../types/exam';
 import { ProfileData, ProfileSettings, ExamMeta } from '../types/profile';
 import { initialSampleExam, emptyExam } from '../utils/sampleExam';
 import { generateExamVersions } from '../utils/randomizer';
 import { generateExamPassword } from '../utils/crypto';
+import { createLatestGate } from '../utils/latestGate';
 import {
   loadActiveClassIdFromStorage,
   saveActiveClassIdToStorage,
@@ -182,7 +183,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
     [isLoadingProfile, store]
   );
 
-  const examAutosave = useAutosave(exam, saveExamFn, 400);
+  const examAutosave = useAutosave(exam, saveExamFn, 400, exam.id);
   const gradebookAutosave = useAutosave(records, saveGradebookFn, 300);
   const classroomsAutosave = useAutosave(classes, saveClassroomsFn, 400);
 
@@ -207,6 +208,22 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
       classroomsAutosave.flushAsync(),
     ]);
   }, [examAutosave, gradebookAutosave, classroomsAutosave]);
+
+  const examRef = useRef(exam);
+  examRef.current = exam;
+  const profileSettingsRef = useRef(profileSettings);
+  profileSettingsRef.current = profileSettings;
+  const flushAllRef = useRef(flushAll);
+  flushAllRef.current = flushAll;
+  const switchGate = useRef(createLatestGate()).current;
+
+  const persistSettings = useCallback(
+    (next: ProfileSettings) => {
+      setProfileSettings(next);
+      void store.putSettings(next).catch(console.error);
+    },
+    [store]
+  );
 
   // Fechamento da janela em Desktop (onCloseRequested) com flush de pendências
   useEffect(() => {
@@ -494,7 +511,20 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const selectActiveExam = useCallback(
     async (id: string | null) => {
+      const targetId = id ?? '';
+      // idempotente
+      if (
+        targetId === examRef.current.id &&
+        (id !== null || !profileSettingsRef.current.activeExamId)
+      ) {
+        return;
+      }
+
+      const token = switchGate.begin();
+      await flushAllRef.current(); // grava edição pendente da prova atual
+
       if (!id) {
+        if (!switchGate.isCurrent(token)) return;
         const autonomousExam: Exam = {
           ...emptyExam,
           id: '',
@@ -506,9 +536,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setExam(autonomousExam);
         setVersions([]);
         setActivePayload(null);
-        const newSettings = { ...profileSettings, activeExamId: undefined };
-        setProfileSettings(newSettings);
-        await store.putSettings(newSettings);
+        persistSettings({ ...profileSettingsRef.current, activeExamId: undefined });
         return;
       }
 
@@ -517,24 +545,24 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
         await ensureExamExists(id);
         target = await store.getExam(id);
       }
+      if (!target || !switchGate.isCurrent(token)) return; // "último vence"
 
-      if (target) {
-        let pass = target.password;
-        if (!pass) {
-          pass = generateExamPassword(8);
-          target.password = pass;
-          await store.putExam(target);
-        }
-        setExam(target);
-        setTeacherPassword(pass);
-        setAllExamPasswords((prev) => ({ ...prev, [id]: pass! }));
-        setActivePayload(null);
-        const newSettings = { ...profileSettings, activeExamId: id };
-        setProfileSettings(newSettings);
-        await store.putSettings(newSettings);
+      let pass = target.password;
+      if (!pass) {
+        pass = generateExamPassword(8);
+        target.password = pass;
+        await store.putExam(target);
       }
+      if (!switchGate.isCurrent(token)) return;
+
+      // commit síncrono, sem awaits no meio
+      setExam(target);
+      setTeacherPassword(pass);
+      setAllExamPasswords((prev) => ({ ...prev, [id]: pass! }));
+      setActivePayload(null);
+      persistSettings({ ...profileSettingsRef.current, activeExamId: id });
     },
-    [store, profileSettings, ensureExamExists]
+    [store, ensureExamExists, persistSettings, switchGate]
   );
 
   const createExam = useCallback(

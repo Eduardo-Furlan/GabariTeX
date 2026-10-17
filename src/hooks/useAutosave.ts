@@ -39,6 +39,16 @@ export class AutosaveManager<T> {
     this.onStateChange = cb;
   }
 
+  public rebase(newValue: T) {
+    this.flush();
+    if (this.timer) {
+      clearTimeout(this.timer);
+      this.timer = null;
+    }
+    this.value = newValue;
+    this.hasPendingSave = false;
+  }
+
   public updateValue(newValue: T) {
     this.value = newValue;
     this.hasPendingSave = true;
@@ -174,7 +184,8 @@ export class AutosaveManager<T> {
 export function useAutosave<T>(
   value: T,
   saveFn: (val: T) => SaveResult | Promise<SaveResult>,
-  delay = 400
+  delay = 400,
+  identity?: unknown
 ): AutosaveState & { flush: () => void; flushAsync: () => Promise<SaveResult> } {
   const [state, setState] = useState<AutosaveState>({
     status: 'saved',
@@ -183,6 +194,7 @@ export function useAutosave<T>(
 
   const managerRef = useRef<AutosaveManager<T> | null>(null);
   const isInitialMount = useRef<boolean>(true);
+  const identityRef = useRef(identity);
 
   if (!managerRef.current) {
     managerRef.current = new AutosaveManager(value, saveFn, delay, setState);
@@ -205,8 +217,13 @@ export function useAutosave<T>(
       isInitialMount.current = false;
       return;
     }
+    if (identity !== identityRef.current) {
+      identityRef.current = identity;
+      managerRef.current?.rebase(value);
+      return;
+    }
     managerRef.current?.updateValue(value);
-  }, [value]);
+  }, [value, identity]);
 
   // Garante flush ao alternar abas, ocultar aplicativo ou descarregar a página
   useEffect(() => {
