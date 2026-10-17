@@ -721,5 +721,127 @@
     ],
     "alt": "Fila de correção no computador recebendo automaticamente a foto enviada pelo celular",
     "caption": "Recepção imediata da foto do gabarito na fila de processamento do computador."
+  },
+  {
+    "id": "turmas-notas-01-lista-turmas",
+    "page": "turmas-notas",
+    "after": "Na barra superior, clique em **Turmas** para abrir o gerenciador dividido em lista de turmas à esquerda e estudantes à direita.",
+    "target": "desktop",
+    "window": "1280x800",
+    "screen": "ClassroomManager Overview",
+    "state": "ClassroomManager showing class 2º A selected with student roster and quick-add row",
+    "setup": "Navigate to Turmas screen with demo classes and students loaded",
+    "mustShow": [
+      "Gerenciador de Turmas e Alunos",
+      "Nome do Aluno",
+      "Definir como Turma Ativa"
+    ],
+    "mustNotShow": ["OS clutter"],
+    "crop": "Full ClassroomManager view at 1280x800",
+    "callouts": [
+      {
+        "n": 1,
+        "target": "Left sidebar with class names",
+        "label": "Lista de turmas cadastradas"
+      },
+      {
+        "n": 2,
+        "target": "Right student roster table",
+        "label": "Lista de estudantes com nome e matrícula"
+      }
+    ],
+    "alt": "Tela do gerenciador de turmas com painel lateral de turmas e lista de estudantes",
+    "caption": "Gerenciamento de turmas com listagem de estudantes e cadastro de matrículas."
+  },
+  {
+    "id": "turmas-notas-02-livro-notas",
+    "page": "turmas-notas",
+    "after": "Acesse a aba **Notas** para visualizar a tabela geral de notas calculadas com a pontuação e percentual de cada estudante.",
+    "target": "desktop",
+    "window": "1280x800",
+    "screen": "GradebookTable Overview",
+    "state": "GradebookTable displaying student grades list with export and recalculate actions",
+    "setup": "Navigate to Notas in exam flow with demo records loaded",
+    "mustShow": [
+      "Exportar para Excel / CSV",
+      "Imprimir Espelhos (A4)",
+      "Recalcular"
+    ],
+    "mustNotShow": ["OS clutter"],
+    "crop": "GradebookTable at 1280x800",
+    "callouts": [
+      {
+        "n": 1,
+        "target": "Student grades rows",
+        "label": "Notas, acertos e versões dos estudantes"
+      },
+      {
+        "n": 2,
+        "target": "Export and print buttons",
+        "label": "Exportação para Excel/CSV e impressão de espelhos"
+      }
+    ],
+    "alt": "Tabela de notas dos estudantes com colunas de versão, acertos e nota final",
+    "caption": "Livro de notas com notas consolidadas, filtros por turma e ações de exportação."
+  },
+  {
+    "id": "turmas-notas-03-analise-itens",
+    "page": "turmas-notas",
+    "after": "Clique no botão **Análise por Questão** para verificar as taxas de acerto e o comportamento da turma em cada item da prova.",
+    "target": "desktop",
+    "window": "1280x800",
+    "screen": "Item Analysis View",
+    "state": "GradebookTable in items view displaying summary cards and per-question accuracy table",
+    "setup": "Click Análise por Questão tab in Gradebook",
+    "mustShow": [
+      "Análise por Questão",
+      "Média da Turma",
+      "Taxa de Acerto"
+    ],
+    "mustNotShow": ["OS clutter"],
+    "crop": "Item analysis section at 1280x800",
+    "callouts": [
+      {
+        "n": 1,
+        "target": "Statistical summary cards",
+        "label": "Média, mediana, menor e maior nota da turma"
+      },
+      {
+        "n": 2,
+        "target": "Item accuracy table",
+        "label": "Taxa de acerto e distribuição de alternativas por questão"
+      }
+    ],
+    "alt": "Painel de análise estatística de itens com taxa de acerto por questão e distribuição",
+    "caption": "Análise pedagógica por item com taxas de acerto e alternativas mais marcadas."
+  },
+  {
+    "id": "turmas-notas-04-comprovante-aluno",
+    "page": "turmas-notas",
+    "after": "Clique em **Imprimir Espelhos (A4)** para gerar comprovantes individuais de correção para entrega aos estudantes.",
+    "target": "desktop",
+    "window": "1280x800",
+    "screen": "Student Slips Print Preview",
+    "state": "Student slips sheet view displaying individual student slips with question breakdown",
+    "setup": "Trigger Imprimir Espelhos (A4) in GradebookTable",
+    "mustShow": [
+      "Imprimir Espelhos (A4)"
+    ],
+    "mustNotShow": ["OS clutter"],
+    "crop": "Student slips preview window",
+    "callouts": [
+      {
+        "n": 1,
+        "target": "Individual slip container",
+        "label": "Comprovante do aluno com nota e gabarito"
+      },
+      {
+        "n": 2,
+        "target": "Answers grid",
+        "label": "Detalhamento de acertos e erros questão a questão"
+      }
+    ],
+    "alt": "Espelhos de resposta individuais em formato A4 prontos para impressão e entrega",
+    "caption": "Espelhos individuais de resposta com detalhamento de acertos para entrega aos alunos."
   }
 ]
