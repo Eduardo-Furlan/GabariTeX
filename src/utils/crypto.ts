@@ -1,6 +1,9 @@
 import { DecryptedQrPayload } from '../types/omr';
 
 const PREFIX = 'MCORR:v1:';
+// 100k PBKDF2 iterations with random 8-character passwords (~46 bits of entropy) is a deliberate
+// fit for classroom use. Changing this parameter requires introducing a new MCORR:v2 prefix so
+// already-printed answer sheets continue to work.
 const PBKDF2_ITERATIONS = 100000;
 
 function bytesToHex(bytes: Uint8Array): string {
