@@ -599,5 +599,127 @@
     ],
     "alt": "Lista de folhas corrigidas em lote prontas para gravação no livro de notas",
     "caption": "Resumo do lote com notas individuais e envio para o diário da turma."
+  },
+  {
+    "id": "camera-celular-01-painel-desktop",
+    "page": "camera-celular",
+    "after": "No computador, abra o corretor e clique em **Câmera do Celular** para exibir o código QR e o endereço de pareamento da rede local.",
+    "target": "desktop",
+    "window": "1280x800",
+    "screen": "RemoteCameraPanel Desktop Dialog",
+    "state": "Remote camera modal open showing QR Code, local IP address, and status Aguardando fotos do celular",
+    "setup": "Click Câmera do Celular in desktop Corretor screen",
+    "mustShow": [
+      "Usar Câmera do Celular",
+      "Aponte o app de câmera do celular para este código",
+      "Aguardando fotos do celular"
+    ],
+    "mustNotShow": ["OS clutter"],
+    "crop": "RemoteCameraPanel modal dialog box",
+    "callouts": [
+      {
+        "n": 1,
+        "target": "QR Code element",
+        "label": "Código QR de pareamento sem fio"
+      },
+      {
+        "n": 2,
+        "target": "Network address input",
+        "label": "Endereço local da rede (IP e porta 47831)"
+      }
+    ],
+    "alt": "Painel de conexão da câmera do celular no computador com QR Code e endereço de rede",
+    "caption": "Painel de pareamento da câmera remota com código QR e endereço local."
+  },
+  {
+    "id": "camera-celular-02-navegador-mobile",
+    "page": "camera-celular",
+    "after": "Aponte a câmera do seu smartphone para a tela do computador e abra a página no navegador do aparelho.",
+    "target": "phone",
+    "window": "390x844",
+    "screen": "Remote Camera Mobile Web Home",
+    "state": "Mobile browser page showing GabariTeX header with status Conectado and mode selector",
+    "setup": "Open paired remote camera URL on mobile browser",
+    "mustShow": [
+      "GabariTeX",
+      "Conectado",
+      "O que você deseja enviar agora?"
+    ],
+    "mustNotShow": ["Browser URL bar", "OS status bar"],
+    "crop": "Full phone viewport 390x844",
+    "callouts": [
+      {
+        "n": 1,
+        "target": "Status badge",
+        "label": "Status de conexão com o computador"
+      },
+      {
+        "n": 2,
+        "target": "Mode buttons",
+        "label": "Seletor de envio: QR Code ou Gabarito"
+      }
+    ],
+    "alt": "Tela do navegador no celular conectada ao GabariTeX exibindo seletor de modo",
+    "caption": "Interface web do celular com indicação de conexão ativa e modos de captura."
+  },
+  {
+    "id": "camera-celular-03-disparo-mobile",
+    "page": "camera-celular",
+    "after": "No celular, selecione **2. Gabarito** e toque no botão **Fotografar Gabarito** para capturar a folha de respostas.",
+    "target": "phone",
+    "window": "390x844",
+    "screen": "Remote Camera Mobile Capture Trigger",
+    "state": "Mode 2. Gabarito active with green highlight and primary action button Fotografar Gabarito",
+    "setup": "Tap 2. Gabarito in mobile remote camera page",
+    "mustShow": [
+      "2. Gabarito",
+      "Fotografar Gabarito"
+    ],
+    "mustNotShow": ["OS status bar"],
+    "crop": "Full phone viewport 390x844",
+    "callouts": [
+      {
+        "n": 1,
+        "target": "Active Gabarito mode button",
+        "label": "Modo de folha de respostas ativo"
+      },
+      {
+        "n": 2,
+        "target": "Primary capture button",
+        "label": "Botão de disparo para foto da folha"
+      }
+    ],
+    "alt": "Modo de envio de gabarito ativo no celular com botão de disparo da foto",
+    "caption": "Modo de gabarito selecionado com acionamento da câmera fotográfica do celular."
+  },
+  {
+    "id": "camera-celular-04-recebida-desktop",
+    "page": "camera-celular",
+    "after": "A cada foto enviada pelo celular, a imagem aparece de forma instantânea na fila de processamento do computador.",
+    "target": "desktop",
+    "window": "1280x800",
+    "screen": "BatchGrader with Remote Photos",
+    "state": "Desktop Corretor displaying Celular Conectado badge and thumbnail in batch queue",
+    "setup": "Receive a photographed sheet from phone in desktop Em Lote mode",
+    "mustShow": [
+      "Celular Conectado",
+      "Em Lote"
+    ],
+    "mustNotShow": ["OS clutter"],
+    "crop": "Batch queue section at 1280x800",
+    "callouts": [
+      {
+        "n": 1,
+        "target": "Celular Conectado badge in top bar",
+        "label": "Indicador de celular conectado"
+      },
+      {
+        "n": 2,
+        "target": "Received item row in batch queue",
+        "label": "Folha recebida remotamente pronta para correção"
+      }
+    ],
+    "alt": "Fila de correção no computador recebendo automaticamente a foto enviada pelo celular",
+    "caption": "Recepção imediata da foto do gabarito na fila de processamento do computador."
   }
 ]

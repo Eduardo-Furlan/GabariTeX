@@ -175,7 +175,11 @@ function readAllSourceFiles(dir) {
   return combined;
 }
 
-const srcFiles = fs.existsSync(srcDir) ? readAllSourceFiles(srcDir) : [];
+const remoteDir = path.join(rootDir, 'src-tauri', 'remote');
+const srcFiles = [
+  ...(fs.existsSync(srcDir) ? readAllSourceFiles(srcDir) : []),
+  ...(fs.existsSync(remoteDir) ? readAllSourceFiles(remoteDir) : []),
+];
 
 let boldWarnings = 0;
 for (const { label, file, lineNum } of boldLabels) {
