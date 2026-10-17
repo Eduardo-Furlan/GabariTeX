@@ -6,6 +6,11 @@ export default defineConfig({
   description: 'Gerador de provas com LaTeX e corretor óptico de folhas de respostas com QR Code criptografado',
   base: '/GabariTeX/docs/',
   srcExclude: ['screenshots/**/*.md'],
+  vite: {
+    define: {
+      __DOCS_SHOW_PLACEHOLDERS__: JSON.stringify(process.env.DOCS_SHOW_PLACEHOLDERS === '1'),
+    },
+  },
   themeConfig: {
     outline: {
       label: 'Nesta página',
