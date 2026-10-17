@@ -7,6 +7,15 @@ interface MathViewProps {
   className?: string;
 }
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export const MathView: React.FC<MathViewProps> = ({ content, className = '' }) => {
   const renderedHtml = useMemo(() => {
     if (!content) return '';
@@ -23,9 +32,9 @@ export const MathView: React.FC<MathViewProps> = ({ content, className = '' }) =
         if (part.startsWith('$$') && part.endsWith('$$')) {
           const math = part.slice(2, -2);
           try {
-            return katex.renderToString(math, { displayMode: true, throwOnError: false });
+            return katex.renderToString(math, { displayMode: true, throwOnError: false, trust: false });
           } catch {
-            return `<span class="text-red-500 font-mono">${part}</span>`;
+            return `<span class="text-red-500 font-mono">${escapeHtml(part)}</span>`;
           }
         }
 
@@ -33,9 +42,9 @@ export const MathView: React.FC<MathViewProps> = ({ content, className = '' }) =
         if (part.startsWith('\\[') && part.endsWith('\\]')) {
           const math = part.slice(2, -2);
           try {
-            return katex.renderToString(math, { displayMode: true, throwOnError: false });
+            return katex.renderToString(math, { displayMode: true, throwOnError: false, trust: false });
           } catch {
-            return `<span class="text-red-500 font-mono">${part}</span>`;
+            return `<span class="text-red-500 font-mono">${escapeHtml(part)}</span>`;
           }
         }
 
@@ -43,9 +52,9 @@ export const MathView: React.FC<MathViewProps> = ({ content, className = '' }) =
         if (part.startsWith('$') && part.endsWith('$')) {
           const math = part.slice(1, -1);
           try {
-            return katex.renderToString(math, { displayMode: false, throwOnError: false });
+            return katex.renderToString(math, { displayMode: false, throwOnError: false, trust: false });
           } catch {
-            return `<span class="text-red-500 font-mono">${part}</span>`;
+            return `<span class="text-red-500 font-mono">${escapeHtml(part)}</span>`;
           }
         }
 
@@ -53,18 +62,14 @@ export const MathView: React.FC<MathViewProps> = ({ content, className = '' }) =
         if (part.startsWith('\\(') && part.endsWith('\\)')) {
           const math = part.slice(2, -2);
           try {
-            return katex.renderToString(math, { displayMode: false, throwOnError: false });
+            return katex.renderToString(math, { displayMode: false, throwOnError: false, trust: false });
           } catch {
-            return `<span class="text-red-500 font-mono">${part}</span>`;
+            return `<span class="text-red-500 font-mono">${escapeHtml(part)}</span>`;
           }
         }
 
         // Texto plano: preserva quebras de linha
-        return part
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/\n/g, '<br/>');
+        return escapeHtml(part).replace(/\n/g, '<br/>');
       })
       .join('');
   }, [content]);
