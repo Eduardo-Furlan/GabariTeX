@@ -31,6 +31,7 @@
   },
   "dependencies": {
     "@tauri-apps/api": "^2.12.4",
+    "@tauri-apps/plugin-opener": "^2.7.2",
     "fflate": "^0.8.3",
     "html5-qrcode": "^2.3.8",
     "katex": "^0.16.11",

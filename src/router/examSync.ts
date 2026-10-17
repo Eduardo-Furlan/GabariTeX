@@ -49,3 +49,4 @@ export function decideRouteSync(input: DecideRouteSyncInput): DecideRouteSyncOut
 
   return { action: { type: 'noop' }, nextLastSyncedExamId: null };
 }
+

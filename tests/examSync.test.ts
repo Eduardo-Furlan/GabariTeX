@@ -119,3 +119,4 @@ describe('decideRouteSync', () => {
     expect(res.nextLastSyncedExamId).toBeNull();
   });
 });
+

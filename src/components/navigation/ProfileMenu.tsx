@@ -13,6 +13,8 @@ import {
 import { useProfile } from '../../context/ProfileContext';
 import { ThemeSelector } from '../ThemeSelector';
 import { usePwaInstall } from '../../hooks/usePwaInstall';
+import { DOCS_URL } from '../../config/links';
+import { openExternal } from '../../platform/external';
 
 interface ProfileMenuProps {
   onOpenExportImport: (mode?: 'export' | 'import') => void;
@@ -116,10 +118,18 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ onOpenExportImport }) 
 
           <div className="border-t border-slate-100 py-1">
             <a
-              href="https://eduardo-furlan.github.io/GabariTeX/docs/"
+              href={DOCS_URL}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={() => setIsOpen(false)}
+              onClick={(e) => {
+                setIsOpen(false);
+                if (__DESKTOP__) {
+                  e.preventDefault();
+                  void openExternal(DOCS_URL).catch(() => {
+                    // Falha rara (sem navegador padrão): mantém o menu informativo no console; sem toast neste plano
+                  });
+                }
+              }}
               className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 transition"
             >
               <BookOpen className="w-4 h-4 text-slate-500" />

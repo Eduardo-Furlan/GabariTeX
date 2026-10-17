@@ -76,3 +76,4 @@ describe('AutosaveManager.rebase', () => {
     expect(manager.hasPendingSave).toBe(false);
   });
 });
+

@@ -18,3 +18,4 @@ describe('createLatestGate', () => {
     expect(gate.isCurrent(t3)).toBe(true);
   });
 });
+

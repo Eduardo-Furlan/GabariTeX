@@ -5,3 +5,4 @@ export function createLatestGate() {
     isCurrent: (token: number) => token === current,
   };
 }
+
