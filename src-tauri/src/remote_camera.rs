@@ -368,6 +368,16 @@ pub async fn remote_status(
     }))
 }
 
+pub fn is_monitored_session(
+    session: Option<&ActiveSession>,
+    monitored_activity: &Arc<AtomicU64>,
+) -> bool {
+    match session {
+        Some(active) => Arc::ptr_eq(&active.last_activity, monitored_activity),
+        None => false,
+    }
+}
+
 #[tauri::command]
 pub async fn remote_start(
     app: AppHandle,
@@ -442,6 +452,13 @@ pub async fn remote_start(
     tauri::async_runtime::spawn(async move {
         loop {
             tokio::time::sleep(Duration::from_secs(15)).await;
+            let Some(state_ref) = app_clone.try_state::<RemoteCameraState>() else {
+                break;
+            };
+            let mut lock = state_ref.session.lock().await;
+            if !is_monitored_session(lock.as_ref(), &last_act_for_monitor) {
+                break;
+            }
             let last = last_act_for_monitor.load(Ordering::Relaxed);
             let now = current_epoch_seconds();
             if now.saturating_sub(last) > SESSION_IDLE_TIMEOUT.as_secs() {
@@ -451,12 +468,9 @@ pub async fn remote_start(
                         reason: "idle".to_string(),
                     },
                 );
-                if let Some(state_ref) = app_clone.try_state::<RemoteCameraState>() {
-                    let mut lock = state_ref.session.lock().await;
-                    if let Some(old) = lock.take() {
-                        if let Some(tx) = old.shutdown_tx {
-                            let _ = tx.send(());
-                        }
+                if let Some(old) = lock.take() {
+                    if let Some(tx) = old.shutdown_tx {
+                        let _ = tx.send(());
                     }
                 }
                 break;
@@ -734,6 +748,25 @@ mod tests {
         let status_bytes = resp.into_body().collect().await.unwrap().to_bytes();
         let status_json: serde_json::Value = serde_json::from_slice(&status_bytes).unwrap();
         assert_eq!(status_json["status"], "received");
+    }
+
+    #[test]
+    fn test_is_monitored_session() {
+        let arc_a = Arc::new(AtomicU64::new(100));
+        let arc_b = Arc::new(AtomicU64::new(100));
+
+        let session_a = ActiveSession {
+            ip: "127.0.0.1".to_string(),
+            port: DEFAULT_PORT,
+            token: "tok".to_string(),
+            shutdown_tx: None,
+            photos: Arc::new(RwLock::new(HashMap::new())),
+            last_activity: arc_a.clone(),
+        };
+
+        assert!(is_monitored_session(Some(&session_a), &arc_a));
+        assert!(!is_monitored_session(Some(&session_a), &arc_b));
+        assert!(!is_monitored_session(None, &arc_a));
     }
 }
 
