@@ -7,9 +7,7 @@
     "core:default",
     "core:window:allow-destroy",
     "core:window:allow-close",
-    "opener:allow-reveal-item-in-dir",
-    "updater:default",
-    "process:allow-restart"
+    "opener:allow-reveal-item-in-dir"
   ]
 }
 
