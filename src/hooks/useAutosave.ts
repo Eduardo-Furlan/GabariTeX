@@ -163,12 +163,12 @@ export class AutosaveManager<T> {
 }
 
 /**
- * Hook para salvamento automático com debounce de dados no localStorage.
+ * Hook para salvamento automático com debounce no armazenamento do perfil.
  * Garante o salvamento imediato (flush) quando a aba é ocultada (visibilitychange)
  * ou fechada/trocada (pagehide).
  *
  * @param value Valor a ser salvo
- * @param saveFn Função síncrona de salvamento que retorna SaveResult
+ * @param saveFn Função de salvamento que retorna SaveResult ou Promise<SaveResult>
  * @param delay Atraso em milissegundos para o debounce (padrão: 400ms)
  */
 export function useAutosave<T>(

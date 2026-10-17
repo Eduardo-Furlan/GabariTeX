@@ -22,6 +22,7 @@ export interface ExamMeta {
 export interface ProfileManifest {
   app: 'gabaritex';
   kind: 'profile';
+  // Policy: schema 1 is supported by every 1.x release, and any future schema bump must ship with a migration step.
   schema: 1;
   exportedAt: string;
   counts: {

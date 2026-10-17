@@ -1,106 +1,12 @@
-import { Exam, GradingRecord, Classroom, Student } from '../types/exam';
+import { GradingRecord, Classroom, Student } from '../types/exam';
 import { saveFile } from '../platform/files';
 
 export type SaveResult =
   | { ok: true }
   | { ok: false; reason: 'quota' | 'disk_full' | 'permission' | 'unknown'; error?: unknown };
 
-export const EXAM_STORAGE_KEY = 'mcorr_exam_data';
-export const GRADEBOOK_STORAGE_KEY = 'mcorr_gradebook_data';
-export const TEACHER_PASSWORD_KEY = 'mcorr_teacher_password';
 export const LAST_BACKUP_KEY = 'mcorr_last_backup_at';
-export const CLASSES_STORAGE_KEY = 'mcorr_classes';
 export const ACTIVE_CLASS_STORAGE_KEY = 'mcorr_active_class';
-
-export function isQuotaExceededError(err: unknown): boolean {
-  if (err instanceof DOMException) {
-    return (
-      err.name === 'QuotaExceededError' ||
-      err.code === 22 ||
-      err.code === 1014 ||
-      err.name === 'NS_ERROR_DOM_QUOTA_REACHED'
-    );
-  }
-  if (typeof err === 'object' && err !== null && 'name' in err) {
-    const errorObj = err as { name?: string; code?: number };
-    return (
-      errorObj.name === 'QuotaExceededError' ||
-      errorObj.code === 22 ||
-      errorObj.code === 1014 ||
-      errorObj.name === 'NS_ERROR_DOM_QUOTA_REACHED'
-    );
-  }
-  return false;
-}
-
-export function tryRequestPersistence(): void {
-  if (__DESKTOP__) return;
-  try {
-    if (typeof navigator !== 'undefined' && navigator.storage && typeof navigator.storage.persist === 'function') {
-      navigator.storage.persist().catch(() => {});
-    }
-  } catch {
-    // Silencioso se não suportado
-  }
-}
-
-export function saveExamToStorage(exam: Exam): SaveResult {
-  try {
-    localStorage.setItem(EXAM_STORAGE_KEY, JSON.stringify(exam));
-    tryRequestPersistence();
-    return { ok: true };
-  } catch (e) {
-    console.error('Falha ao salvar prova no localStorage', e);
-    return { ok: false, reason: isQuotaExceededError(e) ? 'quota' : 'unknown' };
-  }
-}
-
-export function loadExamFromStorage(): Exam | null {
-  try {
-    const raw = localStorage.getItem(EXAM_STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as Exam) : null;
-  } catch (e) {
-    console.error('Falha ao carregar prova do localStorage', e);
-    return null;
-  }
-}
-
-export function saveGradebookToStorage(records: GradingRecord[]): SaveResult {
-  try {
-    localStorage.setItem(GRADEBOOK_STORAGE_KEY, JSON.stringify(records));
-    tryRequestPersistence();
-    return { ok: true };
-  } catch (e) {
-    console.error('Falha ao salvar notas no localStorage', e);
-    return { ok: false, reason: isQuotaExceededError(e) ? 'quota' : 'unknown' };
-  }
-}
-
-export function loadGradebookFromStorage(): GradingRecord[] {
-  try {
-    const raw = localStorage.getItem(GRADEBOOK_STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as GradingRecord[]) : [];
-  } catch (e) {
-    console.error('Falha ao carregar notas do localStorage', e);
-    return [];
-  }
-}
-
-export function saveTeacherPasswordToStorage(password: string): void {
-  try {
-    localStorage.setItem(TEACHER_PASSWORD_KEY, password);
-  } catch (e) {
-    console.error('Falha ao salvar senha do professor no localStorage', e);
-  }
-}
-
-export function loadTeacherPasswordFromStorage(): string | null {
-  try {
-    return localStorage.getItem(TEACHER_PASSWORD_KEY);
-  } catch {
-    return null;
-  }
-}
 
 export function saveLastBackupDate(date: Date = new Date()): void {
   try {
@@ -116,31 +22,6 @@ export function loadLastBackupDate(): Date | null {
     return raw ? new Date(raw) : null;
   } catch {
     return null;
-  }
-}
-
-export function saveClassroomsToStorage(classes: Classroom[]): SaveResult {
-  try {
-    localStorage.setItem(CLASSES_STORAGE_KEY, JSON.stringify(classes));
-    tryRequestPersistence();
-    return { ok: true };
-  } catch (e) {
-    console.error('Falha ao salvar turmas no localStorage', e);
-    return { ok: false, reason: isQuotaExceededError(e) ? 'quota' : 'unknown' };
-  }
-}
-
-export function loadClassroomsFromStorage(): Classroom[] {
-  try {
-    const raw = localStorage.getItem(CLASSES_STORAGE_KEY);
-    const parsed = raw ? (JSON.parse(raw) as Classroom[]) : [];
-    return (parsed || []).map((c) => ({
-      ...c,
-      students: Array.isArray(c.students) ? c.students : [],
-    }));
-  } catch (e) {
-    console.error('Falha ao carregar turmas do localStorage', e);
-    return [];
   }
 }
 
@@ -162,15 +43,6 @@ export function loadActiveClassIdFromStorage(): string | null {
   } catch {
     return null;
   }
-}
-
-export function exportExamToJson(exam: Exam): void {
-  const safeTitle = (exam.header.examTitle || 'prova').toLowerCase().replace(/[^a-z0-9]/gi, '_');
-  void saveFile({
-    suggestedName: `${safeTitle}_banco.json`,
-    mime: 'application/json;charset=utf-8;',
-    data: JSON.stringify(exam, null, 2),
-  });
 }
 
 function escapeCsvField(val: unknown): string {
