@@ -8,6 +8,7 @@ import {
   HardDrive,
   FileCheck2,
   Smartphone,
+  BookOpen,
 } from 'lucide-react';
 import { useProfile } from '../../context/ProfileContext';
 import { ThemeToggle } from '../ThemeToggle';
@@ -114,6 +115,17 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ onOpenExportImport }) 
           </div>
 
           <div className="border-t border-slate-100 py-1">
+            <a
+              href="https://eduardo-furlan.github.io/GabariTeX/docs/"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setIsOpen(false)}
+              className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 transition"
+            >
+              <BookOpen className="w-4 h-4 text-slate-500" />
+              <span>Documentação & Ajuda</span>
+            </a>
+
             <button
               type="button"
               onClick={() => setShowAbout(true)}
