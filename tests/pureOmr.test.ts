@@ -166,6 +166,54 @@ describe('Detecção OMR pura em TypeScript (Fiduciais + Sincronizadores)', () =
     expect(() => detectSheet(gray4qr, 1, 10)).toThrow(OmrDetectionError);
   });
 
+  it('deve rejeitar tests/5qr.png, tests/6qr.png e tests/7qr.png (imagens apenas de QR code) sem fiduciais válidos', () => {
+    for (const qrPath of ['tests/5qr.png', 'tests/6qr.png', 'tests/7qr.png']) {
+      const grayQr = loadJpgAsGray(qrPath);
+      expect(() => detectSheet(grayQr, 1, 10)).toThrow(OmrDetectionError);
+    }
+  });
+
+  it('deve ler perfeitamente as respostas e dupla marcação em tests/6gb.png e 40 questões em tests/7gb.png', () => {
+    const gray6 = loadJpgAsGray('tests/6gb.png');
+    const det6 = detectSheet(gray6, 1, 6);
+    expect(det6.corners.length).toBe(4);
+    expect(det6.columns.length).toBe(1);
+    expect(det6.columns[0].length).toBe(6);
+
+    const res6 = readBubbles(gray6, det6, {
+      totalQuestions: 6,
+      subjectiveQuestions: [1],
+    });
+    expect(res6.detections.length).toBe(6);
+    expect(res6.detections[0].status).toBe('blank'); // Q1 dissertativa
+    expect(res6.detections[1].detectedMark).toBe('A'); // Q2
+    expect(res6.detections[2].status).toBe('multiple'); // Q3 B e D marcadas
+    expect(res6.detections[2].detectedMark).toBeNull();
+    expect(res6.detections[3].detectedMark).toBe('C'); // Q4
+    expect(res6.detections[4].detectedMark).toBe('E'); // Q5
+    expect(res6.detections[5].detectedMark).toBe('E'); // Q6
+
+    const gray7 = loadJpgAsGray('tests/7gb.png');
+    const det7 = detectSheet(gray7, 2, 20);
+    expect(det7.corners.length).toBe(4);
+    expect(det7.columns.length).toBe(2);
+    expect(det7.columns[0].length).toBe(20);
+    expect(det7.columns[1].length).toBe(20);
+
+    const res7 = readBubbles(gray7, det7, {
+      totalQuestions: 40,
+      subjectiveQuestions: [4],
+    });
+    expect(res7.detections.length).toBe(40);
+    const marks7 = res7.detections.map((d) => d.detectedMark || '-');
+    expect(marks7).toEqual([
+      'A', 'C', 'D', '-', 'D', 'C', 'C', 'B', 'C', 'D',
+      'E', 'A', 'A', 'C', 'B', 'D', 'C', 'C', 'B', 'D',
+      'A', 'B', 'C', 'B', 'B', 'A', 'C', 'B', 'E', 'D',
+      'E', 'B', 'D', 'C', 'E', 'C', 'D', 'D', 'C', 'B',
+    ]);
+  });
+
   it('deve detectar perfeitamente os 4 fiduciais e sincronizadores de linha em tests/2.jpg e tests/3.jpg', () => {
     const gray2 = loadJpgAsGray('tests/2.jpg');
     const det2 = detectSheet(gray2, 1, 10);

@@ -408,4 +408,192 @@ mod tests {
             }
         }
     }
+
+    #[test]
+    fn test_decode_qr_5qr_6qr_7qr_png() {
+        let manifest_dir = env!("CARGO_MANIFEST_DIR");
+        for file in ["../tests/5qr.png", "../tests/6qr.png", "../tests/7qr.png"] {
+            let path = Path::new(manifest_dir).join(file);
+            let bytes = fs::read(&path).expect("arquivo QR deve existir");
+
+            let req_qr_only = NativeOmrRequest {
+                total_questions: 10,
+                subjective_questions: vec![],
+                read_qr: true,
+                read_omr: false,
+                generate_debug_image: false,
+            };
+            let res_qr = process_image_bytes(&bytes, req_qr_only).unwrap();
+            assert!(res_qr.qr_raw_text.is_some(), "QR não lido em {file}");
+            assert!(res_qr.qr_raw_text.as_ref().unwrap().starts_with("MCORR:v1:"));
+            assert!(
+                res_qr.omr_error.is_none(),
+                "Não deve retornar erro de OMR no modo QR puro ({file})"
+            );
+        }
+
+        // 5qr.png e 6qr.png também rejeitam fiduciais no modo combinado
+        for file in ["../tests/5qr.png", "../tests/6qr.png"] {
+            let path = Path::new(manifest_dir).join(file);
+            let bytes = fs::read(&path).expect("arquivo QR deve existir");
+            let req_both = NativeOmrRequest {
+                total_questions: 10,
+                subjective_questions: vec![],
+                read_qr: true,
+                read_omr: true,
+                generate_debug_image: false,
+            };
+            let res_both = process_image_bytes(&bytes, req_both).unwrap();
+            assert!(res_both.qr_raw_text.is_some());
+            assert!(
+                res_both.omr_error.is_some(),
+                "Deveria rejeitar fiduciais no close-up de {file}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_process_sheet_5gb_png_exact_answers() {
+        let manifest_dir = env!("CARGO_MANIFEST_DIR");
+        let path = Path::new(manifest_dir).join("../tests/5gb.png");
+        let bytes = fs::read(&path).expect("tests/5gb.png deve existir");
+        let req = NativeOmrRequest {
+            total_questions: 3,
+            subjective_questions: vec![],
+            read_qr: false,
+            read_omr: true,
+            generate_debug_image: true,
+        };
+        let res = process_image_bytes(&bytes, req).unwrap();
+        assert!(res.omr_error.is_none(), "omr_error: {:?}", res.omr_error);
+        assert_eq!(res.detections.len(), 3);
+
+        let expected: Vec<(usize, &str)> = vec![(1, "A"), (2, "C"), (3, "B")];
+        for (q, exp) in expected {
+            let det = res
+                .detections
+                .iter()
+                .find(|d| d.question_number == q)
+                .unwrap_or_else(|| panic!("Questão {q} não encontrada em 5gb.png"));
+            assert_eq!(
+                det.detected_mark.as_deref(),
+                Some(exp),
+                "5gb.png: Questão {q} lida incorretamente: {:?}",
+                det.detected_mark
+            );
+        }
+    }
+
+    #[test]
+    fn test_process_sheet_6gb_png_exact_answers() {
+        let manifest_dir = env!("CARGO_MANIFEST_DIR");
+        let path = Path::new(manifest_dir).join("../tests/6gb.png");
+        let bytes = fs::read(&path).expect("tests/6gb.png deve existir");
+        let req = NativeOmrRequest {
+            total_questions: 6,
+            subjective_questions: vec![1],
+            read_qr: false,
+            read_omr: true,
+            generate_debug_image: true,
+        };
+        let res = process_image_bytes(&bytes, req).unwrap();
+        assert!(res.omr_error.is_none(), "omr_error: {:?}", res.omr_error);
+        assert_eq!(res.detections.len(), 5);
+
+        let q3 = res
+            .detections
+            .iter()
+            .find(|d| d.question_number == 3)
+            .expect("Questão 3 deve existir em 6gb.png");
+        assert_eq!(q3.status, "multiple");
+        assert!(q3.detected_mark.is_none());
+
+        let expected: Vec<(usize, &str)> = vec![(2, "A"), (4, "C"), (5, "E"), (6, "E")];
+        for (q, exp) in expected {
+            let det = res
+                .detections
+                .iter()
+                .find(|d| d.question_number == q)
+                .unwrap_or_else(|| panic!("Questão {q} não encontrada em 6gb.png"));
+            assert_eq!(
+                det.detected_mark.as_deref(),
+                Some(exp),
+                "6gb.png: Questão {q} lida incorretamente: {:?}",
+                det.detected_mark
+            );
+        }
+    }
+
+    #[test]
+    fn test_process_sheet_7gb_png_exact_answers() {
+        let manifest_dir = env!("CARGO_MANIFEST_DIR");
+        let path = Path::new(manifest_dir).join("../tests/7gb.png");
+        let bytes = fs::read(&path).expect("tests/7gb.png deve existir");
+        let req = NativeOmrRequest {
+            total_questions: 40,
+            subjective_questions: vec![4],
+            read_qr: false,
+            read_omr: true,
+            generate_debug_image: true,
+        };
+        let res = process_image_bytes(&bytes, req).unwrap();
+        assert!(res.omr_error.is_none(), "omr_error: {:?}", res.omr_error);
+        assert_eq!(res.detections.len(), 39);
+
+        let expected: Vec<(usize, &str)> = vec![
+            (1, "A"),
+            (2, "C"),
+            (3, "D"),
+            (5, "D"),
+            (6, "C"),
+            (7, "C"),
+            (8, "B"),
+            (9, "C"),
+            (10, "D"),
+            (11, "E"),
+            (12, "A"),
+            (13, "A"),
+            (14, "C"),
+            (15, "B"),
+            (16, "D"),
+            (17, "C"),
+            (18, "C"),
+            (19, "B"),
+            (20, "D"),
+            (21, "A"),
+            (22, "B"),
+            (23, "C"),
+            (24, "B"),
+            (25, "B"),
+            (26, "A"),
+            (27, "C"),
+            (28, "B"),
+            (29, "E"),
+            (30, "D"),
+            (31, "E"),
+            (32, "B"),
+            (33, "D"),
+            (34, "C"),
+            (35, "E"),
+            (36, "C"),
+            (37, "D"),
+            (38, "D"),
+            (39, "C"),
+            (40, "B"),
+        ];
+
+        for (q, exp) in expected {
+            let det = res
+                .detections
+                .iter()
+                .find(|d| d.question_number == q)
+                .unwrap_or_else(|| panic!("Questão {q} não encontrada em 7gb.png"));
+            assert_eq!(
+                det.detected_mark.as_deref(),
+                Some(exp),
+                "7gb.png: Questão {q} lida incorretamente: {:?}",
+                det.detected_mark
+            );
+        }
+    }
 }
