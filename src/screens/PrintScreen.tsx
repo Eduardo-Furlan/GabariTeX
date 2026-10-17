@@ -147,7 +147,7 @@ export const PrintScreen: React.FC = () => {
                 header={exam.header}
                 onOverflowChange={setIsSheetOverflowing}
               />
-              <div className="a4-page-separator">
+              <div className="a4-page-separator no-print">
                 Quebra de Página A4 — Início do Caderno de Questões
               </div>
               <ExamPrintView
@@ -187,7 +187,7 @@ export const PrintScreen: React.FC = () => {
                     header={exam.header}
                     onOverflowChange={idx === 0 ? setIsSheetOverflowing : undefined}
                   />
-                  <div className="a4-page-separator">
+                  <div className="a4-page-separator no-print">
                     Quebra de Página A4 — Caderno de Questões (Versão {v.versionLetter})
                   </div>
                   <ExamPrintView
@@ -196,7 +196,7 @@ export const PrintScreen: React.FC = () => {
                     twoColumns={exam.twoColumns}
                   />
                   {idx < versions.length - 1 && (
-                    <div className="a4-page-separator text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-500/30 font-bold">
+                    <div className="a4-page-separator no-print text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-500/30 font-bold">
                       Fim da Versão {v.versionLetter} — Próxima: Versão {versions[idx + 1].versionLetter}
                     </div>
                   )}

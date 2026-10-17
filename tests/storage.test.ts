@@ -214,6 +214,27 @@ describe('Armazenamento Local Seguro (storage.ts)', () => {
       expect(csv).toContain('"Zezinho";"999";-;0,00;0,00;Sem nota');
       expect(csv).toContain('"Turma Alpha"');
     });
+
+    it('deve incluir coluna de nota convertida na escala targetScore quando fornecida', () => {
+      const records: GradingRecord[] = [
+        {
+          id: 'rec-scale-1',
+          timestamp: 1000,
+          studentName: 'Carlos',
+          studentId: 'RA55',
+          versionLetter: 'A',
+          totalScore: 15,
+          maxScore: 30,
+          percentage: 50,
+          answers: [],
+        },
+      ];
+
+      const csv = generateGradebookCsv(records, { targetScore: 10 });
+      const lines = csv.trim().split('\n');
+      expect(lines[0]).toContain('Nota (Escala 10);Pontos Brutos;Nota Máxima');
+      expect(lines[1]).toContain('5,00;15,00;30,00;50,0%');
+    });
   });
 
   describe('Armazenamento de Turmas (Plano 06)', () => {

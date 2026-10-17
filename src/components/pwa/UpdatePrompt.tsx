@@ -56,7 +56,7 @@ const UpdatePromptInner: React.FC<UpdatePromptProps> = ({ isBatchProcessing = fa
     <div
       role="region"
       aria-label="Notificações do aplicativo"
-      className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-[calc(100vw-2rem)] pointer-events-none"
+      className="no-print fixed bottom-16 md:bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-[calc(100vw-2rem)] pointer-events-none"
     >
       {/* Toast discreto de Offline Ready */}
       {offlineToastVisible && (
@@ -109,7 +109,7 @@ const UpdatePromptInner: React.FC<UpdatePromptProps> = ({ isBatchProcessing = fa
             </button>
           </div>
 
-          <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-100">
+          <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-200">
             <button
               type="button"
               onClick={() => setNeedRefresh(false)}
@@ -120,7 +120,7 @@ const UpdatePromptInner: React.FC<UpdatePromptProps> = ({ isBatchProcessing = fa
             <button
               type="button"
               onClick={handleUpdate}
-              className="px-3.5 py-1.5 text-xs font-semibold text-zinc-50 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 rounded-lg shadow-sm transition-colors flex items-center gap-1.5"
+              className="px-3.5 py-1.5 text-xs font-semibold text-on-accent bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 rounded-lg shadow-sm transition-colors flex items-center gap-1.5"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               Atualizar

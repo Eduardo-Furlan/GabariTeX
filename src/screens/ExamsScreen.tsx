@@ -125,7 +125,7 @@ export const ExamsScreen: React.FC<ExamsScreenProps> = ({
           <button
             type="button"
             onClick={handleLoadSample}
-            className="flex items-center gap-1.5 px-3 py-2 border border-indigo-200 dark:border-indigo-500/30 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-xl shadow-2xs hover:bg-indigo-100 transition"
+            className="flex items-center gap-1.5 px-3 py-2 border border-indigo-200 dark:border-indigo-500/30 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-xl shadow-2xs hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition"
           >
             <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-300" />
             <span>Modelo Matemática</span>
@@ -270,7 +270,7 @@ export const ExamsScreen: React.FC<ExamsScreenProps> = ({
                 key={ex.id}
                 className={`p-5 rounded-2xl bg-white border transition flex flex-col justify-between ${
                   isActive
-                    ? 'border-indigo-300 ring-2 ring-indigo-500/20 shadow-sm'
+                    ? 'border-indigo-300 dark:border-indigo-500/50 ring-2 ring-indigo-500/20 shadow-sm'
                     : 'border-slate-200 hover:border-slate-300 hover:shadow-xs'
                 }`}
               >

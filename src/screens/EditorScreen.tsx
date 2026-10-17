@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BookOpen } from 'lucide-react';
 import { useProfile } from '../context/ProfileContext';
 import { ExamHeaderEditor } from '../components/editor/ExamHeaderEditor';
 import { QuestionList } from '../components/editor/QuestionList';
+import { ImportQuestionsModal } from '../components/editor/ImportQuestionsModal';
 import { Exam } from '../types/exam';
 
 export const EditorScreen: React.FC = () => {
-  const { exam, updateExam, loadSampleMathExam } = useProfile();
+  const { exam, exams, store, updateExam, importQuestions, loadSampleMathExam } = useProfile();
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   const handleExamChange = (updated: Exam) => {
     updateExam(updated);
@@ -25,9 +27,9 @@ export const EditorScreen: React.FC = () => {
             Nenhuma questão cadastrada
           </h3>
           <p className="text-xs text-slate-500 max-w-md mx-auto mt-1 mb-4">
-            Comece a montar sua avaliação do zero através dos botões abaixo, ou carregue a prova modelo de Matemática para explorar as funcionalidades com KaTeX, alternativas e dissertativas.
+            Comece a montar sua avaliação do zero através dos botões abaixo, importe questões de outra prova ou carregue a prova modelo de Matemática.
           </p>
-          <div className="flex items-center justify-center gap-3">
+          <div className="flex items-center justify-center gap-3 flex-wrap">
             <button
               type="button"
               onClick={loadSampleMathExam}
@@ -35,6 +37,15 @@ export const EditorScreen: React.FC = () => {
             >
               <BookOpen className="w-4 h-4" /> Carregar Exemplo Completo de Matemática
             </button>
+            {exams.length > 1 && (
+              <button
+                type="button"
+                onClick={() => setIsImportModalOpen(true)}
+                className="flex items-center gap-2 px-5 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-xl text-xs font-bold shadow-2xs transition"
+              >
+                <BookOpen className="w-4 h-4 text-indigo-600 dark:text-indigo-400" /> Importar de Outra Prova
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -42,6 +53,17 @@ export const EditorScreen: React.FC = () => {
       <QuestionList
         questions={exam.questions}
         onChange={(updatedQuestions) => handleExamChange({ ...exam, questions: updatedQuestions })}
+        onOpenImportModal={() => setIsImportModalOpen(true)}
+      />
+
+      <ImportQuestionsModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        exams={exams}
+        currentExamId={exam.id}
+        currentQuestionCount={exam.questions.length}
+        store={store}
+        onImport={importQuestions}
       />
     </div>
   );

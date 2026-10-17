@@ -81,7 +81,7 @@ export const StepTabs: React.FC<StepTabsProps> = ({ currentRoute, onNavigate }) 
   };
 
   return (
-    <div className="bg-white border-b border-slate-200">
+    <div className="no-print bg-white border-b border-slate-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <nav
           className="flex space-x-1 sm:space-x-2 overflow-x-auto py-1.5 scrollbar-none"

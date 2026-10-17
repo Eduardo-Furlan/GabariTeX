@@ -54,6 +54,7 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
     handleSelectExamVersion,
     scannerMode,
     setScannerMode,
+    setIsBatchProcessing,
     classes,
     activeClassId,
     setActiveClassId,
@@ -535,6 +536,7 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
                   onOpenClassManager={() => onNavigate({ type: 'classes' })}
                   onAddStudentToClass={handleAddStudentToClass}
                   onOpenRemoteCamera={handleOpenRemoteCamera}
+                  onRunningChange={setIsBatchProcessing}
                   incomingRemotePhoto={incomingRemotePhoto}
                   remoteReceivedCount={remoteReceivedCount}
                 />

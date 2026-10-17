@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ProfileProvider, useProfile } from './context/ProfileContext';
 import { useHashRouter } from './router/hashRouter';
 import { AppHeader } from './components/navigation/AppHeader';
@@ -44,11 +44,13 @@ const AppContent: React.FC = () => {
     setIsExportImportOpen,
     exportProfileData,
     setExportProfileData,
+    isBatchProcessing,
     profileSettings,
     reloadProfile,
     store,
   } = useProfile();
 
+  const [exportImportMode, setExportImportMode] = useState<'export' | 'import'>('export');
   const { route, navigate } = useHashRouter();
 
   // Redireciona se a rota for exam_step mas a prova não existir, e garante modo autônomo em /corretor
@@ -67,8 +69,9 @@ const AppContent: React.FC = () => {
     }
   }, [isLoadingProfile, route, exams, exam.id, activeExamId, selectActiveExam, navigate]);
 
-  const handleOpenExportImport = async (_mode?: 'export' | 'import') => {
+  const handleOpenExportImport = async (mode: 'export' | 'import' = 'export') => {
     try {
+      setExportImportMode(mode);
       const fullExams = await Promise.all(exams.map((m) => store.getExam(m.id)));
       const validExams = fullExams.filter((e): e is Exam => Boolean(e));
       const examMap = new Map(validExams.map((e) => [e.id, e]));
@@ -89,13 +92,24 @@ const AppContent: React.FC = () => {
 
   const handleProfileImported = async (
     data: ProfileData,
-    settings: ProfileSettings
+    settings: ProfileSettings,
+    mode: 'merge' | 'replace' = 'merge'
   ) => {
     if (typeof __DESKTOP__ !== 'undefined' && __DESKTOP__ && exportProfileData) {
       try {
         await triggerDesktopSnapshot(exportProfileData, 'pre-import');
       } catch (err) {
         console.warn('[Desktop Snapshot] Falha ao criar snapshot pré-importação:', err);
+      }
+    }
+
+    if (mode === 'replace') {
+      const existingList = await store.listExams();
+      const importedIds = new Set(data.exams.map((ex) => ex.id));
+      for (const existing of existingList) {
+        if (!importedIds.has(existing.id)) {
+          await store.deleteExam(existing.id);
+        }
       }
     }
 
@@ -197,6 +211,7 @@ const AppContent: React.FC = () => {
           currentData={exportProfileData}
           currentSettings={profileSettings}
           activeExamId={exam.id || activeExamId}
+          initialMode={exportImportMode}
           onProfileImported={handleProfileImported}
         />
       )}
@@ -251,7 +266,7 @@ const AppContent: React.FC = () => {
       )}
 
       {/* Notificações e controle de versão do PWA */}
-      <UpdatePrompt />
+      <UpdatePrompt isBatchProcessing={isBatchProcessing} />
     </div>
   );
 };

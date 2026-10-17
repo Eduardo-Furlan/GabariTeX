@@ -18,14 +18,15 @@
     flex-shrink: 0;
   }
 
-  .a4-sheet.answer-sheet-print {
-    width: 190mm !important;
-    min-width: 190mm !important;
-    max-width: 190mm !important;
-    height: 260mm !important;
-    max-height: 260mm !important;
-    min-height: 260mm !important;
-    padding: 0 !important;
+  .a4-sheet.answer-sheet-print,
+  .a4-sheet.exam-sheet-container {
+    width: 210mm !important;
+    min-width: 210mm !important;
+    max-width: 210mm !important;
+    height: 297mm !important;
+    max-height: 297mm !important;
+    min-height: 297mm !important;
+    padding: 10mm 12mm !important;
     overflow: hidden !important;
   }
 
@@ -91,7 +92,7 @@
 
   @page {
     size: A4 portrait;
-    margin: 10mm 10mm 10mm 10mm;
+    margin: 0;
   }
 
   /* Remove backgrounds azulados, cinzas ou sombras de TODOS os elementos pais */
@@ -104,7 +105,6 @@
     background: #ffffff !important;
     background-color: #ffffff !important;
     color: #000000 !important;
-    font-size: 10pt;
     margin: 0 !important;
     padding: 0 !important;
     border: none !important;
@@ -134,13 +134,10 @@
     background: #ffffff !important;
     background-color: #ffffff !important;
     color: #000000 !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: 100% !important;
-    min-height: 0 !important;
-    height: auto !important;
-    padding: 0 !important;
-    margin: 0 !important;
+    width: 210mm !important;
+    min-width: 210mm !important;
+    max-width: 210mm !important;
+    margin: 0 auto !important;
     border: none !important;
     box-shadow: none !important;
     border-radius: 0 !important;
@@ -149,36 +146,48 @@
     page-break-after: always !important;
   }
 
-  /* O último elemento NÃO deve forçar quebra de página, eliminando a página extra em branco */
-  .a4-sheet:last-child {
-    break-after: auto !important;
-    page-break-after: auto !important;
-  }
-
   /* Garante que os containers pais não usem flex no print, evitando bugs de paginação */
   .print-area-wrapper,
   .print-area-wrapper > div,
-  .print-area-wrapper > div > div {
+  .print-area-wrapper > div > div:not(.a4-sheet) {
     display: block !important;
     width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
   }
 
-  .answer-sheet-print {
-    height: 260mm !important;
-    max-height: 260mm !important;
-    min-height: 0 !important;
+  .a4-sheet.answer-sheet-print,
+  .answer-sheet-print,
+  .a4-sheet.exam-sheet-container,
+  .exam-sheet-container {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    width: 210mm !important;
+    min-width: 210mm !important;
+    max-width: 210mm !important;
+    height: 297mm !important;
+    min-height: 297mm !important;
+    max-height: 297mm !important;
+    padding: 10mm 12mm !important;
+    margin: 0 auto !important;
     overflow: hidden !important;
+    position: relative !important;
+    break-before: auto !important;
+    page-break-before: auto !important;
+    break-after: page !important;
+    page-break-after: always !important;
     break-inside: avoid !important;
     page-break-inside: avoid !important;
     box-sizing: border-box !important;
   }
 
-  .exam-sheet-container {
-    display: block !important;
-    min-height: 0 !important;
-    height: auto !important;
+  /* O último elemento NÃO deve forçar quebra de página, eliminando a página extra em branco */
+  .a4-sheet:last-child,
+  .a4-sheet.answer-sheet-print:last-child,
+  .a4-sheet.exam-sheet-container:last-child {
+    break-after: auto !important;
+    page-break-after: auto !important;
   }
 
   .page-break-after {

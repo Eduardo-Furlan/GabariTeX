@@ -71,7 +71,7 @@ export const ContextBar: React.FC<ContextBarProps> = ({ currentRoute, onNavigate
   };
 
   return (
-    <div className="bg-slate-50 border-b border-slate-200 py-1.5 px-4 sm:px-6">
+    <div className="no-print bg-slate-50 border-b border-slate-200 py-1.5 px-4 sm:px-6">
       <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
         {/* Contextos: Prova Ativa & Turma Ativa */}
         <div className="flex flex-wrap items-center gap-2 sm:gap-4 w-full sm:w-auto">

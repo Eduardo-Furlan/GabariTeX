@@ -191,7 +191,7 @@ export const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
       ref={sheetRef}
       className="a4-sheet paper answer-sheet-print text-black font-sans flex flex-col justify-between relative"
     >
-      <div className="px-5 py-1.5 flex-1 flex flex-col justify-between">
+      <div className="w-full flex-1 flex flex-col justify-between min-h-0">
         {/* Cabeçalho Oficial */}
         <div>
           <div className="flex items-start justify-between border-b-2 border-black pb-1.5">
@@ -236,27 +236,27 @@ export const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
           </div>
 
           {/* Identificação do Aluno */}
-          <div className="mt-1.5 p-1.5 border-2 border-black text-xs grid grid-cols-12 gap-3 bg-white">
+          <div className="mt-1 p-1.5 border-2 border-black text-xs grid grid-cols-12 gap-3 bg-white">
             <div className="col-span-8">
               <span className="font-bold uppercase tracking-wider text-[10px] block">
                 Nome Completo do Aluno(a):
               </span>
-              <div className="border-b border-black mt-2 w-full" />
+              <div className="border-b border-black mt-1.5 w-full" />
             </div>
             <div className="col-span-4">
               <span className="font-bold uppercase tracking-wider text-[10px] block">
                 Matrícula / RA:
               </span>
-              <div className="border-b border-black mt-2 w-full" />
+              <div className="border-b border-black mt-1.5 w-full" />
             </div>
           </div>
 
           {/* Instruções de Preenchimento com Amostras Visuais */}
-          <div className="mt-1.5 text-[10px] sm:text-xs bg-slate-50 border border-slate-300 px-2 py-0.5 flex items-center justify-between gap-3">
+          <div className="mt-1 text-[9.5px] bg-slate-50 border border-slate-300 px-2 py-0.5 flex items-center justify-between gap-2">
             <div className="leading-tight">
               <strong>Instruções Obrigatórias:</strong> Use caneta azul ou preta. Preencha completamente a bolinha. Rasuras ou marcações duplas anulam a questão.
             </div>
-            <div className="flex items-center gap-2 font-mono text-[10px] sm:text-xs shrink-0 bg-white px-2 py-0.5 border border-slate-200">
+            <div className="flex items-center gap-1.5 font-mono text-[9.5px] shrink-0 bg-white px-1.5 py-0.5 border border-slate-200">
               <span className="text-emerald-700 font-bold">Certo: (●)</span>
               <span className="text-rose-700">Errado: (✕) (⊘)</span>
             </div>
@@ -264,7 +264,7 @@ export const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
         </div>
 
         {/* Grade de Bolinhas (OMR Grid) */}
-        <div className="my-1.5 border-2 border-black p-2 bg-white flex-1 flex flex-col justify-center relative">
+        <div className="my-1 border-2 border-black p-2 bg-white flex-1 flex flex-col justify-center relative min-h-0">
           {/* Marcadores de alinhamento nos 4 cantos da caixa OMR */}
           <div className="absolute top-1.5 left-1.5 w-4 h-4 bg-black flex items-center justify-center">
             <div className="w-1.5 h-1.5 bg-white" />
@@ -324,9 +324,9 @@ export const AnswerSheetView: React.FC<AnswerSheetViewProps> = ({
         </div>
 
         {/* Rodapé e Assinatura do Aluno */}
-        <div className="pt-1.5 border-t-2 border-black flex items-end justify-between text-xs">
+        <div className="pt-1 border-t-2 border-black flex items-end justify-between text-xs avoid-break">
           <div className="w-3/5">
-            <span className="font-bold text-[10px] uppercase block mb-1.5">
+            <span className="font-bold text-[10px] uppercase block mb-1">
               Assinatura do Aluno(a):
             </span>
             <div className="border-b border-black w-full" />

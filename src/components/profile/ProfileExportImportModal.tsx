@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   ProfileData,
   ProfileSettings,
@@ -31,7 +31,12 @@ interface ProfileExportImportModalProps {
   currentData: ProfileData;
   currentSettings: ProfileSettings;
   activeExamId?: string;
-  onProfileImported: (data: ProfileData, settings: ProfileSettings) => void;
+  initialMode?: 'export' | 'import';
+  onProfileImported: (
+    data: ProfileData,
+    settings: ProfileSettings,
+    mode?: 'merge' | 'replace'
+  ) => void;
 }
 
 export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> = ({
@@ -40,9 +45,16 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
   currentData,
   currentSettings,
   activeExamId,
+  initialMode = 'export',
   onProfileImported,
 }) => {
-  const [activeTab, setActiveTab] = useState<'export' | 'import'>('export');
+  const [activeTab, setActiveTab] = useState<'export' | 'import'>(initialMode);
+
+  useEffect(() => {
+    if (isOpen) {
+      setActiveTab(initialMode);
+    }
+  }, [isOpen, initialMode]);
 
   // Export State
   const [exportScope, setExportScope] = useState<'all' | 'custom'>('all');
@@ -153,7 +165,7 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
       );
       if (!confirmReplace) return;
 
-      onProfileImported(importPreview.parsedData, importPreview.parsedSettings);
+      onProfileImported(importPreview.parsedData, importPreview.parsedSettings, 'replace');
     } else {
       const { mergedData, mergedSettings } = mergeProfiles(
         currentData,
@@ -161,7 +173,7 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
         currentSettings,
         importPreview.parsedSettings
       );
-      onProfileImported(mergedData, mergedSettings);
+      onProfileImported(mergedData, mergedSettings, 'merge');
     }
 
     onClose();
@@ -513,7 +525,7 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
                 </div>
 
                 {/* Ações */}
-                <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                <div className="flex items-center justify-between pt-3 border-t border-slate-200">
                   <button
                     type="button"
                     onClick={() => setImportPreview(null)}

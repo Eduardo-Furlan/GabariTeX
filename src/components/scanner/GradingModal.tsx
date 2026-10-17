@@ -133,12 +133,12 @@ export const GradingModal: React.FC<GradingModalProps> = ({
 
   const getScoreColor = (percentage: number) => {
     if (percentage >= 70) {
-      return 'text-emerald-600 bg-emerald-50 border-emerald-200 dark:text-emerald-300 dark:bg-emerald-950/50 dark:border-emerald-800/60';
+      return 'text-emerald-600 bg-emerald-50 border-emerald-200 dark:text-emerald-300 dark:bg-emerald-500/10 dark:border-emerald-500/30';
     }
     if (percentage >= 50) {
-      return 'text-amber-600 bg-amber-50 border-amber-200 dark:text-amber-300 dark:bg-amber-950/50 dark:border-amber-800/60';
+      return 'text-amber-600 bg-amber-50 border-amber-200 dark:text-amber-300 dark:bg-amber-500/15 dark:border-amber-500/30';
     }
-    return 'text-rose-600 bg-rose-50 border-rose-200 dark:text-rose-300 dark:bg-rose-950/50 dark:border-rose-800/60';
+    return 'text-rose-600 bg-rose-50 border-rose-200 dark:text-rose-300 dark:bg-rose-500/10 dark:border-rose-500/30';
   };
 
   // Questões que precisam de atenção
@@ -164,7 +164,7 @@ export const GradingModal: React.FC<GradingModalProps> = ({
     <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-hidden">
       <div className="bg-white rounded-2xl max-w-2xl w-full p-4 sm:p-5 shadow-2xl border border-slate-200 max-h-[92vh] flex flex-col my-auto">
         {/* Cabeçalho do Modal */}
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100 flex-wrap gap-2 shrink-0">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-200 flex-wrap gap-2 shrink-0">
           <div className="flex items-center gap-2">
             <Award className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
             <h3 className="text-base sm:text-lg font-bold text-slate-900">Resultado da Correção</h3>
@@ -179,7 +179,7 @@ export const GradingModal: React.FC<GradingModalProps> = ({
                 <Eye className="w-3.5 h-3.5" /> Ver folha inteira
               </button>
             )}
-            <span className="px-2.5 py-1 bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300 font-black text-xs rounded-md">
+            <span className="px-2.5 py-1 bg-indigo-100 text-indigo-800 dark:bg-indigo-500/20 dark:text-indigo-300 font-black text-xs rounded-md">
               VERSÃO {record.versionLetter}
             </span>
           </div>
@@ -189,7 +189,7 @@ export const GradingModal: React.FC<GradingModalProps> = ({
         <div className="flex-1 overflow-y-auto min-h-0 py-2.5 space-y-3 pr-1">
           {/* Alerta de Suspeita Global (muitas questões em branco) */}
           {isSuspiciousBlank && (
-            <div className="p-2.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-800/60 rounded-xl text-xs text-rose-800 dark:text-rose-200 flex items-start gap-2.5">
+            <div className="p-2.5 bg-rose-50 dark:bg-rose-500/10 border border-rose-300 dark:border-rose-500/30 rounded-xl text-xs text-rose-800 dark:text-rose-200 flex items-start gap-2.5">
               <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600 dark:text-rose-400 mt-0.5" />
               <div className="space-y-0.5">
                 <span className="font-bold">Atenção: Muitas questões em branco ({blankCount} de {record.answers.length})</span>
@@ -202,7 +202,7 @@ export const GradingModal: React.FC<GradingModalProps> = ({
 
           {/* Banner de Revisão Humana */}
           {totalNeedsReview > 0 && (
-            <div className="p-2.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/60 rounded-xl flex items-center justify-between flex-wrap gap-2 text-xs text-amber-900 dark:text-amber-200">
+            <div className="p-2.5 bg-amber-50 dark:bg-amber-500/15 border border-amber-300 dark:border-amber-500/30 rounded-xl flex items-center justify-between flex-wrap gap-2 text-xs text-amber-900 dark:text-amber-200">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
                 <span>
@@ -309,9 +309,9 @@ export const GradingModal: React.FC<GradingModalProps> = ({
                     key={a.questionNumber}
                     className={`p-2.5 text-xs transition ${
                       a.needsReview
-                        ? 'bg-amber-50/60 dark:bg-amber-950/30 border-l-4 border-l-amber-500'
+                        ? 'bg-amber-50/60 dark:bg-amber-500/15 border-l-4 border-l-amber-500'
                         : a.manualOverride
-                        ? 'bg-indigo-50/40 dark:bg-indigo-950/20 border-l-4 border-l-indigo-500'
+                        ? 'bg-indigo-50/40 dark:bg-indigo-500/10 border-l-4 border-l-indigo-500'
                         : 'hover:bg-slate-50'
                     }`}
                   >
@@ -347,14 +347,14 @@ export const GradingModal: React.FC<GradingModalProps> = ({
 
                         {/* Indicador de dúvida ou intervenção manual */}
                         {a.needsReview && (
-                          <span className="px-1.5 py-0.5 rounded bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-100 font-bold text-[10px]">
+                          <span className="px-1.5 py-0.5 rounded bg-amber-200 dark:bg-amber-500/25 text-amber-900 dark:text-amber-200 font-bold text-[10px]">
                             Dúvida OMR
                           </span>
                         )}
 
                         {a.manualOverride && (
                           <div className="flex items-center gap-1.5 text-[11px] text-indigo-700 dark:text-indigo-300 font-medium">
-                            <span className="bg-indigo-100 dark:bg-indigo-950 px-1.5 py-0.5 rounded font-mono">
+                            <span className="bg-indigo-100 dark:bg-indigo-500/20 px-1.5 py-0.5 rounded font-mono">
                               Original: {a.detectedOption || '—'}
                             </span>
                             <button
@@ -390,7 +390,7 @@ export const GradingModal: React.FC<GradingModalProps> = ({
                         <img
                           src={evidence!.rowCrops[a.questionNumber]}
                           alt={`Recorte questão ${a.questionNumber}`}
-                          className="max-h-10 rounded border border-slate-300 bg-white object-contain"
+                          className="max-h-10 rounded border border-slate-300 bg-[#ffffff] object-contain"
                         />
                         {a.fillRatios && (
                           <span className="text-[10px] font-mono text-slate-400">
@@ -434,7 +434,7 @@ export const GradingModal: React.FC<GradingModalProps> = ({
         </div>
 
         {/* Ações */}
-        <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 flex-wrap shrink-0">
+        <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-200 flex-wrap shrink-0">
           <button
             type="button"
             onClick={onCancel}

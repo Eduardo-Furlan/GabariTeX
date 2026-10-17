@@ -215,7 +215,7 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
         />
       </div>
 
-      <div className="mt-5 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4">
+      <div className="mt-5 pt-4 border-t border-slate-200 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-6 flex-wrap">
           <div className="flex items-center gap-2">
             <Shuffle className="w-4 h-4 text-slate-500" />
@@ -231,6 +231,32 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
                 </option>
               ))}
             </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <label htmlFor="exam-target-score" className="text-sm font-medium text-slate-700">
+              Escala de Nota:
+            </label>
+            <input
+              id="exam-target-score"
+              type="number"
+              min="1"
+              max="1000"
+              step="0.5"
+              className="w-20 px-2 py-1 border border-slate-300 rounded text-sm bg-white font-semibold text-right"
+              value={exam.header.targetScore ?? 10}
+              onChange={(e) => {
+                const parsed = parseFloat(e.target.value);
+                onChange({
+                  ...exam,
+                  header: {
+                    ...exam.header,
+                    targetScore: Number.isFinite(parsed) && parsed > 0 ? parsed : 10,
+                  },
+                });
+              }}
+              title="Valor máximo para normalização das notas no Livro de Notas (ex: 10 ou 100)"
+            />
           </div>
 
           <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
@@ -283,7 +309,7 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
                 </div>
               </div>
             </div>
-            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-200">
               <button
                 type="button"
                 onClick={() => {

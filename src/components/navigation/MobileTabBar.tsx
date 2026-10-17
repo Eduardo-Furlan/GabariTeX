@@ -63,7 +63,7 @@ export const MobileTabBar: React.FC<MobileTabBarProps> = ({ currentRoute, onNavi
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 shadow-lg pb-[env(safe-area-inset-bottom)]"
+      className="no-print md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 shadow-lg pb-[env(safe-area-inset-bottom)]"
       aria-label="Navegação móvel"
     >
       <div className="grid grid-cols-5 h-13 items-center">

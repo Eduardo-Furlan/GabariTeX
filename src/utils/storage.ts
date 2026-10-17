@@ -187,6 +187,7 @@ export interface GenerateGradebookCsvOptions {
   classrooms?: Classroom[];
   missingStudents?: Student[];
   filteredClassId?: string;
+  targetScore?: number;
 }
 
 /**
@@ -212,11 +213,15 @@ export function generateGradebookCsv(
   const qHeaders = allQuestionNumbers.map((qNum) => `Q${qNum}`);
   const dHeaders = allSubjectiveNumbers.map((qNum) => `D${qNum}`);
 
+  const scoreHeader =
+    options?.targetScore !== undefined ? `Nota (Escala ${options.targetScore})` : 'Nota';
+
   const headerParts = [
     'Aluno',
     'Matrícula',
     'Versão',
-    'Nota',
+    scoreHeader,
+    ...(options?.targetScore !== undefined ? ['Pontos Brutos'] : []),
     'Nota Máxima',
     'Porcentagem (%)',
     ...qHeaders,
@@ -261,11 +266,19 @@ export function generateGradebookCsv(
 
     const dateStr = new Date(r.timestamp).toLocaleString('pt-BR');
 
+    const scaledScore =
+      options?.targetScore !== undefined
+        ? r.maxScore > 0
+          ? (r.totalScore / r.maxScore) * options.targetScore
+          : (r.percentage / 100) * options.targetScore
+        : r.totalScore;
+
     const rowParts = [
       escapeCsvField(r.studentName),
       escapeCsvField(r.studentId),
       escapeCsvField(r.versionLetter),
-      formatCsvDecimal(r.totalScore),
+      formatCsvDecimal(scaledScore),
+      ...(options?.targetScore !== undefined ? [formatCsvDecimal(r.totalScore)] : []),
       formatCsvDecimal(r.maxScore),
       `${formatCsvDecimal(r.percentage, 1)}%`,
       ...qAnswers,
@@ -294,6 +307,7 @@ export function generateGradebookCsv(
         escapeCsvField(st.registration || ''),
         '-',
         '0,00',
+        ...(options?.targetScore !== undefined ? ['0,00'] : []),
         '0,00',
         'Sem nota',
         ...emptyAnswers,

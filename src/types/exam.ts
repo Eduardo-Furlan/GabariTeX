@@ -26,6 +26,7 @@ export interface ExamHeader {
   examTitle: string;
   date: string;
   instructions: string;
+  targetScore?: number;
 }
 
 export interface Exam {

@@ -1,15 +1,20 @@
 import React from 'react';
 import { Question } from '../../types/exam';
 import { QuestionEditor } from './QuestionEditor';
-import { Plus, Layers, Calculator, AlertTriangle } from 'lucide-react';
+import { Plus, Layers, Calculator, AlertTriangle, BookOpen } from 'lucide-react';
 import { MAX_QUESTIONS, remainingQuestions } from '../../utils/examLimits';
 
 interface QuestionListProps {
   questions: Question[];
   onChange: (updatedQuestions: Question[]) => void;
+  onOpenImportModal?: () => void;
 }
 
-export const QuestionList: React.FC<QuestionListProps> = ({ questions, onChange }) => {
+export const QuestionList: React.FC<QuestionListProps> = ({
+  questions,
+  onChange,
+  onOpenImportModal,
+}) => {
   const isLimitReached = questions.length >= MAX_QUESTIONS;
   const remaining = remainingQuestions(questions.length);
   const showWarning = questions.length >= 36 && !isLimitReached;
@@ -27,6 +32,35 @@ export const QuestionList: React.FC<QuestionListProps> = ({ questions, onChange 
     }
     const list = questions.filter((_, i) => i !== index);
     onChange(list);
+  };
+
+  const handleMoveQuestion = (index: number, direction: 'up' | 'down') => {
+    const targetIdx = direction === 'up' ? index - 1 : index + 1;
+    if (targetIdx < 0 || targetIdx >= questions.length) return;
+    const reordered = [...questions];
+    const [moved] = reordered.splice(index, 1);
+    reordered.splice(targetIdx, 0, moved);
+    onChange(reordered);
+  };
+
+  const handleDuplicateQuestion = (index: number) => {
+    if (questions.length >= MAX_QUESTIONS) return;
+    const source = questions[index];
+    if (!source) return;
+    const newId = `q-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const cloned: Question = {
+      ...JSON.parse(JSON.stringify(source)),
+      id: newId,
+      options: source.options
+        ? source.options.map((opt, idx) => ({
+            ...opt,
+            id: `${newId}-opt-${idx + 1}`,
+          }))
+        : undefined,
+    };
+    const next = [...questions];
+    next.splice(index + 1, 0, cloned);
+    onChange(next);
   };
 
   const handleAddQuestion = (type: 'objective' | 'subjective') => {
@@ -87,6 +121,25 @@ export const QuestionList: React.FC<QuestionListProps> = ({ questions, onChange 
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          {onOpenImportModal && (
+            <button
+              type="button"
+              disabled={isLimitReached}
+              onClick={onOpenImportModal}
+              title={
+                isLimitReached
+                  ? 'Limite de 40 questões atingido.'
+                  : 'Importar questões de outras provas da biblioteca'
+              }
+              className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
+                isLimitReached
+                  ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                  : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300 shadow-2xs'
+              }`}
+            >
+              <BookOpen className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" /> Importar de Outra Prova
+            </button>
+          )}
           <button
             type="button"
             disabled={isLimitReached}
@@ -146,6 +199,12 @@ export const QuestionList: React.FC<QuestionListProps> = ({ questions, onChange 
             key={q.id}
             question={q}
             index={idx}
+            canMoveUp={idx > 0}
+            canMoveDown={idx < questions.length - 1}
+            canDuplicate={!isLimitReached}
+            onMoveUp={() => handleMoveQuestion(idx, 'up')}
+            onMoveDown={() => handleMoveQuestion(idx, 'down')}
+            onDuplicate={() => handleDuplicateQuestion(idx)}
             onChange={(updated) => handleUpdateQuestion(idx, updated)}
             onDelete={() => handleDeleteQuestion(idx)}
           />

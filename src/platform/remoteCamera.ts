@@ -58,7 +58,7 @@ export function mapPhotoResultToReport(result: PhotoResult): PhotoReportPayload 
   return {
     status: 'error',
     label: 'Não foi possível ler',
-    message: `${classified.reason || 'Foto ilegível'} — tire outra`,
+    message: `${classified.reason || 'Foto ilegível'}. tire outra`,
   };
 }
 

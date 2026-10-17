@@ -460,7 +460,7 @@
             } else if (data.status === 'error') {
               clearInterval(pollTimer);
               badge.className = 'photo-state-badge state-error';
-              badge.textContent = 'Não consegui ler — tire outra';
+              badge.textContent = 'Não consegui ler, tire outra';
               msgEl.textContent = data.message || 'Falha ao processar';
             }
           })

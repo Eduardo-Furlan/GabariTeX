@@ -54,6 +54,7 @@ export interface BatchGraderProps {
   onOpenClassManager?: () => void;
   onAddStudentToClass?: (classId: string, student: { name: string; registration?: string }) => void;
   onOpenRemoteCamera?: () => void;
+  onRunningChange?: (isRunning: boolean) => void;
   incomingRemotePhoto?: {
     file: File;
     id: string;
@@ -77,6 +78,7 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
   onOpenClassManager,
   onAddStudentToClass,
   onOpenRemoteCamera,
+  onRunningChange,
   incomingRemotePhoto,
   remoteReceivedCount: propsReceivedCount = 0,
 }) => {
@@ -120,6 +122,13 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
 
   const currentClass = classes.find((c) => c.id === activeClassId) || null;
   const summary = getBatchSummary(state.items);
+
+  useEffect(() => {
+    onRunningChange?.(state.isProcessing);
+    return () => {
+      onRunningChange?.(false);
+    };
+  }, [state.isProcessing, onRunningChange]);
 
   const handleStartRemote = async (ip?: string) => {
     setIsStartingRemote(true);
@@ -387,9 +396,9 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-6 space-y-6">
       {/* Área de Seleção e Upload em Lote */}
       <div>
-        <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100 flex-wrap gap-2">
+        <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-200 flex-wrap gap-2">
           <div className="flex items-center gap-2">
-            <Files className="w-5 h-5 text-indigo-600" />
+            <Files className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
             <h3 className="text-base font-bold text-slate-800">
               Correção em Lote de Cartões-Resposta
             </h3>
@@ -406,7 +415,7 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
                       setRemotePanelOpen(true);
                     }
                   }}
-                  className="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30 flex items-center gap-2 shadow-2xs hover:bg-emerald-100 transition cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30 flex items-center gap-2 shadow-2xs hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition cursor-pointer"
                   title="Abrir painel da câmera do celular"
                 >
                   <span className="relative flex h-2 w-2">
@@ -429,7 +438,7 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
                       }
                     }
                   }}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 transition flex items-center gap-1.5 cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 transition flex items-center gap-1.5 cursor-pointer"
                 >
                   <Smartphone className="w-3.5 h-3.5" />
                   <span>Usar câmera do celular</span>
@@ -834,7 +843,7 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
           </div>
 
           {/* Barra de Ações do Rodapé */}
-          <div className="flex items-center justify-between pt-3 border-t border-slate-100 flex-wrap gap-3">
+          <div className="flex items-center justify-between pt-3 border-t border-slate-200 flex-wrap gap-3">
             <span className="text-xs text-slate-500">
               {summary.saved > 0 && `${summary.saved} ${summary.saved === 1 ? 'nota já gravada' : 'notas já gravadas'}.`}
             </span>
@@ -869,7 +878,7 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
       {confirmSaveAllOpen && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl border border-slate-200 space-y-4">
-            <div className="flex items-center gap-2.5 text-amber-600">
+            <div className="flex items-center gap-2.5 text-amber-600 dark:text-amber-400">
               <AlertTriangle className="w-6 h-6 shrink-0" />
               <h4 className="text-base font-bold text-slate-800">
                 Salvar notas não revisadas?

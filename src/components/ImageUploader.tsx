@@ -96,7 +96,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
             {isProcessing ? (
               <>
                 <Loader2 className="w-6 h-6 text-indigo-500 animate-spin mb-1" />
-                <span className="text-xs font-medium text-indigo-600">Otimizando e comprimindo imagem...</span>
+                <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400">Otimizando e comprimindo imagem...</span>
               </>
             ) : (
               <>

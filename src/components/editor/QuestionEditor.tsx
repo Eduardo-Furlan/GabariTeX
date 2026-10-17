@@ -2,11 +2,25 @@ import React from 'react';
 import { Question, QuestionOption } from '../../types/exam';
 import { MathView } from '../MathView';
 import { ImageUploader } from '../ImageUploader';
-import { Trash2, Plus, CheckCircle2, Circle } from 'lucide-react';
+import {
+  Trash2,
+  Plus,
+  CheckCircle2,
+  Circle,
+  ChevronUp,
+  ChevronDown,
+  Copy,
+} from 'lucide-react';
 
 interface QuestionEditorProps {
   question: Question;
   index: number;
+  canMoveUp?: boolean;
+  canMoveDown?: boolean;
+  canDuplicate?: boolean;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+  onDuplicate?: () => void;
   onChange: (updatedQuestion: Question) => void;
   onDelete: () => void;
 }
@@ -16,6 +30,12 @@ const OPTION_LABELS: ('A' | 'B' | 'C' | 'D' | 'E')[] = ['A', 'B', 'C', 'D', 'E']
 export const QuestionEditor: React.FC<QuestionEditorProps> = ({
   question,
   index,
+  canMoveUp = false,
+  canMoveDown = false,
+  canDuplicate = true,
+  onMoveUp,
+  onMoveDown,
+  onDuplicate,
   onChange,
   onDelete,
 }) => {
@@ -95,7 +115,7 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 mb-4 transition hover:border-slate-300">
       <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100 flex-wrap gap-2">
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-          <span className="flex items-center justify-center w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 font-bold text-sm shrink-0">
+          <span className="flex items-center justify-center w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300 font-bold text-sm shrink-0">
             {index + 1}
           </span>
           <span className="font-semibold text-slate-800 text-sm sm:text-base">Questão {index + 1}</span>
@@ -126,7 +146,7 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           <div className="flex items-center gap-1.5 text-xs">
             <label htmlFor={`annulled-${question.id}`} className="font-medium text-slate-600">
               Situação:
@@ -168,14 +188,53 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
             <span className="text-xs text-slate-500">pt</span>
           </div>
 
-          <button
-            type="button"
-            onClick={onDelete}
-            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 dark:hover:text-rose-300 rounded-lg transition"
-            title="Excluir questão"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-0.5 border-l border-slate-200 pl-2">
+            {onMoveUp && (
+              <button
+                type="button"
+                disabled={!canMoveUp}
+                onClick={onMoveUp}
+                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition disabled:opacity-30 disabled:pointer-events-none"
+                title="Mover questão para cima"
+                aria-label="Mover questão para cima"
+              >
+                <ChevronUp className="w-4 h-4" />
+              </button>
+            )}
+            {onMoveDown && (
+              <button
+                type="button"
+                disabled={!canMoveDown}
+                onClick={onMoveDown}
+                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition disabled:opacity-30 disabled:pointer-events-none"
+                title="Mover questão para baixo"
+                aria-label="Mover questão para baixo"
+              >
+                <ChevronDown className="w-4 h-4" />
+              </button>
+            )}
+            {onDuplicate && (
+              <button
+                type="button"
+                disabled={!canDuplicate}
+                onClick={onDuplicate}
+                className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg transition disabled:opacity-30 disabled:pointer-events-none"
+                title="Duplicar questão"
+                aria-label="Duplicar questão"
+              >
+                <Copy className="w-4 h-4" />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onDelete}
+              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 dark:hover:text-rose-300 rounded-lg transition"
+              title="Excluir questão"
+              aria-label="Excluir questão"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -216,7 +275,7 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
                 key={btn.label}
                 type="button"
                 onClick={() => insertMathSnippet(btn.val)}
-                className="px-1.5 py-0.5 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-950 dark:hover:text-indigo-300 border border-slate-200 rounded font-mono text-[10px]"
+                className="px-1.5 py-0.5 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-500/20 dark:hover:text-indigo-300 border border-slate-200 rounded font-mono text-[10px]"
               >
                 {btn.label}
               </button>
@@ -273,7 +332,7 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
                 key={opt.id}
                 className={`flex items-start gap-2 p-2.5 rounded-lg border transition ${
                   opt.isCorrect
-                    ? 'border-emerald-300 bg-emerald-50/40 dark:border-emerald-700/60 dark:bg-emerald-950/30'
+                    ? 'border-emerald-300 bg-emerald-50/40 dark:border-emerald-500/30 dark:bg-emerald-500/10'
                     : 'border-slate-200 bg-slate-50/50'
                 }`}
               >
@@ -284,7 +343,7 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
                   title={opt.isCorrect ? 'Alternativa Correta' : 'Marcar como correta'}
                 >
                   {opt.isCorrect ? (
-                    <CheckCircle2 className="w-5 h-5 text-emerald-600 fill-emerald-100 dark:text-emerald-400 dark:fill-emerald-950" />
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600 fill-emerald-100 dark:text-emerald-400 dark:fill-emerald-500/20" />
                   ) : (
                     <Circle className="w-5 h-5 text-slate-400" />
                   )}

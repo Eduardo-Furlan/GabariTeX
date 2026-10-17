@@ -98,7 +98,7 @@ export const RemoteCameraPanel: React.FC<RemoteCameraPanelProps> = ({
     >
       <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full max-h-[90vh] overflow-y-auto p-5 sm:p-6 space-y-5">
         {/* Cabeçalho */}
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-200">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
               <Smartphone className="w-5 h-5" />
@@ -170,7 +170,7 @@ export const RemoteCameraPanel: React.FC<RemoteCameraPanelProps> = ({
         {/* Estado: Iniciando */}
         {isStarting && (
           <div className="py-12 text-center space-y-3">
-            <Loader2 className="w-8 h-8 animate-spin text-indigo-600 mx-auto" />
+            <Loader2 className="w-8 h-8 animate-spin text-indigo-600 dark:text-indigo-400 mx-auto" />
             <p className="text-xs font-semibold text-slate-600">
               Iniciando servidor local e gerando chave de pareamento...
             </p>
@@ -183,7 +183,7 @@ export const RemoteCameraPanel: React.FC<RemoteCameraPanelProps> = ({
             {/* Bloco do QR Code */}
             <div className="flex flex-col items-center justify-center p-4 bg-slate-50 rounded-xl border border-slate-200 text-center">
               {qrDataUrl ? (
-                <div className="p-3 bg-white rounded-xl shadow-xs border border-slate-200 mb-2">
+                <div className="p-3 bg-[#ffffff] rounded-xl shadow-xs border border-slate-200 mb-2">
                   <img
                     src={qrDataUrl}
                     alt="QR Code para conectar a câmera do celular"
@@ -223,8 +223,8 @@ export const RemoteCameraPanel: React.FC<RemoteCameraPanelProps> = ({
                 >
                   {copied ? (
                     <>
-                      <Check className="w-3.5 h-3.5 text-emerald-600" />
-                      <span className="text-[11px] font-bold text-emerald-600">Copiado</span>
+                      <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">Copiado</span>
                     </>
                   ) : (
                     <>
@@ -292,7 +292,7 @@ export const RemoteCameraPanel: React.FC<RemoteCameraPanelProps> = ({
         )}
 
         {/* Seção de Ajuda "Não Conecta?" */}
-        <div className="border-t border-slate-100 pt-3">
+        <div className="border-t border-slate-200 pt-3">
           <button
             type="button"
             onClick={() => setShowHelp((prev) => !prev)}

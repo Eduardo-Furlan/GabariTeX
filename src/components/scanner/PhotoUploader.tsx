@@ -548,7 +548,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
           <div className="text-xs font-bold text-slate-800 mb-2 flex items-center justify-between">
             <span>O que você deseja escanear agora?</span>
             {!activePayload && (
-              <span className="text-[11px] font-medium text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-800/80">
+              <span className="text-[11px] font-medium text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-500/15 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-500/30">
                 Trave uma versão antes de ler o gabarito
               </span>
             )}
@@ -572,7 +572,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
               <div
                 className={`p-2 rounded-lg ${
                   scanTarget === 'qr'
-                    ? 'bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300'
+                    ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300'
                     : 'bg-slate-200/80 text-slate-700'
                 }`}
               >
@@ -622,7 +622,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
                   !activePayload
                     ? 'bg-slate-200/40 text-slate-400'
                     : scanTarget === 'sheet'
-                    ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300'
+                    ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
                     : 'bg-slate-200/80 text-slate-700'
                 }`}
               >
@@ -640,7 +640,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
                 >
                   <span>2. Ler Folha de Gabarito</span>
                   {activePayload && (
-                    <span className="text-[10px] px-1.5 py-0.2 bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 rounded font-black">
+                    <span className="text-[10px] px-1.5 py-0.2 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30 rounded font-black">
                       Versão {activePayload.version}
                     </span>
                   )}
@@ -711,14 +711,14 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
               disabled={isProcessing}
               className={`w-full py-4 px-5 font-extrabold text-sm rounded-xl border-2 transition flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50 active:scale-[0.99] shadow-xs ${
                 isRemoteConnected
-                  ? 'border-emerald-300 dark:border-emerald-500/40 bg-emerald-50/70 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100'
-                  : 'border-dashed border-indigo-300 dark:border-indigo-500/40 bg-indigo-50/70 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100'
+                  ? 'border-emerald-300 dark:border-emerald-500/40 bg-emerald-50/70 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-500/20'
+                  : 'border-dashed border-indigo-300 dark:border-indigo-500/40 bg-indigo-50/70 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-500/20'
               }`}
             >
               <Smartphone className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
               <span>
                 {isRemoteConnected
-                  ? 'Celular Conectado — Ver QR Code / Instruções'
+                  ? 'Celular Conectado. Ver QR Code / Instruções'
                   : 'Tirar Foto com a Câmera do Celular (Parear por QR Code)'}
               </span>
             </button>
@@ -852,7 +852,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
 
       <div className="mt-6 p-4 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 space-y-1.5">
         <p className="font-bold text-slate-800 flex items-center gap-1.5">
-          <Sparkles className="w-3.5 h-3.5 text-indigo-600" /> Como funciona o alinhamento OMR:
+          <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" /> Como funciona o alinhamento OMR:
         </p>
         <p>
           • Os <strong>fiduciais de canto</strong> mapeiam a folha e retificam a perspectiva em tempo real, compensando inclinações e distorções de lente.

@@ -264,6 +264,7 @@ function buildRecordFromNativeResponse(
     studentId: '',
     versionLetter: targetPayload.version,
     examId: targetPayload.examId,
+    examFingerprint: targetPayload.examFingerprint || undefined,
     totalScore: 0,
     maxScore: 0,
     percentage: 0,

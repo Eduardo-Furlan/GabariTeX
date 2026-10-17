@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { Exam, ExamVersion, GradingRecord, Classroom } from '../types/exam';
+import { Exam, ExamVersion, GradingRecord, Classroom, Question } from '../types/exam';
 import { ProfileData, ProfileSettings, ExamMeta } from '../types/profile';
 import { initialSampleExam, emptyExam } from '../utils/sampleExam';
 import { generateExamVersions } from '../utils/randomizer';
@@ -55,16 +55,14 @@ export interface ProfileContextType {
   // Modals e painéis
   isExportImportOpen: boolean;
   setIsExportImportOpen: (open: boolean) => void;
-  isClassManagerOpen: boolean;
-  setIsClassManagerOpen: (open: boolean) => void;
-  isLibraryOpen: boolean;
-  setIsLibraryOpen: (open: boolean) => void;
   exportProfileData: ProfileData | null;
   setExportProfileData: (data: ProfileData | null) => void;
 
   // Scanner e Correção
   scannerMode: 'single' | 'batch';
   setScannerMode: (m: 'single' | 'batch') => void;
+  isBatchProcessing: boolean;
+  setIsBatchProcessing: (b: boolean) => void;
   activePayload: DecryptedQrPayload | null;
   setActivePayload: (p: DecryptedQrPayload | null) => void;
   handleLockPayload: (p: DecryptedQrPayload | null) => void;
@@ -90,6 +88,9 @@ export interface ProfileContextType {
   shareExam: (id: string) => Promise<void>;
   loadSampleMathExam: () => Promise<void>;
   updateExam: (updated: Exam) => void;
+  moveQuestion: (questionId: string, direction: 'up' | 'down') => void;
+  duplicateQuestion: (questionId: string) => Question | undefined;
+  importQuestions: (questionsToImport: Question[]) => number;
   clearCurrentExam: () => void;
   updateTeacherPassword: (newPass: string) => void;
 
@@ -129,11 +130,10 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return loadActiveClassIdFromStorage();
   });
 
-  const [isClassManagerOpen, setIsClassManagerOpen] = useState<boolean>(false);
-  const [isLibraryOpen, setIsLibraryOpen] = useState<boolean>(false);
   const [isExportImportOpen, setIsExportImportOpen] = useState<boolean>(false);
   const [exportProfileData, setExportProfileData] = useState<ProfileData | null>(null);
   const [scannerMode, setScannerMode] = useState<'single' | 'batch'>('single');
+  const [isBatchProcessing, setIsBatchProcessing] = useState<boolean>(false);
 
   const [gradingSession, setGradingSession] = useState<{
     record: GradingRecord;
@@ -761,22 +761,131 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
     []
   );
 
+  const moveQuestion = useCallback(
+    (questionId: string, direction: 'up' | 'down') => {
+      const idx = exam.questions.findIndex((q) => q.id === questionId);
+      if (idx === -1) return;
+      const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+      if (targetIdx < 0 || targetIdx >= exam.questions.length) return;
+      const reordered = [...exam.questions];
+      const [moved] = reordered.splice(idx, 1);
+      reordered.splice(targetIdx, 0, moved);
+      updateExam({ ...exam, questions: reordered });
+    },
+    [exam, updateExam]
+  );
+
+  const duplicateQuestion = useCallback(
+    (questionId: string): Question | undefined => {
+      const idx = exam.questions.findIndex((q) => q.id === questionId);
+      if (idx === -1) return undefined;
+      if (!isWithinLimit(exam.questions.length + 1)) {
+        alert(
+          `A prova não pode exceder ${MAX_QUESTIONS} questões (máximo suportado na folha de respostas A4).`
+        );
+        return undefined;
+      }
+      const source = exam.questions[idx];
+      const cloned: Question = {
+        ...JSON.parse(JSON.stringify(source)),
+        id: crypto.randomUUID(),
+        options: source.options
+          ? source.options.map((opt) => ({
+              ...opt,
+              id: crypto.randomUUID(),
+            }))
+          : undefined,
+      };
+      const nextQuestions = [...exam.questions];
+      nextQuestions.splice(idx + 1, 0, cloned);
+      updateExam({ ...exam, questions: nextQuestions });
+      return cloned;
+    },
+    [exam, updateExam]
+  );
+
+  const importQuestions = useCallback(
+    (questionsToImport: Question[]): number => {
+      if (questionsToImport.length === 0) return 0;
+      const availableSlots = MAX_QUESTIONS - exam.questions.length;
+      if (availableSlots <= 0) {
+        alert(
+          `A prova já atingiu o limite máximo de ${MAX_QUESTIONS} questões.`
+        );
+        return 0;
+      }
+      const slice = questionsToImport.slice(0, availableSlots);
+      const clonedList: Question[] = slice.map((q) => ({
+        ...JSON.parse(JSON.stringify(q)),
+        id: crypto.randomUUID(),
+        options: q.options
+          ? q.options.map((opt) => ({
+              ...opt,
+              id: crypto.randomUUID(),
+            }))
+          : undefined,
+      }));
+      updateExam({
+        ...exam,
+        questions: [...exam.questions, ...clonedList],
+      });
+      return clonedList.length;
+    },
+    [exam, updateExam]
+  );
+
   const clearCurrentExam = useCallback(() => {
     if (
       confirm(
         'Tem certeza de que deseja limpar todas as questões e instruções da prova atual?'
       )
     ) {
+      const now = new Date().toISOString();
       const cleared: Exam = {
         ...emptyExam,
         id: exam.id,
         password: exam.password || generateExamPassword(8),
-        updatedAt: new Date().toISOString(),
+        updatedAt: now,
       };
       setExam(cleared);
       setVersions([]);
+      setExams((prev) =>
+        prev.map((m) =>
+          m.id === cleared.id
+            ? {
+                ...m,
+                name: cleared.header.examTitle || 'Sem título',
+                questionCount: cleared.questions.length,
+                updatedAt: now,
+              }
+            : m
+        )
+      );
     }
   }, [exam.id, exam.password]);
+
+  // Mantém recordCount sincronizado automaticamente com a lista de registros
+  useEffect(() => {
+    if (isLoadingProfile) return;
+    const counts: Record<string, number> = {};
+    for (const r of records) {
+      if (r.examId) {
+        counts[r.examId] = (counts[r.examId] || 0) + 1;
+      }
+    }
+    setExams((prev) => {
+      let changed = false;
+      const next = prev.map((e) => {
+        const actual = counts[e.id] || 0;
+        if (e.recordCount !== actual) {
+          changed = true;
+          return { ...e, recordCount: actual };
+        }
+        return e;
+      });
+      return changed ? next : prev;
+    });
+  }, [records, isLoadingProfile]);
 
   const updateClasses = useCallback(
     (clsOrUpdater: Classroom[] | ((prev: Classroom[]) => Classroom[])) => {
@@ -837,12 +946,6 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       setRecords((prev) => [recordToStore, ...prev.filter((r) => r.id !== recordToStore.id)]);
 
-      setExams((prev) =>
-        prev.map((e) =>
-          e.id === recordToStore.examId ? { ...e, recordCount: e.recordCount + 1 } : e
-        )
-      );
-
       if (options?.newStudentToClass) {
         handleAddStudentToClass(options.newStudentToClass.classId, {
           name: options.newStudentToClass.name,
@@ -881,19 +984,6 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
         const filtered = prev.filter((r) => !newIds.has(r.id));
         return [...stamped, ...filtered];
       });
-
-      const countByExam: Record<string, number> = {};
-      stamped.forEach((r) => {
-        const eId = r.examId;
-        if (eId) countByExam[eId] = (countByExam[eId] || 0) + 1;
-      });
-
-      setExams((prev) =>
-        prev.map((e) => {
-          const added = countByExam[e.id] || 0;
-          return added > 0 ? { ...e, recordCount: e.recordCount + added } : e;
-        })
-      );
     },
     [exam.id, activePayload, exams, ensureExamExists]
   );
@@ -966,15 +1056,13 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     isExportImportOpen,
     setIsExportImportOpen,
-    isClassManagerOpen,
-    setIsClassManagerOpen,
-    isLibraryOpen,
-    setIsLibraryOpen,
     exportProfileData,
     setExportProfileData,
 
     scannerMode,
     setScannerMode,
+    isBatchProcessing,
+    setIsBatchProcessing,
     activePayload,
     setActivePayload,
     handleLockPayload,
@@ -995,6 +1083,9 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
     shareExam,
     loadSampleMathExam,
     updateExam,
+    moveQuestion,
+    duplicateQuestion,
+    importQuestions,
     clearCurrentExam,
     updateTeacherPassword,
 
