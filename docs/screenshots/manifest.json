@@ -349,5 +349,105 @@
     ],
     "alt": "Editor de questão dissertativa com configuração de linhas pautadas",
     "caption": "Configuração de questão dissertativa com linhas pautadas no caderno de prova."
+  },
+  {
+    "id": "imprimir-01-central",
+    "page": "imprimir",
+    "after": "Na barra superior da tela **Central de Impressão A4 / Exportação PDF**, escolha o modo de impressão desejado.",
+    "target": "desktop",
+    "window": "1280x800",
+    "screen": "PrintScreen Toolbar",
+    "state": "Central de Impressão toolbar with print modes and version selection",
+    "setup": "Navigate to step Imprimir with the demo exam active",
+    "mustShow": [
+      "Central de Impressão A4 / Exportação PDF",
+      "Prova Completa",
+      "Apenas Caderno",
+      "Apenas Cartão",
+      "Imprimir / Salvar PDF"
+    ],
+    "mustNotShow": ["OS taskbar", "external windows"],
+    "crop": "Top toolbar of the PrintScreen at 1280x800",
+    "callouts": [
+      {
+        "n": 1,
+        "target": "Print mode buttons group",
+        "label": "Modos de impressão: Prova Completa, Apenas Caderno, Apenas Cartão"
+      },
+      {
+        "n": 2,
+        "target": "Imprimir / Salvar PDF action button",
+        "label": "Imprimir / Salvar PDF"
+      }
+    ],
+    "alt": "Barra de ferramentas da Central de Impressão com seleção de modos e botão de imprimir",
+    "caption": "Central de Impressão com seleção de cadernos e folhas de resposta."
+  },
+  {
+    "id": "imprimir-02-cartao-resposta",
+    "page": "imprimir",
+    "after": "Selecione **Apenas Cartão** para inspecionar a folha padronizada com os quatro marcadores fiduciais nos cantos e o código QR.",
+    "target": "desktop",
+    "window": "1280x800",
+    "screen": "AnswerSheetView A4 Page Preview",
+    "state": "A4 Answer sheet preview showing fiducial squares, row sync markers, and QR code",
+    "setup": "Click Apenas Cartão in the PrintScreen toolbar",
+    "mustShow": [
+      "CADERNO DE PROVA",
+      "GABARITO CRIPTOGRAFADO",
+      "Folha 1 de 1 (Gabarito Oficial)",
+      "ASSINATURA DO ALUNO(A):"
+    ],
+    "mustNotShow": ["OS borders"],
+    "crop": "Full A4 page preview of the answer sheet",
+    "callouts": [
+      {
+        "n": 1,
+        "target": "Encrypted QR code box",
+        "label": "Código QR com gabarito criptografado"
+      },
+      {
+        "n": 2,
+        "target": "Top-left and corner fiducial square markers",
+        "label": "Marcadores fiduciais nos 4 cantos"
+      },
+      {
+        "n": 3,
+        "target": "Row sync squares next to questions",
+        "label": "Grade de bolinhas com sincronizadores"
+      }
+    ],
+    "alt": "Visualização da folha de respostas A4 padronizada com código QR e marcadores",
+    "caption": "Folha de respostas oficial com código QR encriptado e marcadores fiduciais."
+  },
+  {
+    "id": "imprimir-03-todas-versoes",
+    "page": "imprimir",
+    "after": "Clique na opção **Todas** para reunir os cadernos e gabaritos de todas as versões em uma única saída de impressão.",
+    "target": "desktop",
+    "window": "1280x800",
+    "screen": "PrintScreen All Versions Mode",
+    "state": "All versions mode selected showing version count button and document flow",
+    "setup": "Click Todas (2) button in the PrintScreen toolbar",
+    "mustShow": [
+      "Todas",
+      "Imprimir / Salvar PDF"
+    ],
+    "mustNotShow": ["OS clutter"],
+    "crop": "Print toolbar and multi-version document separator",
+    "callouts": [
+      {
+        "n": 1,
+        "target": "Todas version button",
+        "label": "Opção para imprimir todas as versões de uma só vez"
+      },
+      {
+        "n": 2,
+        "target": "Imprimir / Salvar PDF button",
+        "label": "Imprimir / Salvar PDF"
+      }
+    ],
+    "alt": "Modo de impressão com todas as versões combinadas para envio à impressora",
+    "caption": "Impressão em lote de todas as versões randomizadas em um único arquivo."
   }
 ]
