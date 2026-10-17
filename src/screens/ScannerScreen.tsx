@@ -558,26 +558,97 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
             )}
           </div>
         ) : (
-          <div className="max-w-2xl mx-auto my-8">
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 sm:p-10 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 flex items-center justify-center text-indigo-600 dark:text-indigo-300 mx-auto mb-5">
+          <div className="max-w-3xl mx-auto my-6 sm:my-10 space-y-8 animate-in fade-in duration-200">
+            {/* Cartão Principal de Apresentação e Download */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-10 text-center relative overflow-hidden">
+              <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 flex items-center justify-center text-indigo-600 dark:text-indigo-300 mx-auto mb-4 shadow-2xs">
                 <Monitor className="w-8 h-8" />
               </div>
 
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-500/20 border border-amber-300 dark:border-amber-500/40 text-amber-800 dark:text-amber-300 text-xs font-bold uppercase tracking-wider mb-4">
-                Em Breve (Coming Soon)
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 text-indigo-700 dark:text-indigo-300 text-xs font-bold uppercase tracking-wider mb-3">
+                <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-300" />
+                Disponível para Download no GitHub
               </div>
 
-              <h2 className="text-xl font-bold text-slate-800">
-                Corretor Óptico (OMR) Exclusivo no Aplicativo Desktop
+              <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+                Corretor Óptico (OMR) no GabariTeX Desktop
               </h2>
 
-              <p className="text-sm text-slate-600 mt-3 leading-relaxed max-w-lg mx-auto">
-                Para garantir leitura óptica de alta precisão com processamento nativo de imagem (OpenCV), a correção automática de folhas de respostas não está disponível diretamente no navegador.
+              <p className="text-sm text-slate-600 mt-3 leading-relaxed max-w-xl mx-auto">
+                Para alcançar leitura óptica de alta precisão com processamento em tempo real, detecção por marcadores fiduciais e calibração de perspectiva via <strong>OpenCV nativo</strong>, o corretor automatizado é executado pelo aplicativo desktop oficial.
               </p>
 
-              <div className="mt-6 p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 leading-relaxed max-w-md mx-auto">
-                Para utilizar o corretor OMR, será necessário baixar o <strong>aplicativo desktop do GabariTeX</strong> (disponível em breve para Windows, macOS e Linux). Você pode continuar criando, embaralhando e imprimindo suas provas e folhas de respostas normalmente por aqui.
+              {/* Botão de Ação Primária: Baixar Última Release */}
+              <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+                <a
+                  href="https://github.com/Eduardo-Furlan/GabariTeX/releases/latest"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-on-accent text-sm font-bold shadow-md hover:shadow-lg transition-all"
+                >
+                  <Monitor className="w-4 h-4" />
+                  <span>Baixar GabariTeX Desktop (GitHub Releases)</span>
+                </a>
+
+                <button
+                  type="button"
+                  onClick={() => onNavigate({ type: 'exams' })}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold transition"
+                >
+                  <FileText className="w-4 h-4 text-slate-500" />
+                  <span>Continuar na Versão Web</span>
+                </button>
+              </div>
+
+              <p className="text-[11px] text-slate-600 mt-3">
+                Binários disponíveis para <strong>Linux (.deb, .AppImage, .rpm)</strong> e <strong>Windows (.exe, .msi)</strong>.
+              </p>
+            </div>
+
+            {/* Grid de Benefícios do Aplicativo Desktop */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-2xs">
+                <div className="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 flex items-center justify-center text-indigo-600 dark:text-indigo-300 mb-3">
+                  <Camera className="w-4 h-4" />
+                </div>
+                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
+                  Processamento OpenCV
+                </h3>
+                <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                  Correção óptica sub-milimétrica com correção de inclinação e perspectiva mesmo em fotos tiradas com iluminação imperfeita.
+                </p>
+              </div>
+
+              <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-2xs">
+                <div className="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-300 mb-3">
+                  <Smartphone className="w-4 h-4" />
+                </div>
+                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
+                  Câmera Sem Fio
+                </h3>
+                <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                  Conecte seu smartphone via Wi-Fi local escaneando um QR Code. Tire fotos das provas no celular e receba a nota instantaneamente no computador.
+                </p>
+              </div>
+
+              <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-2xs">
+                <div className="w-9 h-9 rounded-lg bg-sky-50 dark:bg-sky-500/10 border border-sky-200 dark:border-sky-500/30 flex items-center justify-center text-sky-600 dark:text-sky-300 mb-3">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
+                  Segurança AES-256
+                </h3>
+                <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                  O gabarito oficial viaja criptografado dentro do próprio cartão-resposta. Nenhum banco de dados remoto ou conexão à internet é exigida.
+                </p>
+              </div>
+            </div>
+
+            {/* Aviso de Compatibilidade Total Web <-> Desktop */}
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 sm:p-5 text-xs text-slate-600 leading-relaxed flex items-start gap-3">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-300 shrink-0 mt-0.5" />
+              <div>
+                <strong className="text-slate-800">100% de Compatibilidade entre Web e Desktop:</strong> Você pode elaborar avaliações, formatar equações em LaTeX, embaralhar versões e imprimir cadernos e folhas A4 diretamente pelo navegador. Todos os dados e turmas podem ser exportados como arquivo de perfil (.zip) e abertos sem perdas no aplicativo desktop.
               </div>
             </div>
           </div>

@@ -2,7 +2,12 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
-const isDesktop = Boolean(process.env.TAURI_ENV_PLATFORM);
+const isDesktop =
+  process.env.VITE_TARGET === 'web'
+    ? false
+    : process.env.VITE_TARGET === 'desktop'
+      ? true
+      : Boolean(process.env.TAURI_ENV_PLATFORM);
 
 // https://vitejs.dev/config/
 export default defineConfig({
