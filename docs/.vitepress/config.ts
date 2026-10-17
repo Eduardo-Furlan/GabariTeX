@@ -27,6 +27,48 @@ export default defineConfig({
     lastUpdated: {
       text: 'Última atualização',
     },
+    nav: [
+      { text: 'Início', link: '/' },
+      { text: 'Guia de Uso', link: '/primeiros-passos' },
+      { text: 'Problemas Comuns', link: '/problemas-comuns' },
+      { text: 'Sobre', link: '/sobre' },
+    ],
+    sidebar: [
+      {
+        text: 'Começando',
+        items: [
+          { text: 'Visão Geral', link: '/' },
+          { text: 'Instalação', link: '/instalacao' },
+          { text: 'Primeiros Passos', link: '/primeiros-passos' },
+        ],
+      },
+      {
+        text: 'Elaboração e Impressão',
+        items: [
+          { text: 'Criação de Provas', link: '/criar-prova' },
+          { text: 'Impressão de Cadernos e Gabaritos', link: '/imprimir' },
+        ],
+      },
+      {
+        text: 'Correção e Notas',
+        items: [
+          { text: 'Correção de Folhas de Resposta', link: '/corrigir' },
+          { text: 'Câmera do Celular como Leitor', link: '/camera-celular' },
+          { text: 'Turmas e Livro de Notas', link: '/turmas-notas' },
+        ],
+      },
+      {
+        text: 'Gerenciamento e Ajuda',
+        items: [
+          { text: 'Perfis e Backup', link: '/perfis-backup' },
+          { text: 'Problemas Comuns', link: '/problemas-comuns' },
+          { text: 'Sobre o GabariTeX', link: '/sobre' },
+        ],
+      },
+    ],
+    socialLinks: [
+      { icon: 'github', link: 'https://github.com/Eduardo-Furlan/GabariTeX' },
+    ],
     search: {
       provider: 'local',
       options: {
