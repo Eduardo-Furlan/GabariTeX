@@ -449,5 +449,155 @@
     ],
     "alt": "Modo de impressão com todas as versões combinadas para envio à impressora",
     "caption": "Impressão em lote de todas as versões randomizadas em um único arquivo."
+  },
+  {
+    "id": "corrigir-01-tela-inicial",
+    "page": "corrigir",
+    "after": "No menu superior, clique em **Corretor** e confirme se o banner exibe a prova ativa e o painel **Corretor Óptico em 2 Passos**.",
+    "target": "desktop",
+    "window": "1280x800",
+    "screen": "Scanner Screen Overview",
+    "state": "Corretor Óptico em 2 Passos showing password input and Foto Individual/Em Lote mode tabs",
+    "setup": "Navigate to Corretor in desktop app with Escola Exemplo active",
+    "mustShow": [
+      "Corretor Óptico em 2 Passos",
+      "Foto Individual",
+      "Em Lote",
+      "Câmera do Celular"
+    ],
+    "mustNotShow": ["OS taskbar", "external windows"],
+    "crop": "Full app window at 1280x800",
+    "callouts": [
+      {
+        "n": 1,
+        "target": "Foto Individual and Em Lote mode selector tabs",
+        "label": "Modos de correção: Foto Individual ou Em Lote"
+      },
+      {
+        "n": 2,
+        "target": "Exam password input field",
+        "label": "Senha da Prova (QR Code)"
+      }
+    ],
+    "alt": "Tela do corretor óptico com abas de correção e campo de senha da prova",
+    "caption": "Tela inicial do corretor com abas de modo e senha da avaliação."
+  },
+  {
+    "id": "corrigir-02-travar-versao",
+    "page": "corrigir",
+    "after": "No modo **Foto Individual**, posicione ou envie primeiro a foto de aproximação do código QR para que o sistema identifique a versão.",
+    "target": "desktop",
+    "window": "1280x800",
+    "screen": "PhotoUploader Step 1 QR Lock",
+    "state": "PhotoUploader displaying Step 1 QR Lock container and camera trigger",
+    "setup": "Select Foto Individual mode in Corretor",
+    "mustShow": [
+      "Corretor Óptico em 2 Passos",
+      "Foto Individual"
+    ],
+    "mustNotShow": ["OS clutter"],
+    "crop": "Step 1 QR lock container area",
+    "callouts": [
+      {
+        "n": 1,
+        "target": "Step 1 QR lock box",
+        "label": "Passo 1: Leitura do código QR da folha"
+      },
+      {
+        "n": 2,
+        "target": "QR upload or camera capture button",
+        "label": "Carregar imagem do código QR"
+      }
+    ],
+    "alt": "Passo 1 do corretor para identificação e trava da versão da prova",
+    "caption": "Passo 1: leitura de aproximação do código QR para destravar a versão da folha."
+  },
+  {
+    "id": "corrigir-03-upload-folha",
+    "page": "corrigir",
+    "after": "Alterne para o modo **Em Lote** para abrir a área de importação coletiva de folhas de resposta.",
+    "target": "desktop",
+    "window": "1280x800",
+    "screen": "BatchGrader Dropzone",
+    "state": "Em Lote mode active displaying batch dropzone for multiple images",
+    "setup": "Click the Em Lote tab in Corretor",
+    "mustShow": [
+      "Em Lote"
+    ],
+    "mustNotShow": ["OS clutter"],
+    "crop": "BatchGrader dropzone box at 1280x800",
+    "callouts": [
+      {
+        "n": 1,
+        "target": "Batch files drag-and-drop zone",
+        "label": "Área de envio de fotos em lote"
+      },
+      {
+        "n": 2,
+        "target": "Browse file selection button",
+        "label": "Selecionar arquivos de imagem do computador"
+      }
+    ],
+    "alt": "Área de importação em lote para arrastar múltiplas fotos de gabaritos",
+    "caption": "Envio de múltiplos gabaritos para processamento automático em fila."
+  },
+  {
+    "id": "corrigir-04-revisao-marcas",
+    "page": "corrigir",
+    "after": "Se alguma bolinha estiver marcada com rasura ou preenchimento parcial, confira a leitura na janela de revisão.",
+    "target": "desktop",
+    "window": "1280x800",
+    "screen": "Grading Review Modal",
+    "state": "GradingModal displaying ambiguous answer comparison and student score",
+    "setup": "Open grading modal for an ambiguous detection in the demo class",
+    "mustShow": [
+      "Salvar Nota no Livro"
+    ],
+    "mustNotShow": ["OS clutter"],
+    "crop": "GradingModal review dialog box",
+    "callouts": [
+      {
+        "n": 1,
+        "target": "Ambiguous question review option",
+        "label": "Inspeção de marcação ambígua ou rasurada"
+      },
+      {
+        "n": 2,
+        "target": "Confirm score button",
+        "label": "Pontuação calculada e botão de confirmação"
+      }
+    ],
+    "alt": "Janela de revisão de correção com detalhamento de alternativas e ajuste manual",
+    "caption": "Revisão individual de marcações ambíguas e confirmação manual."
+  },
+  {
+    "id": "corrigir-05-lote-processado",
+    "page": "corrigir",
+    "after": "Ao término do processamento da fila, confirme as notas calculadas e grave o resultado no histórico da turma.",
+    "target": "desktop",
+    "window": "1280x800",
+    "screen": "BatchGrader Results List",
+    "state": "Batch queue processed with green checkmarks and computed scores",
+    "setup": "Complete batch grading of demo sheets",
+    "mustShow": [
+      "Em Lote",
+      "Corretor"
+    ],
+    "mustNotShow": ["OS clutter"],
+    "crop": "BatchGrader processed results table",
+    "callouts": [
+      {
+        "n": 1,
+        "target": "Processed sheet row with student name and grade",
+        "label": "Lista de folhas processadas com notas calculadas"
+      },
+      {
+        "n": 2,
+        "target": "Save batch grades button",
+        "label": "Confirmação e gravação no Livro de Notas"
+      }
+    ],
+    "alt": "Lista de folhas corrigidas em lote prontas para gravação no livro de notas",
+    "caption": "Resumo do lote com notas individuais e envio para o diário da turma."
   }
 ]
