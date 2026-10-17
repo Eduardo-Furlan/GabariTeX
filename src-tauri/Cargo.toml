@@ -1,6 +1,6 @@
 [package]
 name = "gabaritex"
-version = "0.3.0"
+version = "1.0.0"
 
 description = "GabariTeX - Criador e Corretor de Provas"
 authors = ["Eduardo Furlan", "Eduardo C. Lunardi"]

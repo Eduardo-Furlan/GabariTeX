@@ -11,7 +11,7 @@
 
 <br />
 
-[**Acessar Versão Web (GitHub Pages)**](https://eduardo-furlan.github.io/GabariTeX/) • [**Baixar Aplicativo Desktop (GitHub Releases)**](https://github.com/Eduardo-Furlan/GabariTeX/releases/latest) • [**Reportar Problema**](https://github.com/Eduardo-Furlan/GabariTeX/issues)
+[**Acessar Versão Web (GitHub Pages)**](https://eduardo-furlan.github.io/GabariTeX/) • [**Baixar Aplicativo Desktop**](https://github.com/Eduardo-Furlan/GabariTeX/releases/latest) • [**Reportar Problema**](https://github.com/Eduardo-Furlan/GabariTeX/issues)
 
 <br />
 
