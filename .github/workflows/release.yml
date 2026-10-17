@@ -44,6 +44,15 @@ jobs:
           node-version: 20
           cache: "npm"
 
+      - name: Validate version consistency
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            node scripts/check-version.mjs "$GITHUB_REF_NAME"
+          else
+            node scripts/check-version.mjs
+          fi
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
@@ -106,11 +115,23 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: v__VERSION__
-          releaseName: "GabariTeX v__VERSION__"
-          releaseBody: "Versão de teste / pré-lançamento do GabariTeX para Linux e Windows."
+          tagName: ${{ github.event_name == 'push' && github.ref_name || 'v__VERSION__' }}
+          releaseName: "GabariTeX ${{ github.event_name == 'push' && github.ref_name || 'v__VERSION__' }}"
+          releaseBody: |
+            GabariTeX é um gerador e corretor óptico de provas com suporte a fórmulas em LaTeX, folhas de respostas com QR Code criptografado e correção por câmera ou fotos.
+
+            ### Versão Web (PWA)
+            A versão web para criação e impressão de provas está disponível em: https://eduardo-furlan.github.io/GabariTeX/
+
+            ### Instalação no Linux
+            - **`.AppImage`**: torne o arquivo executável (`chmod +x GabariTeX_*.AppImage`) e execute-o diretamente.
+            - **`.deb` / `.rpm`**: instale com o gerenciador de pacotes do sistema (por exemplo, `sudo apt install ./GabariTeX_*.deb` ou `sudo dnf install ./GabariTeX-*.rpm`).
+
+            ### Instalação no Windows
+            - Baixe e execute o instalador `.exe` (`*-setup.exe`).
+            - **Nota sobre o Windows SmartScreen**: o instalador não possui assinatura digital comercial. Caso o Windows exiba um aviso de editor desconhecido, clique em **Mais informações** e, em seguida, em **Executar assim mesmo**.
           releaseDraft: ${{ github.event_name != 'workflow_dispatch' || inputs.draft }}
-          prerelease: ${{ github.event_name != 'workflow_dispatch' || inputs.prerelease }}
+          prerelease: ${{ (github.event_name == 'workflow_dispatch' && inputs.prerelease) || (github.event_name == 'push' && contains(github.ref_name, '-')) }}
 
       - name: Upload workflow artifacts
         uses: actions/upload-artifact@v4
