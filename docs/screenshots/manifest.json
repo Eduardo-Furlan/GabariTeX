@@ -843,5 +843,128 @@
     ],
     "alt": "Espelhos de resposta individuais em formato A4 prontos para impressão e entrega",
     "caption": "Espelhos individuais de resposta com detalhamento de acertos para entrega aos alunos."
+  },
+  {
+    "id": "perfis-backup-01-menu-perfil",
+    "page": "perfis-backup",
+    "after": "No canto superior direito da janela, clique no botão **Perfil** para abrir o menu com as opções de backup e restauração.",
+    "target": "desktop",
+    "window": "1280x800",
+    "screen": "ProfileMenu Dropdown",
+    "state": "ProfileMenu open displaying Exportar Perfil (ZIP), Importar Perfil (ZIP), and count stats",
+    "setup": "Click Perfil button in top navigation bar",
+    "mustShow": [
+      "Perfil",
+      "Exportar Perfil (ZIP)",
+      "Importar Perfil (ZIP)"
+    ],
+    "mustNotShow": ["OS clutter"],
+    "crop": "Top navigation area with ProfileMenu open",
+    "callouts": [
+      {
+        "n": 1,
+        "target": "Exportar Perfil (ZIP) menu item",
+        "label": "Opção para exportar perfil em arquivo ZIP"
+      },
+      {
+        "n": 2,
+        "target": "Importar Perfil (ZIP) menu item",
+        "label": "Opção para importar backup e restaurar dados"
+      }
+    ],
+    "alt": "Menu do perfil do professor com opções de exportação e importação de arquivo ZIP",
+    "caption": "Menu de perfil com atalhos para exportação e restauração de dados."
+  },
+  {
+    "id": "perfis-backup-02-modal-exportar",
+    "page": "perfis-backup",
+    "after": "Na janela de exportação, selecione o escopo desejado e clique em **Exportar Arquivo ZIP** para salvar a cópia compactada.",
+    "target": "desktop",
+    "window": "1280x800",
+    "screen": "ProfileExportImportModal Export Tab",
+    "state": "Modal on Exportar Perfil tab with Perfil Completo selected and checkboxes checked",
+    "setup": "Open ProfileExportImportModal in export mode",
+    "mustShow": [
+      "Exportar Perfil",
+      "Arquivo de Perfil (ZIP)",
+      "Exportar Arquivo ZIP"
+    ],
+    "mustNotShow": ["OS clutter"],
+    "crop": "ProfileExportImportModal dialog box",
+    "callouts": [
+      {
+        "n": 1,
+        "target": "Escopo da Exportação radio options",
+        "label": "Seleção de escopo: Perfil Completo ou Personalizado"
+      },
+      {
+        "n": 2,
+        "target": "Export button",
+        "label": "Botão de exportação do arquivo ZIP compactado"
+      }
+    ],
+    "alt": "Janela de exportação de perfil com seleção de escopo e botão de download",
+    "caption": "Configurações de exportação de perfil com seleção de turmas, provas e notas."
+  },
+  {
+    "id": "perfis-backup-03-modal-importar",
+    "page": "perfis-backup",
+    "after": "Após selecionar o arquivo, confira o resumo dos itens identificados e clique em **Confirmar e Importar** para aplicar as informações.",
+    "target": "desktop",
+    "window": "1280x800",
+    "screen": "ProfileExportImportModal Import Summary Tab",
+    "state": "Modal on Importar Perfil tab displaying parsed content summary and merge/replace mode selector",
+    "setup": "Select a demo backup ZIP file in import tab",
+    "mustShow": [
+      "Importar Perfil",
+      "Conteúdo Identificado no Arquivo",
+      "Confirmar e Importar"
+    ],
+    "mustNotShow": ["OS clutter"],
+    "crop": "ProfileExportImportModal import summary dialog",
+    "callouts": [
+      {
+        "n": 1,
+        "target": "Content summary count boxes",
+        "label": "Contagem de provas, turmas e notas identificadas no arquivo"
+      },
+      {
+        "n": 2,
+        "target": "Merge and Replace radio options",
+        "label": "Modo de aplicação: Mesclar (recomendado) ou Substituir tudo"
+      }
+    ],
+    "alt": "Resumo dos dados encontrados no arquivo ZIP e escolha do modo de mesclagem ou substituição",
+    "caption": "Resumo do arquivo importado com opção de mesclar ou substituir o perfil."
+  },
+  {
+    "id": "perfis-backup-04-pasta-backups",
+    "page": "perfis-backup",
+    "after": "No computador, acesse a pasta de documentos para encontrar as cópias diárias salvas automaticamente pelo GabariTeX Desktop.",
+    "target": "desktop",
+    "window": "1280x800",
+    "screen": "Desktop Backups Folder",
+    "state": "File manager displaying Documentos/GabariTeX/Backups folder with daily rotated ZIP snapshots",
+    "setup": "Show file manager view of Documentos/GabariTeX/Backups with snapshot files",
+    "mustShow": [
+      "Documentos",
+      "Backups"
+    ],
+    "mustNotShow": ["Private files", "Personal user names in paths"],
+    "crop": "File manager window showing backup files",
+    "callouts": [
+      {
+        "n": 1,
+        "target": "Folder path breadcrumb",
+        "label": "Caminho da pasta: Documentos/GabariTeX/Backups"
+      },
+      {
+        "n": 2,
+        "target": "Snapshot zip files list",
+        "label": "Histórico rotativo com as cópias diárias mais recentes"
+      }
+    ],
+    "alt": "Pasta de documentos do computador com arquivos de backup diários do GabariTeX",
+    "caption": "Pasta de backups automáticos diários em Documentos/GabariTeX/Backups."
   }
 ]
