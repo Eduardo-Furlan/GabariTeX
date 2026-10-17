@@ -322,10 +322,9 @@ pub fn is_snapshot_filename(name: &str) -> bool {
         return false;
     };
     // Minimum length for YYYY-MM-DD-HHMM is 15 chars
-    if rest.len() < 15 {
+    let Some(date_part) = rest.get(..15) else {
         return false;
-    }
-    let date_part = &rest[..15];
+    };
     let bytes = date_part.as_bytes();
     let digits_ok = [0, 1, 2, 3, 5, 6, 8, 9, 11, 12, 13, 14]
         .iter()
@@ -437,7 +436,7 @@ pub async fn store_open(
     let root = get_profile_root(&app)?;
     let lock = state.write_lock.clone();
     tauri::async_runtime::spawn_blocking(move || {
-        let _guard = lock.lock().unwrap();
+        let _guard = lock.lock().unwrap_or_else(|e| e.into_inner());
         open_profile_dir(&root)
     })
     .await
@@ -487,7 +486,7 @@ pub async fn store_put(
     let root = get_profile_root(&app)?;
     let lock = state.write_lock.clone();
     tauri::async_runtime::spawn_blocking(move || {
-        let _guard = lock.lock().unwrap();
+        let _guard = lock.lock().unwrap_or_else(|e| e.into_inner());
         write_key_atomic(&root, &key, &bytes)
     })
     .await
@@ -506,7 +505,7 @@ pub async fn store_delete(
     let root = get_profile_root(&app)?;
     let lock = state.write_lock.clone();
     tauri::async_runtime::spawn_blocking(move || {
-        let _guard = lock.lock().unwrap();
+        let _guard = lock.lock().unwrap_or_else(|e| e.into_inner());
         delete_key_files(&root, &key)
     })
     .await
@@ -660,7 +659,7 @@ pub async fn snapshot_write(
 
     let lock = state.write_lock.clone();
     tauri::async_runtime::spawn_blocking(move || {
-        let _guard = lock.lock().unwrap();
+        let _guard = lock.lock().unwrap_or_else(|e| e.into_inner());
         let mut cfg = load_desktop_config(&app);
         let dir = resolve_backup_dir(&app, &cfg)?;
         fs::create_dir_all(&dir).map_err(FsCommandError::from_io)?;
@@ -780,5 +779,32 @@ mod tests {
         assert!(!backup_dir.join("gabaritex-2026-10-03-0930-auto.zip").exists());
         assert!(backup_dir.join("gabaritex-2026-10-04-0930-auto.zip").exists());
         assert!(backup_dir.join("gabaritex-2026-10-13-0930-auto.zip").exists());
+    }
+
+    #[test]
+    fn test_snapshot_filename_non_ascii_does_not_panic() {
+        assert!(!is_snapshot_filename("gabaritex-2026-10-01-093é.zip"));
+
+        let dir = tempdir().unwrap();
+        let backup_dir = dir.path();
+
+        let odd_file = "gabaritex-2026-10-01-093é.zip";
+        fs::write(backup_dir.join(odd_file), b"odd").unwrap();
+        fs::write(
+            backup_dir.join("gabaritex-2026-10-01-0930-auto.zip"),
+            b"valid1",
+        )
+        .unwrap();
+        fs::write(
+            backup_dir.join("gabaritex-2026-10-02-0930-auto.zip"),
+            b"valid2",
+        )
+        .unwrap();
+
+        rotate_snapshots_in_dir(backup_dir, 1).unwrap();
+
+        assert!(backup_dir.join(odd_file).exists());
+        assert!(!backup_dir.join("gabaritex-2026-10-01-0930-auto.zip").exists());
+        assert!(backup_dir.join("gabaritex-2026-10-02-0930-auto.zip").exists());
     }
 }
