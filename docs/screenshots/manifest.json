@@ -1,1 +1,39 @@
-[]
+[
+  {
+    "id": "index-01-visao-geral",
+    "page": "index",
+    "after": "Abra o aplicativo no computador ou acesse a versão web para visualizar a tela inicial com as opções de acesso rápido.",
+    "target": "desktop",
+    "window": "1280x800",
+    "screen": "Exams Screen",
+    "state": "Initial state with Biblioteca de Provas and quick start options",
+    "setup": "Open the desktop app with the Escola Exemplo profile",
+    "mustShow": [
+      "Biblioteca de Provas",
+      "Criar Prova do Zero",
+      "Modelo Matemática",
+      "Importar Perfil"
+    ],
+    "mustNotShow": ["OS taskbar", "window manager borders"],
+    "crop": "Full app window at 1280x800",
+    "callouts": [
+      {
+        "n": 1,
+        "target": "Criar Prova do Zero button",
+        "label": "Criar Prova do Zero"
+      },
+      {
+        "n": 2,
+        "target": "Modelo Matemática button",
+        "label": "Modelo Matemática"
+      },
+      {
+        "n": 3,
+        "target": "Importar Perfil button",
+        "label": "Importar Perfil"
+      }
+    ],
+    "alt": "Visão geral da tela inicial do GabariTeX",
+    "caption": "Tela inicial do GabariTeX com acesso às avaliações, turmas e corretor."
+  }
+]
