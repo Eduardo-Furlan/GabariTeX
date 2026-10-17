@@ -8,3 +8,4 @@ export default {
     app.component('Screenshot', Screenshot);
   },
 } satisfies Theme;
+

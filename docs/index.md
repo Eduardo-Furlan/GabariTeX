@@ -6,7 +6,7 @@ title: Visão geral do GabariTeX
 
 Com este guia, você conhecerá o funcionamento geral do GabariTeX, saberá escolher entre a versão web e o aplicativo desktop e dará os primeiros passos para criar e corrigir suas provas.
 
-O GabariTeX é um gerador de provas com suporte a equações em LaTeX que diagramação folhas de questões e cartões de resposta padronizados em tamanho A4. O sistema cria versões com questões e alternativas embaralhadas, gerando um código QR criptografado que guarda o gabarito oficial em cada folha sem depender de banco de dados centralizado. Na etapa de correção, o aplicativo lê as fotos dos cartões preenchidos pelos estudantes e calcula a nota imediatamente.
+O GabariTeX é um gerador de provas com suporte a equações em LaTeX que faz a diagramação de folhas de questões e cartões de resposta padronizados em tamanho A4. O sistema cria versões com questões e alternativas embaralhadas, gerando um código QR criptografado que guarda o gabarito oficial em cada folha sem depender de banco de dados centralizado. Na etapa de correção, o aplicativo lê as fotos dos cartões preenchidos pelos estudantes e calcula a nota imediatamente.
 
 Para começar agora mesmo, escolha um dos caminhos:
 

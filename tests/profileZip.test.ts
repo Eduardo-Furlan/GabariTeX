@@ -381,5 +381,34 @@ describe('Profile ZIP Container e Senhas (Plano 08 §5 e §6)', () => {
       ).rejects.toThrow('Arquivo de perfil grande demais ou com arquivos demais.');
     });
   });
+
+  describe('Perfil Oficial de Demonstração (Escola Exemplo)', () => {
+    it('deve validar e descompactar o arquivo docs/screenshots/assets/escola-exemplo-perfil.zip com sucesso', async () => {
+      const fs = await import('node:fs');
+      const path = await import('node:path');
+      const zipPath = path.resolve('docs/screenshots/assets/escola-exemplo-perfil.zip');
+      expect(fs.existsSync(zipPath)).toBe(true);
+
+      const buf = fs.readFileSync(zipPath);
+      const parsed = await parseProfileZip(new Uint8Array(buf));
+
+      expect(parsed.manifest.app).toBe('gabaritex');
+      expect(parsed.profile.exams.length).toBe(1);
+      expect(parsed.profile.exams[0].header.institution).toBe('Escola Exemplo');
+      expect(parsed.profile.exams[0].header.examTitle).toBe('Avaliação Bimestral');
+      expect(parsed.profile.exams[0].password).toBe('EXEMPLO1');
+      expect(parsed.profile.exams[0].questions.length).toBe(6);
+      expect(parsed.profile.exams[0].questions[2].imageUrl).toMatch(/^data:image\/png;base64,/);
+
+      expect(parsed.profile.classes.length).toBe(1);
+      expect(parsed.profile.classes[0].name).toBe('Turma 3º Ano A');
+      expect(parsed.profile.classes[0].students.length).toBe(8);
+
+      expect(parsed.profile.records.length).toBe(8);
+      expect(parsed.settings.activeExamId).toBe(parsed.profile.exams[0].id);
+      expect(parsed.settings.activeClassId).toBe(parsed.profile.classes[0].id);
+    });
+  });
 });
+
 

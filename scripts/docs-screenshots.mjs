@@ -100,3 +100,4 @@ const targetSummary = Object.entries(countsByTarget)
   .join(', ');
 
 console.log(`CHECKLIST.md gerado com sucesso: ${existingCount}/${totalCount} capturados (${targetSummary || 'sem capturas'}).`);
+
