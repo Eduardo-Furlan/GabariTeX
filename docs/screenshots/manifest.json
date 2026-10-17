@@ -117,5 +117,71 @@
     ],
     "alt": "Menu de perfil na versão web exibindo a opção Instalar Aplicativo",
     "caption": "Instalação da versão web como aplicativo independente no navegador."
+  },
+  {
+    "id": "primeiros-passos-01-biblioteca",
+    "page": "primeiros-passos",
+    "after": "Acesse a **Biblioteca de Provas** para ver a lista de todas as avaliações salvas e navegar pelas seções principais.",
+    "target": "desktop",
+    "window": "1280x800",
+    "screen": "Biblioteca de Provas",
+    "state": "Exams library displaying demo exam card and level-1 navigation",
+    "setup": "Open the desktop app with the Escola Exemplo demo dataset",
+    "mustShow": [
+      "Biblioteca de Provas",
+      "Provas",
+      "Turmas",
+      "Corretor",
+      "Nova Prova"
+    ],
+    "mustNotShow": ["OS taskbar", "external windows"],
+    "crop": "Full app window at 1280x800",
+    "callouts": [
+      {
+        "n": 1,
+        "target": "Header navigation bar",
+        "label": "Navegação principal: Provas, Turmas e Corretor"
+      },
+      {
+        "n": 2,
+        "target": "Exam card in library",
+        "label": "Cartão da avaliação ativa"
+      }
+    ],
+    "alt": "Tela da Biblioteca de Provas com avaliação carregada e barra de navegação",
+    "caption": "Visão geral da Biblioteca de Provas e áreas de navegação do sistema."
+  },
+  {
+    "id": "primeiros-passos-02-menu-perfil",
+    "page": "primeiros-passos",
+    "after": "Clique no botão **Perfil** no canto superior direito para abrir o menu do professor e conferir os dados salvos.",
+    "target": "desktop",
+    "window": "1280x800",
+    "screen": "Profile Menu and Header",
+    "state": "Open profile dropdown showing counts for exams, classes and records",
+    "setup": "Click the Perfil button in the top header",
+    "mustShow": [
+      "Perfil",
+      "Perfil do Professor",
+      "Exportar Perfil (ZIP)",
+      "Importar Perfil (ZIP)",
+      "Salvo"
+    ],
+    "mustNotShow": ["OS clutter", "taskbar"],
+    "crop": "Top-right header and profile dropdown menu",
+    "callouts": [
+      {
+        "n": 1,
+        "target": "Salvo status pill",
+        "label": "Indicador de salvamento automático local"
+      },
+      {
+        "n": 2,
+        "target": "Exportar Perfil (ZIP) menu item",
+        "label": "Exportar Perfil (ZIP)"
+      }
+    ],
+    "alt": "Menu do Perfil aberto com contador de dados e opções de backup",
+    "caption": "Menu do Perfil com contador de provas, turmas e notas salvas no aparelho."
   }
 ]
