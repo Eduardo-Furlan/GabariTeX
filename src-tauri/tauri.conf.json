@@ -31,6 +31,11 @@
   "bundle": {
     "active": true,
     "targets": ["deb", "rpm", "appimage"],
+    "publisher": "Eduardo Furlan & Eduardo C. Lunardi",
+    "copyright": "2026 Eduardo Furlan, Eduardo C. Lunardi (GPL-3.0-or-later)",
+    "category": "Education",
+    "shortDescription": "Criador de provas em LaTeX e corretor óptico de gabaritos",
+    "longDescription": "Aplicativo para criação de provas com suporte a fórmulas em LaTeX, geração de cadernos embaralhados, impressão de folhas de respostas com QR Code criptografado e correção óptica de gabaritos por fotos ou câmera remota.",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

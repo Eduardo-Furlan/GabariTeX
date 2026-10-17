@@ -3,9 +3,9 @@ name = "gabaritex"
 version = "0.3.0"
 
 description = "GabariTeX - Criador e Corretor de Provas"
-authors = ["GabariTeX"]
-license = "GPL-3.0"
-repository = ""
+authors = ["Eduardo Furlan", "Eduardo C. Lunardi"]
+license = "GPL-3.0-or-later"
+repository = "https://github.com/Eduardo-Furlan/GabariTeX"
 edition = "2021"
 rust-version = "1.77.2"
 
