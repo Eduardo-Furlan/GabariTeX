@@ -218,3 +218,34 @@
 - **Docs Check**: clean (`npm run docs:check` exit 0, 0 bold label warnings)
 - **Gate P8**: GREEN
 
+---
+
+### Phase 9: Dialog & Modal Sweep
+- **Date**: 2026-10-18
+- **Commit SHA**: a63d7cf (feature), 7fcfed7 (gate green)
+- **TypeScript Check**: clean (`npx tsc --noEmit` exit 0)
+- **Test Suite**: 48 files / 292 tests passed (all green)
+- **New Tests Added**:
+  - `tests/ui-no-native-dialogs.test.ts` (1 test asserting zero unapproved alert/confirm calls)
+- **Features Implemented**:
+  - Replaced native `alert()` with `toast.error`:
+    - `src/components/editor/QuestionList.tsx`
+    - `src/components/gradebook/GradebookTable.tsx`
+    - `src/components/ImageUploader.tsx`
+    - `src/components/profile/ProfileExportImportModal.tsx`
+    - `src/context/ProfileContext.tsx`
+  - Replaced native `confirm()` / `window.confirm()` with `await confirmDialog`:
+    - `src/screens/GradebookScreen.tsx`
+    - `src/components/profile/ProfileExportImportModal.tsx`
+    - `src/components/pwa/UpdatePrompt.tsx`
+  - Preserved allow-listed `confirm()` in `ProfileContext.tsx` (`clearCurrentExam`) and fallback in `confirmStore.ts`
+- **Bundle Metrics** (`measure-bundle.mjs dist`):
+  - First-load JS (gzip): 270.8 kB
+  - First-load CSS (gzip): 20.1 kB
+  - Total JS (gzip): 408.5 kB
+  - Total CSS (gzip): 20.1 kB
+  - UI Webfonts (woff2 raw): 107.3 kB
+- **Desktop Target Build**: clean (`VITE_TARGET=desktop npx vite build` exit 0)
+- **Docs Check**: clean (`npm run docs:check` exit 0, 0 bold label warnings)
+- **Gate P9**: GREEN
+
