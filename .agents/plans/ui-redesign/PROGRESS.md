@@ -197,3 +197,24 @@
 - **Docs Check**: clean (`npm run docs:check` exit 0, 0 bold label warnings)
 - **Gate P7**: GREEN
 
+---
+
+### Phase 8: Gradebook & Classes
+- **Commit SHA**: c456cb1 (feature), 964c3cb (gate green)
+- **TypeScript Check**: clean (`npx tsc --noEmit` exit 0)
+- **Test Suite**: 47 files / 291 tests passed (all green)
+- **Features Implemented**:
+  - `GradebookTable`: animated stats cards with `ScoreRing` and `CountUp` on class average and hit-rate; item-analysis bars using `ProgressBar` with 600ms `scaleX` transitions; sticky header (`top-[var(--chrome-h,96px)]`), `Segmented` view toggle (Notas vs Análise por Questão), sortable columns with 140ms rotating indicator, sticky first column on horizontal scroll below `md`, row hover `bg-indigo-50`, row add/remove animation with `AnimatePresence initial={false}`; modals converted to `Modal` (size="md" for missing students, size="lg" for regrade confirmation); `toast.success` notifications for CSV export and slip generation
+  - `ClassroomManager`: defensive `asScreen` mode without modals or portaling; modal mode and its 2 inner overlays (deleting class confirmation and mass import) converted to `Modal`; student rows animate add/remove with `AnimatePresence`; import and registration flows preserved
+  - `GradebookScreen` & `ClassesScreen`: added `screen-enter` animation wrapper
+  - Added `tests/ui-gradebook-classes.test.tsx` verifying SSR rendering, stats cards, sort headers, and classroom resilience
+- **Bundle Metrics** (`measure-bundle.mjs dist`):
+  - First-load JS (gzip): 270.7 kB
+  - First-load CSS (gzip): 20.1 kB
+  - Total JS (gzip): 408.4 kB
+  - Total CSS (gzip): 20.1 kB
+  - UI Webfonts (woff2 raw): 107.3 kB
+- **Desktop Target Build**: clean (`VITE_TARGET=desktop npm run build` exit 0)
+- **Docs Check**: clean (`npm run docs:check` exit 0, 0 bold label warnings)
+- **Gate P8**: GREEN
+
