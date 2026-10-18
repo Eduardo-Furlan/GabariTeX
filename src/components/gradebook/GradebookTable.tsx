@@ -455,7 +455,7 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
                   {currentBannerClass.name}
                 </span>
                 {activeClassId === currentBannerClass.id ? (
-                  <span className="text-[9px] px-1.5 py-0.2 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 font-extrabold uppercase rounded">
+                  <span className="text-[9px] px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 font-extrabold uppercase rounded">
                     Turma Ativa
                   </span>
                 ) : (

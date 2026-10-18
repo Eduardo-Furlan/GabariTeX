@@ -640,7 +640,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
                 >
                   <span>2. Ler Folha de Gabarito</span>
                   {activePayload && (
-                    <span className="text-[10px] px-1.5 py-0.2 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30 rounded font-black">
+                    <span className="text-[10px] px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30 rounded font-black">
                       Versão {activePayload.version}
                     </span>
                   )}

@@ -1,0 +1,27 @@
+:root {
+  /* Accent "Tinta" (ink blue) channel tokens */
+  --accent-50: 239 243 255;
+  --accent-100: 224 231 255;
+  --accent-200: 199 211 254;
+  --accent-300: 160 176 251;
+  --accent-400: 117 134 244;
+  --accent-500: 76 97 232;
+  --accent-600: 52 71 214;
+  --accent-700: 42 57 180;
+  --accent-800: 39 50 143;
+  --accent-900: 37 46 112;
+  --accent-950: 24 29 72;
+
+  /* Motion tokens */
+  --dur-instant: 90ms;
+  --dur-fast: 140ms;
+  --dur-base: 220ms;
+  --dur-slow: 340ms;
+  --dur-signature: 700ms;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* Layout dimensions */
+  --chrome-h: 96px;
+}

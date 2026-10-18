@@ -119,7 +119,7 @@ export const StepTabs: React.FC<StepTabsProps> = ({ currentRoute, onNavigate }) 
                 {s.icon}
                 <span>{s.label}</span>
                 {s.badge !== undefined && (
-                  <span className="ml-1 px-1.5 py-0.2 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold rounded-full">
+                  <span className="ml-1 px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold rounded-full">
                     {s.badge}
                   </span>
                 )}

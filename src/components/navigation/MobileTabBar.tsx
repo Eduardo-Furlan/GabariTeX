@@ -66,7 +66,7 @@ export const MobileTabBar: React.FC<MobileTabBarProps> = ({ currentRoute, onNavi
       className="no-print md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 shadow-lg pb-[env(safe-area-inset-bottom)]"
       aria-label="Navegação móvel"
     >
-      <div className="grid grid-cols-5 h-13 items-center">
+      <div className="grid grid-cols-5 h-[52px] items-center">
         {steps.map((s) => {
           const isActive =
             (isExamRoute && activeStep === s.id) ||
