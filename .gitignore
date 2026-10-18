@@ -31,3 +31,4 @@ src-tauri/resources/windows/*.dll
 # VitePress
 docs/.vitepress/dist
 docs/.vitepress/cache
+docs/screenshots/*.md
