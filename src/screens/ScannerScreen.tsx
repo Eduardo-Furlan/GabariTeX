@@ -65,6 +65,16 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
 
   const [showTeacherPassword, setShowTeacherPassword] = useState<boolean>(false);
 
+  const isPreviewModeFromUrl =
+    typeof window !== 'undefined' &&
+    (window.location.search.includes('preview=1') ||
+      window.location.search.includes('corretor=1') ||
+      window.location.hash.includes('preview=1') ||
+      window.location.hash.includes('corretor=1'));
+
+  const [forceBrowserScanner, setForceBrowserScanner] = useState<boolean>(isPreviewModeFromUrl);
+  const isDesktopUI = Boolean(__DESKTOP__ || forceBrowserScanner);
+
   // Estado e controle da Câmera Remota Desktop (Plano 13)
   const [remotePanelOpen, setRemotePanelOpen] = useState<boolean>(false);
   const [remoteSession, setRemoteSession] = useState<RemoteSessionInfo | null>(null);
@@ -154,23 +164,53 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
   const handleStartRemote = async (ip?: string) => {
     setIsStartingRemote(true);
     try {
-      const s = await startRemoteCamera(ip);
-      setRemoteSession(s);
+      if (__DESKTOP__) {
+        const s = await startRemoteCamera(ip);
+        setRemoteSession(s);
+      } else {
+        // Modo preview no navegador (permite interagir e tirar screenshots da Câmera Remota no Firefox/Chrome)
+        const mockSession: RemoteSessionInfo = {
+          url: `http://${ip || '192.168.1.105'}:47831/#token=EXEMPLO1`,
+          ip: ip || '192.168.1.105',
+          port: 47831,
+          token: 'EXEMPLO1',
+          interfaces: [
+            { name: 'wlan0 (Wi-Fi Local)', ip: '192.168.1.105' },
+            { name: 'eth0 (Rede Cabeada)', ip: '192.168.1.50' },
+          ],
+        };
+        setRemoteSession(mockSession);
+        setAvailableInterfaces(mockSession.interfaces);
+      }
     } finally {
       setIsStartingRemote(false);
     }
   };
 
   const handleStopRemote = async () => {
-    await stopRemoteCamera();
+    if (__DESKTOP__) {
+      await stopRemoteCamera();
+    }
     setRemoteSession(null);
   };
 
   const handleChangeRemoteInterface = async (ip: string) => {
     setIsStartingRemote(true);
     try {
-      const s = await startRemoteCamera(ip);
-      setRemoteSession(s);
+      if (__DESKTOP__) {
+        const s = await startRemoteCamera(ip);
+        setRemoteSession(s);
+      } else {
+        setRemoteSession((prev) =>
+          prev
+            ? {
+                ...prev,
+                ip,
+                url: `http://${ip}:${prev.port}/#token=${prev.token}`,
+              }
+            : null
+        );
+      }
     } finally {
       setIsStartingRemote(false);
     }
@@ -202,7 +242,7 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
           }
         }}
       >
-        {__DESKTOP__ ? (
+        {isDesktopUI ? (
           <div className="space-y-6">
             {/* Faixa fixa / Banner de Contexto do Corretor (Plano 10 §2.6) */}
             <div className="bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 rounded-xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
@@ -543,7 +583,7 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
               )}
             </div>
 
-            {typeof __DESKTOP__ !== 'undefined' && __DESKTOP__ && (
+            {isDesktopUI && (
               <RemoteCameraPanel
                 isOpen={remotePanelOpen}
                 onClose={() => setRemotePanelOpen(false)}
@@ -578,7 +618,7 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
                 Para alcançar leitura óptica de alta precisão com processamento em tempo real, detecção por marcadores fiduciais e calibração de perspectiva via <strong>OpenCV nativo</strong>, o corretor automatizado é executado pelo aplicativo desktop oficial.
               </p>
 
-              {/* Botão de Ação Primária: Baixar Última Release */}
+              {/* Botões de Ação: Baixar Release, Continuar na Web e Preview */}
               <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
                 <a
                   href="https://github.com/Eduardo-Furlan/GabariTeX/releases/latest"
@@ -589,6 +629,15 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
                   <Monitor className="w-4 h-4" />
                   <span>Baixar GabariTeX Desktop (GitHub Releases)</span>
                 </a>
+
+                <button
+                  type="button"
+                  onClick={() => setForceBrowserScanner(true)}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl border border-indigo-300 dark:border-indigo-500/30 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 text-sm font-semibold transition shadow-2xs"
+                >
+                  <Camera className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  <span>Abrir Corretor no Navegador (Preview)</span>
+                </button>
 
                 <button
                   type="button"
