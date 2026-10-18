@@ -149,8 +149,6 @@ O instalador do GabariTeX é distribuído de forma independente e não possui ce
 ### Contexto
 Ao acessar o corretor pela versão web do GabariTeX, o sistema apresenta o painel informativo destacando as vantagens do aplicativo para computador.
 
-<Screenshot id="problemas-comuns-01-aviso-web" />
-
 ### Por que isso acontece?
 A criação de provas, formatação em LaTeX e exportação para impressão funcionam integralmente no navegador web. No entanto, a correção de folhas físicas exige processamento de visão computacional intensivo (OpenCV nativo) e abertura de servidor de rede local seguro para parear a câmera do smartphone sem fios.
 

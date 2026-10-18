@@ -8,7 +8,7 @@ Com este guia, você aprenderá a configurar o cabeçalho da avaliação, adicio
 
 ## Antes de começar
 
-- Abra a **Biblioteca de Provas** e clique em **Nova Prova** ou selecione o cartão **Criar Prova do Zero**.
+- Abra a **Biblioteca de Provas** e clique em **Nova Prova**.
 - Tenha os enunciados das questões, imagens e gabaritos organizados para inclusão.
 - Lembre-se de que a folha de respostas A4 padronizada comporta no máximo 40 questões por avaliação.
 

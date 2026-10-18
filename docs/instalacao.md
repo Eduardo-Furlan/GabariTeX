@@ -17,15 +17,12 @@ Com este guia, você aprenderá a instalar o GabariTeX no Windows e Linux ou a a
 1. Acesse a página de lançamentos do projeto no GitHub e baixe o instalador adequado ao seu sistema (`.exe` ou `.msi` para Windows; `.deb`, `.rpm` ou `.AppImage` para Linux).
 
 2. No Windows, dê um duplo clique no instalador baixado; quando o aviso de fornecedor não reconhecido for exibido pelo sistema, clique em `Mais informações`.
-   <Screenshot id="instalacao-01-smartscreen" />
 
 3. Em seguida, confirme a inicialização clicando no botão `Executar assim mesmo` para concluir a instalação normalmente.
-   <Screenshot id="instalacao-02-executar" />
 
 4. No Linux, instale o pacote correspondente à sua distribuição (por exemplo, execute `sudo dpkg -i gabaritex_*.deb` no Debian/Ubuntu, ou `sudo rpm -i gabaritex-*.rpm` no Fedora) ou torne o `.AppImage` executável com o comando `chmod +x GabariTeX*.AppImage` e abra-o com dois cliques.
 
 5. Na versão web, para criar um atalho direto na área de trabalho e usar o programa sem abrir o navegador, clique no botão **Perfil** no canto superior direito e selecione a opção **Instalar Aplicativo**.
-   <Screenshot id="instalacao-03-web-pwa" />
 
 ## Dicas
 

@@ -47,8 +47,6 @@ O GabariTeX analisa o arquivo ZIP e apresenta um balanço com a quantidade de no
 
 No computador, acesse a pasta de documentos para encontrar as cópias diárias salvas automaticamente pelo GabariTeX Desktop.
 
-<Screenshot id="perfis-backup-04-pasta-backups" />
-
 O aplicativo para desktop cria uma cópia de segurança automática uma vez ao dia sempre que houver avaliações cadastradas. Esses arquivos ficam localizados na pasta `Documentos/GabariTeX/Backups` (ou `Documents/GabariTeX/Backups`).
 
 O sistema mantém automaticamente os 10 arquivos mais recentes, descartando versões mais antigas para economizar espaço em disco. Para restaurar qualquer um desses pontos, basta abrir a tela de importação e selecionar o arquivo correspondente da pasta.

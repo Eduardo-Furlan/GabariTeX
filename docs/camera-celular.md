@@ -21,8 +21,6 @@ Para utilizar seu celular como câmera de leitura das folhas de resposta:
 
 No computador, abra o corretor e clique em **Câmera do Celular** para exibir o código QR e o endereço de pareamento da rede local.
 
-<Screenshot id="camera-celular-01-painel-desktop" />
-
 O painel **Usar Câmera do Celular** é aberto, iniciando um servidor local temporário e seguro na porta `47831`. Um código QR exclusivo da sessão é exibido na tela junto com o endereço de rede correspondente.
 
 ### 2. Conectar o celular pelo código QR
