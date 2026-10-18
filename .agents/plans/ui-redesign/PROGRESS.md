@@ -273,3 +273,62 @@
 - **Docs Check**: clean (`npm run docs:check` exit 0, 0 bold label warnings)
 - **Gate P10**: GREEN
 
+---
+
+### Phase 11: Sweeps, Polish, Audits & Gate P
+- **Date**: 2026-10-18
+- **Commit SHA**: 4dcecf2 (feature), 7720248 (gate green)
+- **TypeScript Check**: clean (`npx tsc --noEmit` exit 0)
+- **Test Suite**: 49 files / 293 tests passed (all green)
+- **New Tests Added**:
+  - `tests/ui-no-dead-classes.test.ts` (1 test asserting zero dead animation or spacing classes across all TSX components)
+- **Audits & Sweeps Completed**:
+  - **Typography Sweep**:
+    - `text-[10px|11px]` outside preview: reduced from 173 baseline to 16 (target <= 20) - PASSED
+    - `uppercase` outside preview: reduced from 47 baseline to 1 (target <= 15) - PASSED
+    - Primary content promoted from `text-xs` to `text-body` (14 px) / `text-meta` (12 px)
+  - **Radius Hierarchy**:
+    - Eliminated all blanket `rounded-2xl` outside preview (reduced to 0)
+    - Applied consistent scale: `rounded-lg` for controls, `rounded-card` for cards, `rounded-sheet` for dialogs
+  - **Dead-Class Guard**:
+    - Zero dead Tailwind animate classes (`animate-in`, `animate-out`, `fade-in`, `fade-out`, `zoom-in`, `zoom-out`, `slide-in-from`, `slide-out-to`, `h-13`, `py-0.2`)
+    - Guard test `tests/ui-no-dead-classes.test.ts` permanently active
+  - **Overlay Audit**:
+    - Exactly 0 raw `fixed inset-0` overlays remaining outside `src/components/ui/`
+    - Refactored `ProfileExportImportModal` to accessible `Modal` primitive with `Segmented` tabs and `Button`s
+  - **Dialog Audit**:
+    - All native `alert()` and `confirm()` calls replaced with `toast.error` and `confirmDialog`
+  - **Print & Paper Fidelity (Gate P)**:
+    - Zero modifications to `src/components/preview/**` and `src/styles/print.css`
+    - `tests/paper-guard.test.ts` (7 tests) and OMR tests (`tests/pureOmr.test.ts`, `tests/omrProcessor.test.ts`) all green
+- **Bundle Metrics** (`measure-bundle.mjs dist`):
+  - First-load JS (gzip): 212.0 kB (budget: <= 250 kB, target <= 238 kB, baseline was 238.3 kB) - EXCEEDED EXPECTATION (-26.3 kB vs baseline)
+  - First-load CSS (gzip): 20.0 kB (budget: <= 24 kB, baseline was 18.0 kB) - PASSED
+  - Total JS (gzip): 417.0 kB (budget: <= 430 kB, baseline was 348.3 kB) - PASSED
+  - Total CSS (gzip): 20.0 kB (budget: <= 24 kB, baseline was 18.0 kB) - PASSED
+  - UI Webfonts (woff2 raw): 107.3 kB (budget: <= 110 kB) - PASSED
+- **Desktop Target Build**: clean (`VITE_TARGET=desktop npx vite build` exit 0)
+- **Docs Check**: clean (`npm run docs:check` exit 0, 0 bold label warnings)
+- **Gate P11 & Gate P**: GREEN
+
+---
+
+## Final Project Summary (Folha Óptica Redesign)
+- **Status**: ALL PHASES (0 THROUGH 11) COMPLETE & GREEN.
+- **Branch**: `feat/ui-redesign`.
+- **Test Suite**: 49 files / 293 tests passing cleanly.
+- **TypeScript**: zero errors (`npx tsc --noEmit` exit 0).
+- **Desktop & Web Builds**: clean.
+- **Documentation Checks**: clean.
+- **Design Guards**:
+  - `tests/paper-guard.test.ts` (7/7 passed)
+  - `tests/rule09-neutrals.test.ts` (passed)
+  - `tests/no-raw-white-text.test.ts` (passed)
+  - `tests/contrast.test.ts` (3/3 passed)
+  - `tests/ui-tokens.test.ts` (4/4 passed)
+  - `tests/ui-accent-contrast.test.ts` (5/5 passed)
+  - `tests/ui-motion-css.test.ts` (4/4 passed)
+  - `tests/ui-primitives.test.tsx` (7/7 passed)
+  - `tests/ui-no-native-dialogs.test.ts` (passed)
+  - `tests/ui-no-dead-classes.test.ts` (passed)
+
