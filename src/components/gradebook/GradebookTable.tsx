@@ -227,27 +227,27 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-6">
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
       {/* Cabeçalho do Livro de Notas */}
-      <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-200 dark:border-slate-800 flex-wrap gap-3">
+      <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-200 flex-wrap gap-3">
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2">
             <Users className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-            <h2 className="text-base font-bold text-slate-800 dark:text-slate-100">Livro de Notas</h2>
+            <h2 className="text-base font-bold text-slate-800">Livro de Notas</h2>
             <span className="ml-1 px-2.5 py-0.5 bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300 text-xs font-bold rounded-full">
               {classFilteredRecords.length} {classFilteredRecords.length === 1 ? 'prova corrigida' : 'provas corrigidas'}
             </span>
           </div>
 
           {/* Alternador de visualização: Tabela vs Análise por Questão */}
-          <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 text-xs font-semibold">
+          <div className="flex items-center bg-slate-100 rounded-lg p-0.5 text-xs font-semibold">
             <button
               type="button"
               onClick={() => setViewMode('table')}
               className={`px-3 py-1.5 rounded-md transition ${
                 viewMode === 'table'
-                  ? 'bg-white dark:bg-slate-700 text-indigo-700 dark:text-indigo-300 shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                  ? 'bg-white text-indigo-700 dark:text-indigo-300 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               Notas
@@ -257,8 +257,8 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
               onClick={() => setViewMode('items')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition ${
                 viewMode === 'items'
-                  ? 'bg-white dark:bg-slate-700 text-indigo-700 dark:text-indigo-300 shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                  ? 'bg-white text-indigo-700 dark:text-indigo-300 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <BarChart2 className="w-3.5 h-3.5" />
@@ -281,7 +281,7 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
                     onSelectActiveExam(val);
                   }
                 }}
-                className="text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-800 font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500"
               >
                 <option value="current">
                   Prova Atual ({exam?.header.examTitle || 'Ativa'})
@@ -306,7 +306,7 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
             <select
               value={selectedFilterClassId}
               onChange={(e) => setSelectedFilterClassId(e.target.value)}
-              className="text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-800 font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500"
             >
               <option value="all">Todas as turmas ({records.length})</option>
               {classes.map((cls) => {
@@ -326,7 +326,7 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
               <button
                 type="button"
                 onClick={onOpenClassManager}
-                className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg transition"
+                className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-100 border border-slate-300 rounded-lg transition"
                 title="Gerenciar Turmas e Alunos"
               >
                 <Settings2 className="w-3.5 h-3.5 text-slate-500" />
@@ -341,8 +341,8 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
               onClick={() => setFilterOnlyPending(!filterOnlyPending)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
                 filterOnlyPending
-                  ? 'bg-amber-100 dark:bg-amber-500/15 border-amber-300 dark:border-amber-500/30 text-amber-900 dark:text-amber-200'
-                  : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                  ? 'bg-amber-100 dark:bg-amber-500/15 border-amber-300 dark:border-amber-500/30 text-amber-900 dark:text-amber-300'
+                  : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
               }`}
             >
               <Filter className="w-3.5 h-3.5" />
@@ -366,7 +366,7 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
           {viewMode === 'table' && (
             <div className="flex items-center gap-1.5">
               {selectedFilterClassId !== 'all' && selectedFilterClassId !== 'none' && currentBannerClass && (
-                <label className="text-[11px] text-slate-600 dark:text-slate-400 flex items-center gap-1 cursor-pointer pr-1">
+                <label className="text-[11px] text-slate-600 flex items-center gap-1 cursor-pointer pr-1">
                   <input
                     type="checkbox"
                     checked={includeMissingInCsv}
@@ -451,7 +451,7 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-800 dark:text-slate-100">
+                <span className="text-xs font-bold text-slate-800">
                   {currentBannerClass.name}
                 </span>
                 {activeClassId === currentBannerClass.id ? (
@@ -470,7 +470,7 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
                   )
                 )}
               </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              <p className="text-[11px] text-slate-500">
                 {bannerGradedCount} de {bannerTotalInClass} alunos avaliados (
                 {bannerTotalInClass > 0
                   ? ((bannerGradedCount / bannerTotalInClass) * 100).toFixed(0)
@@ -501,7 +501,7 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
 
       {/* Alerta de backup desatualizado */}
       {isBackupStale && onOpenBackupPanel && (
-        <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-xl flex items-center justify-between text-xs text-amber-900 dark:text-amber-200 flex-wrap gap-2">
+        <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-xl flex items-center justify-between text-xs text-amber-900 dark:text-amber-300 flex-wrap gap-2">
           <div className="flex items-center gap-2">
             <ShieldAlert className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
             <span>
@@ -532,8 +532,8 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
             return (
               <div className="space-y-4">
                 {/* Faixa no topo */}
-                <div className="p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-between flex-wrap gap-2 text-xs">
-                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 flex-wrap">
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between flex-wrap gap-2 text-xs">
+                  <div className="flex items-center gap-2 text-slate-700 flex-wrap">
                     <span className="font-semibold">
                       Usando {analysis.used} {analysis.used === 1 ? 'nota' : 'notas'}; {analysis.excluded} fora
                     </span>
@@ -553,37 +553,37 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
 
                 {/* Cards de resumo estatístico */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 p-3 rounded-xl">
-                    <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block">Média da Turma</span>
-                    <span className="text-lg font-bold text-slate-900 dark:text-slate-100 font-mono">
+                  <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl">
+                    <span className="text-[11px] font-medium text-slate-500 block">Média da Turma</span>
+                    <span className="text-lg font-bold text-slate-900 font-mono">
                       {analysis.summary.mean.toFixed(2)}
                     </span>
                   </div>
-                  <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 p-3 rounded-xl">
-                    <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block">Mediana</span>
-                    <span className="text-lg font-bold text-slate-900 dark:text-slate-100 font-mono">
+                  <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl">
+                    <span className="text-[11px] font-medium text-slate-500 block">Mediana</span>
+                    <span className="text-lg font-bold text-slate-900 font-mono">
                       {analysis.summary.median.toFixed(2)}
                     </span>
                   </div>
-                  <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 p-3 rounded-xl">
-                    <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block">Menor Nota</span>
-                    <span className="text-lg font-bold text-slate-900 dark:text-slate-100 font-mono">
+                  <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl">
+                    <span className="text-[11px] font-medium text-slate-500 block">Menor Nota</span>
+                    <span className="text-lg font-bold text-slate-900 font-mono">
                       {analysis.summary.min.toFixed(2)}
                     </span>
                   </div>
-                  <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 p-3 rounded-xl">
-                    <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block">Maior Nota</span>
-                    <span className="text-lg font-bold text-slate-900 dark:text-slate-100 font-mono">
+                  <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl">
+                    <span className="text-[11px] font-medium text-slate-500 block">Maior Nota</span>
+                    <span className="text-lg font-bold text-slate-900 font-mono">
                       {analysis.summary.max.toFixed(2)}
                     </span>
                   </div>
                 </div>
 
                 {/* Tabela de Itens */}
-                <div className="overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-xl">
+                <div className="overflow-x-auto border border-slate-200 rounded-xl">
                   <table className="w-full text-left border-collapse text-xs">
                     <thead>
-                      <tr className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-semibold">
+                      <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
                         <th className="py-2.5 px-3 w-16">Item</th>
                         <th className="py-2.5 px-3 min-w-[200px]">Enunciado</th>
                         <th className="py-2.5 px-3 text-center min-w-[130px]">Taxa de Acerto</th>
@@ -592,7 +592,7 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
                         <th className="py-2.5 px-3 min-w-[180px]">Sinalizações</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    <tbody className="divide-y divide-slate-100">
                       {analysis.items.length === 0 ? (
                         <tr>
                           <td colSpan={6} className="py-8 text-center text-slate-400">
@@ -603,9 +603,9 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
                         analysis.items.map((item) => (
                           <tr
                             key={item.questionId}
-                            className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition"
+                            className="hover:bg-slate-50 transition"
                           >
-                            <td className="py-3 px-3 font-bold text-slate-900 dark:text-slate-100 align-top">
+                            <td className="py-3 px-3 font-bold text-slate-900 align-top">
                               <div className="flex flex-col gap-1">
                                 <span className="text-sm font-mono">Q{item.originalNumber}</span>
                                 {item.annulled && (
@@ -615,17 +615,17 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
                                 )}
                               </div>
                             </td>
-                            <td className="py-3 px-3 text-slate-700 dark:text-slate-300 align-top max-w-xs">
+                            <td className="py-3 px-3 text-slate-700 align-top max-w-xs">
                               <div className="line-clamp-3">
                                 <MathView content={item.prompt} />
                               </div>
                             </td>
                             <td className="py-3 px-3 text-center align-top">
                               <div className="flex flex-col items-center gap-1">
-                                <span className="font-mono font-bold text-sm text-slate-900 dark:text-slate-100">
+                                <span className="font-mono font-bold text-sm text-slate-900">
                                   {item.correctPct.toFixed(1)}%
                                 </span>
-                                <div className="w-20 bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                                <div className="w-20 bg-slate-200 h-2 rounded-full overflow-hidden">
                                   <div
                                     className={`h-full rounded-full ${
                                       item.correctPct >= 70
@@ -652,7 +652,7 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
                                       className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-mono ${
                                         isCorrect
                                           ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 font-bold'
-                                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                                          : 'bg-slate-100 text-slate-700 border border-slate-200'
                                       }`}
                                     >
                                       <span>{opt}:</span>
@@ -668,13 +668,13 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
                             <td className="py-3 px-3 text-center text-[11px] text-slate-500 align-top">
                               <div>
                                 Branco:{' '}
-                                <span className="font-mono font-semibold text-slate-700 dark:text-slate-300">
+                                <span className="font-mono font-semibold text-slate-700">
                                   {item.blankPct.toFixed(0)}%
                                 </span>
                               </div>
                               <div>
                                 Rasura:{' '}
-                                <span className="font-mono font-semibold text-slate-700 dark:text-slate-300">
+                                <span className="font-mono font-semibold text-slate-700">
                                   {item.multiplePct.toFixed(0)}%
                                 </span>
                               </div>
@@ -707,7 +707,7 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
                                     return (
                                       <span
                                         key={flag}
-                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
+                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200"
                                       >
                                         Muito fácil (&gt; 90%)
                                       </span>
@@ -736,12 +736,12 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
           {/* Faixa de Estatísticas de Médias da Turma */}
           {classFilteredRecords.length > 0 && (
             <div className="mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="bg-slate-50 dark:bg-slate-800/60 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
-                <span className="text-slate-500 dark:text-slate-400 text-xs font-medium block">
+              <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                <span className="text-slate-500 text-xs font-medium block">
                   Média da Turma (Escala {targetScore})
                 </span>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-lg font-bold text-slate-800 dark:text-slate-100 font-mono">
+                  <span className="text-lg font-bold text-slate-800 font-mono">
                     {((averagePercentage / 100) * targetScore).toFixed(2)}
                   </span>
                   <span className="text-xs text-slate-400 font-mono">
@@ -749,20 +749,20 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
                   </span>
                 </div>
               </div>
-              <div className="bg-slate-50 dark:bg-slate-800/60 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
-                <span className="text-slate-500 dark:text-slate-400 text-xs font-medium block">
+              <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                <span className="text-slate-500 text-xs font-medium block">
                   Média de Acertos (%)
                 </span>
-                <span className="text-lg font-bold text-slate-800 dark:text-slate-100 font-mono">
+                <span className="text-lg font-bold text-slate-800 font-mono">
                   {averagePercentage.toFixed(1)}%
                 </span>
               </div>
-              <div className="bg-slate-50 dark:bg-slate-800/60 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
-                <span className="text-slate-500 dark:text-slate-400 text-xs font-medium block">
+              <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                <span className="text-slate-500 text-xs font-medium block">
                   Provas Computadas
                 </span>
                 <div className="flex items-baseline gap-1.5">
-                  <span className="text-lg font-bold text-slate-800 dark:text-slate-100 font-mono">
+                  <span className="text-lg font-bold text-slate-800 font-mono">
                     {totalEvaluated}
                   </span>
                   {excludedPartialCount > 0 && (
@@ -785,7 +785,7 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs sm:text-sm">
                 <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-semibold">
+                  <tr className="border-b border-slate-200 text-slate-500 font-semibold">
                     <th className="py-2.5 px-3">Data / Hora</th>
                     <th className="py-2.5 px-3">Aluno</th>
                     <th className="py-2.5 px-3">Turma</th>
@@ -795,19 +795,19 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
                     <th className="py-2.5 px-3 text-right">Ações</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                <tbody className="divide-y divide-slate-100">
                   {displayedRecords.map((r) => (
                     <React.Fragment key={r.id}>
                       <tr
-                        className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition cursor-pointer ${
-                          expandedId === r.id ? 'bg-slate-50/50 dark:bg-slate-800/30' : ''
+                        className={`hover:bg-slate-50/80 transition cursor-pointer ${
+                          expandedId === r.id ? 'bg-slate-50/50' : ''
                         }`}
                         onClick={() => toggleExpand(r.id)}
                       >
                         <td className="py-3 px-3 text-slate-500 text-xs">
                           {new Date(r.timestamp).toLocaleString('pt-BR')}
                         </td>
-                        <td className="py-3 px-3 font-semibold text-slate-800 dark:text-slate-100">
+                        <td className="py-3 px-3 font-semibold text-slate-800">
                           <div>
                             <span>{r.studentName || 'Não identificado'}</span>
                             {r.studentId && (
@@ -817,17 +817,17 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
                             )}
                           </div>
                         </td>
-                        <td className="py-3 px-3 text-slate-600 dark:text-slate-300 text-xs">
+                        <td className="py-3 px-3 text-slate-600 text-xs">
                           {classes.find((c) => c.id === r.classId)?.name || (
                             <span className="text-slate-400 italic">Sem turma</span>
                           )}
                         </td>
                         <td className="py-3 px-3 text-center">
-                          <span className="inline-block px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded text-xs font-mono font-bold">
+                          <span className="inline-block px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-xs font-mono font-bold">
                             {r.versionLetter}
                           </span>
                         </td>
-                        <td className="py-3 px-3 text-right font-mono font-bold text-slate-900 dark:text-slate-100">
+                        <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">
                           <div>
                             <span>{((r.percentage / 100) * targetScore).toFixed(2)}</span>
                             <span className="block text-[10px] text-slate-400 font-normal">
@@ -888,15 +888,15 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
                       </tr>
 
                       {expandedId === r.id && (
-                        <tr className="bg-slate-50/80 dark:bg-slate-800/40">
+                        <tr className="bg-slate-50/80">
                           <td colSpan={7} className="p-4">
                             <div className="text-xs">
                               <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-                                <span className="font-semibold text-slate-700 dark:text-slate-300 block">
+                                <span className="font-semibold text-slate-700 block">
                                   Resumo e Edição das Respostas:
                                 </span>
                                 {onUpdateRecord && (
-                                  <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                                  <span className="text-[11px] text-slate-500">
                                     Clique nos seletores abaixo para corrigir qualquer alternativa diretamente no livro.
                                   </span>
                                 )}
@@ -921,7 +921,7 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
                                     >
                                       <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-1.5">
-                                          <span className="font-bold text-slate-800 dark:text-slate-100">
+                                          <span className="font-bold text-slate-800">
                                             Q{a.questionNumber}
                                           </span>
                                           {a.annulled && (
@@ -963,7 +963,7 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
                                       </div>
 
                                       {onUpdateRecord ? (
-                                        <div className="flex items-center justify-between pt-1 border-t border-slate-200/50 dark:border-slate-700/50 mt-1 gap-1">
+                                        <div className="flex items-center justify-between pt-1 border-t border-slate-200/50 mt-1 gap-1">
                                           <AnswerChoiceGroup
                                             size="sm"
                                             value={currentChoice}
@@ -1010,13 +1010,13 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
 
                               {/* Questões Dissertativas */}
                               {r.subjectiveAnswers && r.subjectiveAnswers.length > 0 && (
-                                <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700">
+                                <div className="mt-4 pt-3 border-t border-slate-200">
                                   <div className="flex items-center justify-between mb-2 flex-wrap gap-1">
-                                    <span className="font-semibold text-slate-700 dark:text-slate-300 block">
+                                    <span className="font-semibold text-slate-700 block">
                                       Questões Dissertativas:
                                     </span>
                                     {onUpdateRecord && (
-                                      <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                                      <span className="text-[11px] text-slate-500">
                                         Ajuste a pontuação de cada dissertativa abaixo.
                                       </span>
                                     )}
@@ -1068,15 +1068,15 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
       {/* Modal de Alunos Faltando */}
       {showMissingModal && currentBannerClass && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full max-h-[85vh] flex flex-col shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-            <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+          <div className="bg-white rounded-2xl max-w-md w-full max-h-[85vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+            <div className="p-4 border-b border-slate-200 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Users className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                  <h3 className="text-sm font-bold text-slate-900">
                     Alunos Sem Nota ({currentBannerClass.name})
                   </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                  <p className="text-xs text-slate-500">
                     Alunos cadastrados na turma sem prova corrigida
                   </p>
                 </div>
@@ -1090,7 +1090,7 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
               </button>
             </div>
 
-            <div className="p-4 overflow-y-auto flex-1 divide-y divide-slate-100 dark:divide-slate-800">
+            <div className="p-4 overflow-y-auto flex-1 divide-y divide-slate-100">
               {missingList.length === 0 ? (
                 <div className="text-center py-6 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
                   Todos os alunos desta turma já possuem nota registrada!
@@ -1098,7 +1098,7 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
               ) : (
                 missingList.map((st, i) => (
                   <div key={st.id} className="py-2 flex items-center justify-between text-xs">
-                    <span className="font-semibold text-slate-800 dark:text-slate-200">
+                    <span className="font-semibold text-slate-800">
                       {i + 1}. {st.name}
                     </span>
                     <span className="font-mono text-slate-400 text-[11px]">
@@ -1109,11 +1109,11 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
               )}
             </div>
 
-            <div className="p-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-2 bg-slate-50 dark:bg-slate-800/60">
+            <div className="p-3 border-t border-slate-200 flex items-center justify-end gap-2 bg-slate-50">
               <button
                 type="button"
                 onClick={() => setShowMissingModal(false)}
-                className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-700 rounded-lg"
+                className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-200/60 rounded-lg"
               >
                 Fechar
               </button>
@@ -1142,15 +1142,15 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
       {/* Modal de Confirmação do Recálculo de Notas */}
       {showRegradeModal && regradePreview && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full max-h-[85vh] flex flex-col shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-            <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[85vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+            <div className="p-4 border-b border-slate-200 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <RefreshCw className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                  <h3 className="text-sm font-bold text-slate-900">
                     Recalcular Notas com a Prova Atual
                   </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                  <p className="text-xs text-slate-500">
                     Aplica gabaritos corrigidos e anulações às notas salvas
                   </p>
                 </div>
@@ -1168,14 +1168,14 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
               {/* Resumo do relatório */}
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="p-3 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30">
-                  <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Notas a Atualizar</span>
+                  <span className="text-slate-500 block text-[11px]">Notas a Atualizar</span>
                   <span className="text-lg font-bold text-indigo-700 dark:text-indigo-300 font-mono">
                     {regradePreview.report.updated}
                   </span>
                 </div>
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
-                  <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Notas Inalteradas</span>
-                  <span className="text-lg font-bold text-slate-700 dark:text-slate-200 font-mono">
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                  <span className="text-slate-500 block text-[11px]">Notas Inalteradas</span>
+                  <span className="text-lg font-bold text-slate-700 font-mono">
                     {regradePreview.report.unchanged}
                   </span>
                 </div>
@@ -1210,28 +1210,28 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
               {/* Lista de variações */}
               {regradePreview.report.changes.length > 0 && (
                 <div>
-                  <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-2">
+                  <span className="text-xs font-semibold text-slate-700 block mb-2">
                     Principais alterações de pontuação ({regradePreview.report.changes.length}):
                   </span>
-                  <div className="border border-slate-200 dark:border-slate-700 rounded-lg max-h-48 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+                  <div className="border border-slate-200 rounded-lg max-h-48 overflow-y-auto divide-y divide-slate-100 text-xs">
                     {regradePreview.report.changes.map((c) => {
                       const diff = c.after - c.before;
                       return (
                         <div key={c.recordId} className="p-2 flex items-center justify-between">
-                          <span className="font-medium text-slate-800 dark:text-slate-200 truncate max-w-[180px]">
+                          <span className="font-medium text-slate-800 truncate max-w-[180px]">
                             {c.studentName || 'Aluno sem nome'}
                           </span>
                           <div className="flex items-center gap-2 font-mono text-[11px]">
                             <span className="text-slate-400">{c.before.toFixed(2)}</span>
                             <span className="text-slate-300">→</span>
-                            <span className="font-bold text-slate-800 dark:text-slate-100">{c.after.toFixed(2)}</span>
+                            <span className="font-bold text-slate-800">{c.after.toFixed(2)}</span>
                             <span
                               className={`font-bold ml-1 ${
                                 diff > 0
-                                  ? 'text-emerald-600 dark:text-emerald-400'
-                                  : diff < 0
-                                  ? 'text-rose-600 dark:text-rose-400'
-                                  : 'text-slate-400'
+                                    ? 'text-emerald-600 dark:text-emerald-400'
+                                    : diff < 0
+                                    ? 'text-rose-600 dark:text-rose-400'
+                                    : 'text-slate-400'
                               }`}
                             >
                               ({diff > 0 ? `+${diff.toFixed(2)}` : diff.toFixed(2)})
@@ -1245,15 +1245,15 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
               )}
 
               {/* Recomendação de Backup */}
-              <div className="p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-between text-xs">
-                <span className="text-slate-600 dark:text-slate-400">
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
+                <span className="text-slate-600">
                   Deseja salvar um backup antes de aplicar as mudanças?
                 </span>
                 {onOpenBackupPanel && (
                   <button
                     type="button"
                     onClick={onOpenBackupPanel}
-                    className="flex items-center gap-1 px-2.5 py-1 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-lg font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                    className="flex items-center gap-1 px-2.5 py-1 text-slate-700 hover:text-slate-900 border border-slate-300 rounded-lg font-semibold hover:bg-slate-100 transition"
                   >
                     <Database className="w-3.5 h-3.5 text-slate-500" /> Backup
                   </button>
@@ -1261,11 +1261,11 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
               </div>
             </div>
 
-            <div className="p-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-2 bg-slate-50 dark:bg-slate-800/60">
+            <div className="p-3 border-t border-slate-200 flex items-center justify-end gap-2 bg-slate-50">
               <button
                 type="button"
                 onClick={() => setShowRegradeModal(false)}
-                className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg"
+                className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg"
               >
                 Cancelar
               </button>

@@ -82,7 +82,7 @@ export const ThemeSelector: React.FC<{ className?: string }> = ({ className = ''
             className={`min-h-[36px] px-2 py-1.5 rounded-lg border text-xs flex items-center justify-center gap-1.5 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
               isSelected
                 ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 border-indigo-200 dark:border-indigo-500/30 font-bold shadow-sm'
-                : 'border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                : 'border-slate-300 text-slate-600 hover:bg-slate-100'
             }`}
           >
             <Icon
