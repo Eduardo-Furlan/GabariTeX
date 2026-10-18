@@ -4,6 +4,7 @@ import { AnimatePresence } from 'motion/react';
 import * as m from 'motion/react-m';
 import { RefreshCw, CheckCircle2, X } from 'lucide-react';
 import { Button } from '../ui/Button';
+import { confirmDialog } from '../ui/confirmStore';
 
 interface UpdatePromptProps {
   isBatchProcessing?: boolean;
@@ -40,11 +41,14 @@ const UpdatePromptInner: React.FC<UpdatePromptProps> = ({ isBatchProcessing = fa
     }
   }, [offlineReady, setOfflineReady]);
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (isBatchProcessing) {
-      const confirmDiscard = window.confirm(
-        'Há uma correção em lote em processamento. Atualizar agora recarregará a página e o lote será reiniciado. Deseja continuar?'
-      );
+      const confirmDiscard = await confirmDialog({
+        title: 'Atualizar Aplicativo',
+        message: 'Há uma correção em lote em processamento. Atualizar agora recarregará a página e o lote será reiniciado. Deseja continuar?',
+        tone: 'danger',
+        confirmLabel: 'Recarregar e atualizar',
+      });
       if (!confirmDiscard) return;
     }
     updateServiceWorker(true);

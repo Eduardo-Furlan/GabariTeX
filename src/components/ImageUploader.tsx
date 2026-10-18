@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { X, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { downscaleImage } from '../utils/image';
+import { toast } from './ui/toastStore';
 import { cn } from './ui/cn';
 
 interface ImageUploaderProps {
@@ -20,7 +21,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
 
   const handleFile = async (file: File) => {
     if (!file.type.startsWith('image/')) {
-      alert('Por favor, selecione um arquivo de imagem.');
+      toast.error('Por favor, selecione um arquivo de imagem.');
       return;
     }
 

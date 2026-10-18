@@ -10,6 +10,7 @@ import { Button } from '../ui/Button';
 import { CountUp } from '../ui/CountUp';
 import { ProgressBar } from '../ui/ProgressBar';
 import { Alert } from '../ui/Alert';
+import { toast } from '../ui/toastStore';
 import { cn } from '../ui/cn';
 
 interface QuestionListProps {
@@ -54,7 +55,7 @@ export const QuestionList: React.FC<QuestionListProps> = ({
 
   const handleDeleteQuestion = (index: number) => {
     if (questions.length <= 1) {
-      alert('A prova deve ter pelo menos uma questão.');
+      toast.error('A prova deve ter pelo menos uma questão.');
       return;
     }
     const list = questions.filter((_, i) => i !== index);
