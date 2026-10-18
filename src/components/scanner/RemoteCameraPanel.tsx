@@ -102,7 +102,7 @@ export const RemoteCameraPanel: React.FC<RemoteCameraPanelProps> = ({
         {/* Estado: Sem Sessão Ativa */}
         {!session && !isStarting && (
           <div className="space-y-4 text-center py-4">
-            <div className="w-16 h-16 mx-auto rounded-2xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600">
+            <div className="w-16 h-16 mx-auto rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600">
               <Radio className="w-8 h-8" />
             </div>
             <div className="space-y-1">

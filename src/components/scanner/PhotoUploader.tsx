@@ -363,7 +363,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
 
         {/* Painel do Modo Diagnóstico OMR / Resultado Debug */}
         {isDebugAllowed && isDebugMode && debugResult && (
-          <div className="keep-light-palette mb-6 p-5 bg-slate-900 text-slate-100 rounded-2xl shadow-xl border border-slate-800 space-y-5">
+          <div className="keep-light-palette mb-6 p-5 bg-slate-900 text-slate-100 rounded-card shadow-xl border border-slate-800 space-y-5">
             {/* Barra de Título do Debug */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-800 flex-wrap gap-2">
               <div className="flex items-center gap-2">
@@ -879,7 +879,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
         )}
 
         {isDebugAllowed && isDebugMode && errorDebugUrl && !debugResult && (
-          <div className="keep-light-palette mt-4 p-4 bg-slate-900 text-slate-100 rounded-2xl border border-slate-800 space-y-3">
+          <div className="keep-light-palette mt-4 p-4 bg-slate-900 text-slate-100 rounded-card border border-slate-800 space-y-3">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <span className="text-meta font-bold text-amber-400 flex items-center gap-1.5">
                 <Bug className="w-4 h-4" /> Diagnóstico Visual da Imagem (Falha na Detecção)

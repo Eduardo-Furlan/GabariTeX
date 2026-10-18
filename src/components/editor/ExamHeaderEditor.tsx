@@ -81,9 +81,9 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div>
-          <label className="flex items-center justify-between text-xs font-semibold text-slate-600 uppercase mb-1">
+          <label className="flex items-center justify-between text-xs font-semibold text-slate-600 mb-1">
             <span>Instituição / Universidade</span>
-            <span className="text-[10px] text-slate-400 font-mono font-normal">
+            <span className="text-meta text-slate-400 font-mono font-normal">
               {(exam.header.institution || '').length}/70
             </span>
           </label>
@@ -98,9 +98,9 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
         </div>
 
         <div>
-          <label className="flex items-center justify-between text-xs font-semibold text-slate-600 uppercase mb-1">
+          <label className="flex items-center justify-between text-xs font-semibold text-slate-600 mb-1">
             <span>Disciplina</span>
-            <span className="text-[10px] text-slate-400 font-mono font-normal">
+            <span className="text-meta text-slate-400 font-mono font-normal">
               {(exam.header.course || '').length}/40
             </span>
           </label>
@@ -115,9 +115,9 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
         </div>
 
         <div>
-          <label className="flex items-center justify-between text-xs font-semibold text-slate-600 uppercase mb-1">
+          <label className="flex items-center justify-between text-xs font-semibold text-slate-600 mb-1">
             <span>Título da Avaliação</span>
-            <span className="text-[10px] text-slate-400 font-mono font-normal">
+            <span className="text-meta text-slate-400 font-mono font-normal">
               {(exam.header.examTitle || '').length}/50
             </span>
           </label>
@@ -132,9 +132,9 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
         </div>
 
         <div>
-          <label className="flex items-center justify-between text-xs font-semibold text-slate-600 uppercase mb-1">
+          <label className="flex items-center justify-between text-xs font-semibold text-slate-600 mb-1">
             <span>Professor(a)</span>
-            <span className="text-[10px] text-slate-400 font-mono font-normal">
+            <span className="text-meta text-slate-400 font-mono font-normal">
               {(exam.header.professor || '').length}/40
             </span>
           </label>
@@ -149,7 +149,7 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-600 uppercase mb-1">Data</label>
+          <label className="block text-xs font-semibold text-slate-600 mb-1">Data</label>
           <input
             type="text"
             className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:outline-none transition"
@@ -160,11 +160,11 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
         </div>
 
         <div>
-          <label className="text-xs font-semibold uppercase mb-1 flex items-center justify-between text-amber-700 dark:text-amber-300">
+          <label className="text-xs font-semibold mb-1 flex items-center justify-between text-amber-700 dark:text-amber-300">
             <span className="flex items-center gap-1">
               <Shield className="w-3.5 h-3.5" /> Senha da Prova (QR Code)
             </span>
-            <div className="flex items-center gap-1 normal-case font-normal text-[11px]">
+            <div className="flex items-center gap-1 normal-case font-normal text-meta">
               <button
                 type="button"
                 onClick={handleCopyPassword}
@@ -212,7 +212,7 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
       </div>
 
       <div className="mt-4">
-        <label className="block text-xs font-semibold text-slate-600 uppercase mb-1">
+        <label className="block text-xs font-semibold text-slate-600 mb-1">
           Instruções Gerais para os Alunos
         </label>
         <textarea

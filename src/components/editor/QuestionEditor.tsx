@@ -255,17 +255,17 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
               ? 'Questão anulada: pontuação cheia concedida a todos os alunos ao recalcular.'
               : 'Questão anulada: desconsiderada do total e do valor máximo da prova ao recalcular.'}
           </span>
-          <span className="text-[10px] opacity-75">Não altera folhas já impressas</span>
+          <span className="text-meta opacity-75">Não altera folhas já impressas</span>
         </div>
       )}
 
       <div>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 mb-1.5">
-          <label className="block text-xs font-semibold text-slate-600 uppercase">
+          <label className="block text-xs font-semibold text-slate-600">
             Enunciado da Questão
           </label>
-          <div className="flex flex-wrap items-center gap-1 text-[11px] text-slate-500">
-            <span className="text-slate-400 text-[10px]">Atalhos LaTeX:</span>
+          <div className="flex flex-wrap items-center gap-1 text-meta text-slate-500">
+            <span className="text-slate-400 text-meta">Atalhos LaTeX:</span>
             {[
               { label: 'x²', val: '$x^2$' },
               { label: 'a/b', val: '$\\frac{a}{b}$' },
@@ -279,7 +279,7 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
                 key={btn.label}
                 type="button"
                 onClick={() => insertMathSnippet(btn.val)}
-                className="px-1.5 py-0.5 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-500/20 dark:hover:text-indigo-300 border border-slate-200 rounded font-mono text-[10px] transition"
+                className="px-1.5 py-0.5 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-500/20 dark:hover:text-indigo-300 border border-slate-200 rounded font-mono text-meta transition"
               >
                 {btn.label}
               </button>
@@ -297,7 +297,7 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
 
         {question.prompt && (
           <div className="mt-2 p-3 bg-slate-50 border border-slate-200 rounded-lg">
-            <span className="text-[10px] font-semibold text-slate-400 uppercase block mb-1">
+            <span className="text-meta font-semibold text-slate-400 block mb-1">
               Pré-visualização do Enunciado:
             </span>
             <MathView content={question.prompt} className="text-slate-800 text-sm leading-relaxed" />
@@ -316,7 +316,7 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
       {question.type === 'objective' && question.options && (
         <div className="mt-5 pt-4 border-t border-slate-100">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-slate-600 uppercase flex items-center gap-1">
+            <span className="text-xs font-semibold text-slate-600 flex items-center gap-1">
               Alternativas (Selecione a correta para o gabarito)
             </span>
             {question.options.length < 5 && (
@@ -400,7 +400,7 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
 
       {question.type === 'subjective' && (
         <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-3 flex-wrap">
-          <label className="text-xs font-semibold text-slate-600 uppercase">
+          <label className="text-xs font-semibold text-slate-600">
             Linhas pautadas para resposta:
           </label>
           <input

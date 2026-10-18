@@ -131,7 +131,7 @@ export const VersionsScreen: React.FC = () => {
           {showAnswerSheetPreview && (
             <Surface tone="default" className="p-4 sm:p-6">
               <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3 flex-wrap gap-2">
-                <span className="text-xs font-bold uppercase text-slate-700 flex items-center gap-1.5">
+                <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                   <Eye className="w-4 h-4 text-indigo-600 dark:text-indigo-300" />
                   {`Pré-visualização da Folha de Respostas A4 (Versão ${currentVersion.versionLetter})`}
                 </span>

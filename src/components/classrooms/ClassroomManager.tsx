@@ -269,7 +269,7 @@ export const ClassroomManager: React.FC<ClassroomManagerProps> = ({
       {/* Lado Esquerdo: Lista de Turmas */}
       <div className="w-full md:w-64 border-b md:border-b-0 md:border-r border-slate-200 flex flex-col shrink-0 bg-slate-50">
         <div className="p-3 border-b border-slate-200 flex items-center justify-between">
-          <span className="text-meta font-bold text-slate-700 uppercase tracking-wider">
+          <span className="text-meta font-bold text-slate-700">
             Suas Turmas ({classes.length})
           </span>
           <Button
@@ -759,7 +759,7 @@ export const ClassroomManager: React.FC<ClassroomManagerProps> = ({
         <div className="space-y-4 text-body">
           {/* Destino da Importação */}
           <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
-            <label className="block text-meta font-bold text-slate-700 mb-2 uppercase tracking-wider">
+            <label className="block text-meta font-bold text-slate-700 mb-2">
               Destino da Importação:
             </label>
             <div className="flex items-center gap-4 flex-wrap text-body">
@@ -865,7 +865,7 @@ export const ClassroomManager: React.FC<ClassroomManagerProps> = ({
                     </div>
                   ))}
                   {parsedPreview.students.length > 15 && (
-                    <div className="pt-1.5 text-center text-[10px] text-slate-400 italic">
+                    <div className="pt-1.5 text-center text-meta text-slate-400 italic">
                       + {parsedPreview.students.length - 15} outros alunos...
                     </div>
                   )}
