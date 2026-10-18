@@ -53,7 +53,7 @@ export const PasswordModal: React.FC<PasswordModalProps> = ({
     >
       <form onSubmit={handleSubmit} className="space-y-4 pt-1">
         <div>
-          <label className="block text-meta font-semibold text-slate-700 uppercase mb-1.5">
+          <label className="block text-meta font-semibold text-slate-700 mb-1.5">
             Digitar senha apenas desta vez
           </label>
           <div className="relative flex items-center">

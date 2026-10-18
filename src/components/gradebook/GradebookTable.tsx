@@ -874,7 +874,7 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
                       <CountUp value={totalEvaluated} />
                     </span>
                     {excludedPartialCount > 0 && (
-                      <span className="text-[11px] text-amber-700 dark:text-amber-300 font-medium">
+                      <span className="text-meta text-amber-700 dark:text-amber-300 font-medium">
                         ({excludedPartialCount} com dissertativas pendentes)
                       </span>
                     )}

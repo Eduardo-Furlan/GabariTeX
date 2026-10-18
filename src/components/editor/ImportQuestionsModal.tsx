@@ -195,7 +195,7 @@ export const ImportQuestionsModal: React.FC<ImportQuestionsModalProps> = ({
               <div>
                 <label
                   htmlFor="source-exam-select"
-                  className="block text-xs font-semibold text-slate-600 uppercase mb-1"
+                  className="block text-xs font-semibold text-slate-600 mb-1"
                 >
                   Prova de Origem
                 </label>
@@ -218,7 +218,7 @@ export const ImportQuestionsModal: React.FC<ImportQuestionsModalProps> = ({
               <div>
                 <label
                   htmlFor="source-question-search"
-                  className="block text-xs font-semibold text-slate-600 uppercase mb-1"
+                  className="block text-xs font-semibold text-slate-600 mb-1"
                 >
                   Buscar no Enunciado
                 </label>
@@ -333,7 +333,7 @@ export const ImportQuestionsModal: React.FC<ImportQuestionsModalProps> = ({
                               {q.type === 'objective' ? 'Objetiva' : 'Dissertativa'}
                             </Badge>
                           </div>
-                          <span className="font-mono text-[11px] font-semibold text-slate-600 tabular-nums">
+                          <span className="font-mono text-meta font-semibold text-slate-600 tabular-nums">
                             {(q.points || 0).toFixed(1)} pt
                           </span>
                         </div>

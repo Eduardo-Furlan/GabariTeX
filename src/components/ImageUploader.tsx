@@ -133,7 +133,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
                 <span className="text-xs font-medium text-slate-700">
                   Adicionar Imagem / Gráfico (opcional)
                 </span>
-                <span className="text-[11px] text-slate-400 mt-0.5">
+                <span className="text-meta text-slate-400 mt-0.5">
                   Clique ou arraste um arquivo de imagem
                 </span>
               </>

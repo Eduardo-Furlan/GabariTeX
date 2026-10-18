@@ -373,7 +373,7 @@ export const GradingModal: React.FC<GradingModalProps> = ({
           {/* Detalhamento Questão a Questão com Ajuste Manual */}
           <div>
             <div className="flex items-center justify-between mb-2 flex-wrap gap-1">
-              <label className="block text-meta font-bold text-slate-700 uppercase">
+              <label className="block text-meta font-bold text-slate-700">
                 Espelho de Correção das Questões Objetivas:
               </label>
               <span className="text-meta text-slate-500">
@@ -503,7 +503,7 @@ export const GradingModal: React.FC<GradingModalProps> = ({
           {hasSubjective && (
             <div>
               <div className="flex items-center justify-between mb-2 flex-wrap gap-1">
-                <label className="block text-meta font-bold text-slate-700 uppercase">
+                <label className="block text-meta font-bold text-slate-700">
                   Questões Dissertativas:
                 </label>
                 <span className="text-meta text-slate-500">

@@ -453,7 +453,7 @@ export const ExamsScreen: React.FC<ExamsScreenProps> = ({
                           </>
                         )}
                         <span className="text-slate-300" aria-hidden="true">·</span>
-                        <span className="text-[11px] text-slate-400">
+                        <span className="text-meta text-slate-400">
                           {`Editada em ${formatDate(ex.updatedAt)}`}
                         </span>
                       </div>
