@@ -139,11 +139,14 @@ jobs:
 
       - name: Run Cargo test
         shell: pwsh
+        env:
+          GABARITEX_WINDOWS_TEST: "1"
         run: |
           $opencv_vc = Get-ChildItem "C:\tools\opencv\build\x64" -Directory | Where-Object { $_.Name -like "vc*" } | Select-Object -Last 1
           if ($opencv_vc) {
             $env:PATH = "$($opencv_vc.FullName)\bin;$env:PATH"
           }
-          cargo test --manifest-path src-tauri/Cargo.toml
+          cargo test --lib --manifest-path src-tauri/Cargo.toml
+
 
 
