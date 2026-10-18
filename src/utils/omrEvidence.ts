@@ -39,10 +39,8 @@ export function buildEvidence(
       }
     }
 
-    // 2. Para cada questão com needsReview, recorta a faixa correspondente
-    const answersNeedingReview = record.answers.filter((a) => a.needsReview);
-
-    for (const ans of answersNeedingReview) {
+    // 2. Para cada questão avaliada, recorta a faixa correspondente quando houver bolhas detectadas
+    for (const ans of record.answers) {
       try {
         const qBubbles = (debugInfo.bubbles || []).filter(
           (b) => b.questionNumber === ans.questionNumber

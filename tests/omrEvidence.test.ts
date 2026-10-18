@@ -62,7 +62,7 @@ describe('omrEvidence', () => {
     expect(res).toEqual({ rowCrops: {} });
   });
 
-  it('generates row crop for answers with needsReview and thumbnail', () => {
+  it('generates row crop for all answers with detected bubbles and thumbnail', () => {
     const drawImageMock = vi.fn();
     const toDataURLMock = vi.fn().mockReturnValue('data:image/jpeg;base64,mockdata');
 
@@ -96,7 +96,19 @@ describe('omrEvidence', () => {
 
     expect(res.sheetThumbUrl).toBe('data:image/jpeg;base64,mockdata');
     expect(res.rowCrops[2]).toBe('data:image/jpeg;base64,mockdata');
-    expect(res.rowCrops[1]).toBeUndefined(); // question 1 didn't need review
+    expect(res.rowCrops[1]).toBeUndefined(); // question 1 had no bubbles in dummyDebugInfo
+
+    // When question 1 has bubbles, it is also cropped even with needsReview = false
+    const debugWithQ1: OmrDebugInfo = {
+      ...dummyDebugInfo,
+      bubbles: [
+        ...dummyDebugInfo.bubbles,
+        { questionNumber: 1, optionLabel: 'A', cx: 100, cy: 110, radius: 10, fillRatio: 0.7, isMarked: true },
+      ],
+    };
+    const resWithQ1 = buildEvidence(fakeCanvas as unknown as HTMLCanvasElement, debugWithQ1, dummyRecord);
+    expect(resWithQ1.rowCrops[1]).toBe('data:image/jpeg;base64,mockdata');
+    expect(resWithQ1.rowCrops[2]).toBe('data:image/jpeg;base64,mockdata');
   });
 
   it('safely handles out-of-bounds coordinates without throwing', () => {
