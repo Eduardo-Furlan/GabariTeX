@@ -5,6 +5,9 @@ export default defineConfig({
   title: 'GabariTeX',
   description: 'Gerador de provas com LaTeX e corretor óptico de folhas de respostas com QR Code criptografado',
   base: '/GabariTeX/docs/',
+  head: [
+    ['link', { rel: 'icon', href: '/GabariTeX/docs/favicon.ico' }],
+  ],
   srcExclude: ['screenshots/**/*.md'],
   vite: {
     define: {
