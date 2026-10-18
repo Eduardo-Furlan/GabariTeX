@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, Suspense } from 'react';
 import { ProfileProvider, useProfile } from './context/ProfileContext';
 import { useHashRouter, StepId } from './router/hashRouter';
 import { decideRouteSync } from './router/examSync';
@@ -8,14 +8,30 @@ import { StepTabs } from './components/navigation/StepTabs';
 import { MobileTabBar } from './components/navigation/MobileTabBar';
 
 import { ExamsScreen } from './screens/ExamsScreen';
-import { ClassesScreen } from './screens/ClassesScreen';
 import { EditorScreen } from './screens/EditorScreen';
-import { VersionsScreen } from './screens/VersionsScreen';
-import { PrintScreen } from './screens/PrintScreen';
-import { ScannerScreen } from './screens/ScannerScreen';
-import { GradebookScreen } from './screens/GradebookScreen';
+import { lazyWithRetry } from './components/ui/lazyWithRetry';
+import { ScreenSkeleton } from './components/ui/ScreenSkeleton';
 
-import { ProfileExportImportModal } from './components/profile/ProfileExportImportModal';
+const ClassesScreen = lazyWithRetry(() =>
+  import('./screens/ClassesScreen').then((m) => ({ default: m.ClassesScreen }))
+);
+const VersionsScreen = lazyWithRetry(() =>
+  import('./screens/VersionsScreen').then((m) => ({ default: m.VersionsScreen }))
+);
+const PrintScreen = lazyWithRetry(() =>
+  import('./screens/PrintScreen').then((m) => ({ default: m.PrintScreen }))
+);
+const ScannerScreen = lazyWithRetry(() =>
+  import('./screens/ScannerScreen').then((m) => ({ default: m.ScannerScreen }))
+);
+const GradebookScreen = lazyWithRetry(() =>
+  import('./screens/GradebookScreen').then((m) => ({ default: m.GradebookScreen }))
+);
+const ProfileExportImportModal = lazyWithRetry(() =>
+  import('./components/profile/ProfileExportImportModal').then((m) => ({
+    default: m.ProfileExportImportModal,
+  }))
+);
 import { GradingModal } from './components/scanner/GradingModal';
 import { UpdatePrompt } from './components/pwa/UpdatePrompt';
 import { ToastHost } from './components/ui/Toast';
@@ -213,31 +229,33 @@ const AppContent: React.FC = () => {
 
       {/* 4. Telas / Conteúdo Principal */}
       <main className="flex-1 flex flex-col" data-nav-dir={navDir}>
-        {route.type === 'exams' && (
-          <ExamsScreen
-            onNavigate={navigate}
-            onOpenExportImport={handleOpenExportImport}
-          />
-        )}
+        <Suspense fallback={<ScreenSkeleton />}>
+          {route.type === 'exams' && (
+            <ExamsScreen
+              onNavigate={navigate}
+              onOpenExportImport={handleOpenExportImport}
+            />
+          )}
 
-        {route.type === 'classes' && <ClassesScreen />}
+          {route.type === 'classes' && <ClassesScreen />}
 
-        {route.type === 'scanner' && <ScannerScreen onNavigate={navigate} />}
+          {route.type === 'scanner' && <ScannerScreen onNavigate={navigate} />}
 
-        {route.type === 'exam_step' && (
-          <>
-            {route.step === 'criar' && <EditorScreen />}
-            {route.step === 'versoes' && <VersionsScreen />}
-            {route.step === 'imprimir' && <PrintScreen />}
-            {route.step === 'corrigir' && <ScannerScreen onNavigate={navigate} />}
-            {route.step === 'notas' && (
-              <GradebookScreen
-                onNavigate={navigate}
-                onOpenExportImport={handleOpenExportImport}
-              />
-            )}
-          </>
-        )}
+          {route.type === 'exam_step' && (
+            <>
+              {route.step === 'criar' && <EditorScreen />}
+              {route.step === 'versoes' && <VersionsScreen />}
+              {route.step === 'imprimir' && <PrintScreen />}
+              {route.step === 'corrigir' && <ScannerScreen onNavigate={navigate} />}
+              {route.step === 'notas' && (
+                <GradebookScreen
+                  onNavigate={navigate}
+                  onOpenExportImport={handleOpenExportImport}
+                />
+              )}
+            </>
+          )}
+        </Suspense>
       </main>
 
       {/* 5. Barra Inferior Fixa para Mobile */}
@@ -260,15 +278,17 @@ const AppContent: React.FC = () => {
 
       {/* Modal de Exportação / Importação de Perfil ZIP */}
       {isExportImportOpen && exportProfileData && (
-        <ProfileExportImportModal
-          isOpen={isExportImportOpen}
-          onClose={() => setIsExportImportOpen(false)}
-          currentData={exportProfileData}
-          currentSettings={profileSettings}
-          activeExamId={exam.id || activeExamId}
-          initialMode={exportImportMode}
-          onProfileImported={handleProfileImported}
-        />
+        <Suspense fallback={null}>
+          <ProfileExportImportModal
+            isOpen={isExportImportOpen}
+            onClose={() => setIsExportImportOpen(false)}
+            currentData={exportProfileData}
+            currentSettings={profileSettings}
+            activeExamId={exam.id || activeExamId}
+            initialMode={exportImportMode}
+            onProfileImported={handleProfileImported}
+          />
+        </Suspense>
       )}
 
       {/* Diálogo de troca de prova ativa caso folha de outra prova seja escaneada */}
