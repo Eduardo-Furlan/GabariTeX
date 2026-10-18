@@ -24,6 +24,8 @@ import {
   FileCheck2,
   Loader2,
 } from 'lucide-react';
+import { toast } from '../ui/toastStore';
+import { confirmDialog } from '../ui/confirmStore';
 
 interface ProfileExportImportModalProps {
   isOpen: boolean;
@@ -122,7 +124,7 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
         setTimeout(() => setExportSuccess(null), 4000);
       }
     } catch (err: unknown) {
-      alert(`Falha ao exportar perfil: ${err instanceof Error ? err.message : String(err)}`);
+      toast.error(`Falha ao exportar perfil: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setIsExporting(false);
     }
@@ -156,13 +158,16 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
     }
   };
 
-  const handleExecuteImport = () => {
+  const handleExecuteImport = async () => {
     if (!importPreview) return;
 
     if (importMode === 'replace') {
-      const confirmReplace = window.confirm(
-        'ATENÇÃO: Você escolheu "Substituir tudo". Todos os dados existentes serão substituídos pelos do arquivo importado. Deseja continuar?'
-      );
+      const confirmReplace = await confirmDialog({
+        title: 'Substituir Tudo',
+        message: 'ATENÇÃO: Você escolheu "Substituir tudo". Todos os dados existentes serão substituídos pelos do arquivo importado. Deseja continuar?',
+        tone: 'danger',
+        confirmLabel: 'Substituir tudo',
+      });
       if (!confirmReplace) return;
 
       onProfileImported(importPreview.parsedData, importPreview.parsedSettings, 'replace');

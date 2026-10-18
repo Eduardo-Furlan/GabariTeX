@@ -3,6 +3,7 @@ import { useProfile } from '../context/ProfileContext';
 import { GradebookTable } from '../components/gradebook/GradebookTable';
 import { GradingRecord } from '../types/exam';
 import { Route } from '../router/hashRouter';
+import { confirmDialog } from '../components/ui/confirmStore';
 
 interface GradebookScreenProps {
   onNavigate: (route: Route) => void;
@@ -35,8 +36,14 @@ export const GradebookScreen: React.FC<GradebookScreenProps> = ({
     updateRecords((prev) => prev.filter((r) => r.id !== id));
   };
 
-  const handleClearAll = () => {
-    if (confirm('Tem certeza de que deseja apagar todas as notas corrigidas desta prova?')) {
+  const handleClearAll = async () => {
+    const ok = await confirmDialog({
+      title: 'Limpar Notas',
+      message: 'Tem certeza de que deseja apagar todas as notas corrigidas desta prova?',
+      tone: 'danger',
+      confirmLabel: 'Limpar notas',
+    });
+    if (ok) {
       updateRecords((prev) => prev.filter((r) => r.examId && r.examId !== exam.id));
     }
   };

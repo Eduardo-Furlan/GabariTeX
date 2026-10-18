@@ -24,6 +24,7 @@ import {
   triggerDesktopSnapshot,
   checkAndRunDailySnapshot,
 } from '../platform/snapshots';
+import { toast } from '../components/ui/toastStore';
 
 export interface ExamSwitchPromptState {
   targetExamId: string;
@@ -762,7 +763,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const updateExam = useCallback(
     (updated: Exam) => {
       if (!isWithinLimit(updated.questions?.length ?? 0)) {
-        alert(
+        toast.error(
           `A prova não pode exceder ${MAX_QUESTIONS} questões (máximo suportado na folha de respostas A4). A alteração foi rejeitada.`
         );
         return;
@@ -808,7 +809,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const idx = exam.questions.findIndex((q) => q.id === questionId);
       if (idx === -1) return undefined;
       if (!isWithinLimit(exam.questions.length + 1)) {
-        alert(
+        toast.error(
           `A prova não pode exceder ${MAX_QUESTIONS} questões (máximo suportado na folha de respostas A4).`
         );
         return undefined;
@@ -837,7 +838,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (questionsToImport.length === 0) return 0;
       const availableSlots = MAX_QUESTIONS - exam.questions.length;
       if (availableSlots <= 0) {
-        alert(
+        toast.error(
           `A prova já atingiu o limite máximo de ${MAX_QUESTIONS} questões.`
         );
         return 0;

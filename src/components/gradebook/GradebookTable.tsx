@@ -214,7 +214,7 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
 
   const handleStartRegrade = () => {
     if (!exam) {
-      alert('A prova atual não foi encontrada neste aparelho.');
+      toast.error('A prova atual não foi encontrada neste aparelho.');
       return;
     }
     const result = regradeRecords(records, exam);
