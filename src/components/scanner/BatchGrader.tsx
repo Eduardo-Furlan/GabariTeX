@@ -1,4 +1,5 @@
 import React, { useReducer, useRef, useState, useEffect, useCallback } from 'react';
+import * as m from 'motion/react-m';
 import { ExamVersion, GradingRecord, Classroom } from '../../types/exam';
 import { DecryptedQrPayload } from '../../types/omr';
 import { gradePhotoFile } from '../../utils/photoPipeline';
@@ -18,12 +19,10 @@ import {
   RotateCcw,
   Trash2,
   Save,
-  Loader2,
   Eye,
   Check,
   AlertCircle,
   FileCheck,
-  Smartphone,
 } from 'lucide-react';
 import {
   RemoteSessionInfo,
@@ -39,6 +38,13 @@ import {
 } from '../../platform/remoteCamera';
 import { getFileSignature } from '../../utils/batchQueue';
 import { RemoteCameraPanel } from './RemoteCameraPanel';
+import { Button } from '../ui/Button';
+import { IconButton } from '../ui/IconButton';
+import { Modal } from '../ui/Modal';
+import { ProgressBar } from '../ui/ProgressBar';
+import { CountUp } from '../ui/CountUp';
+import { Bubble } from '../ui/Bubble';
+import { BubbleLoader } from '../ui/BubbleLoader';
 
 export interface BatchGraderProps {
   teacherPassword: string;
@@ -120,17 +126,67 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
   const onLockPayloadRef = useRef(onLockPayload);
   onLockPayloadRef.current = onLockPayload;
 
-  const currentClass = classes.find((c) => c.id === activeClassId) || null;
-  const summary = getBatchSummary(state.items);
-
+  // Sincroniza flag de lote ativo com a aplicação para evitar fechamento acidental
   useEffect(() => {
     onRunningChange?.(state.isProcessing);
-    return () => {
-      onRunningChange?.(false);
-    };
   }, [state.isProcessing, onRunningChange]);
 
+  // Listener para fotos recebidas da Câmera Remota em lote
+  const handleEnqueueRemotePhoto = useCallback(
+    (file: File, remoteId?: string, target?: 'qr' | 'sheet') => {
+      const sig = getFileSignature(file);
+      if (remoteId) {
+        remoteIdBySignatureRef.current.set(sig, remoteId);
+      }
+      if (target) {
+        remoteTargetBySignatureRef.current.set(sig, target);
+      }
+      dispatch({ type: 'ADD_FILES', files: [file] });
+      cancelRequestedRef.current = false;
+      inFlightIdsRef.current.clear();
+      dispatch({ type: 'START_PROCESSING' });
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (!incomingRemotePhoto) return;
+    const { file, id, target } = incomingRemotePhoto;
+    handleEnqueueRemotePhoto(file, id, target);
+  }, [incomingRemotePhoto, handleEnqueueRemotePhoto]);
+
+  useEffect(() => {
+    if (typeof __DESKTOP__ === 'undefined' || !__DESKTOP__) return;
+    getRemoteCameraStatus().then((s) => {
+      if (s) setRemoteSession(s);
+    });
+    getNetworkInterfaces().then((list) => {
+      setAvailableInterfaces(list);
+    });
+
+    let unlistenStopped: (() => void) | undefined;
+    listenRemoteStopped(() => {
+      setRemoteSession(null);
+    }).then((un) => {
+      unlistenStopped = un;
+    });
+
+    let unlistenPhotos: (() => void) | undefined;
+    listenRemotePhotos(async (file, id, target) => {
+      setLocalRemoteReceivedCount((c) => c + 1);
+      handleEnqueueRemotePhoto(file, id, target);
+    }).then((un) => {
+      unlistenPhotos = un;
+    });
+
+    return () => {
+      if (unlistenStopped) unlistenStopped();
+      if (unlistenPhotos) unlistenPhotos();
+    };
+  }, [handleEnqueueRemotePhoto]);
+
   const handleStartRemote = async (ip?: string) => {
+    if (!__DESKTOP__) return;
     setIsStartingRemote(true);
     try {
       const s = await startRemoteCamera(ip);
@@ -141,11 +197,14 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
   };
 
   const handleStopRemote = async () => {
-    await stopRemoteCamera();
+    if (__DESKTOP__) {
+      await stopRemoteCamera();
+    }
     setRemoteSession(null);
   };
 
   const handleChangeRemoteInterface = async (ip: string) => {
+    if (!__DESKTOP__) return;
     setIsStartingRemote(true);
     try {
       const s = await startRemoteCamera(ip);
@@ -155,65 +214,7 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
     }
   };
 
-  // Recebe e enfileira fotos provenientes da câmera remota centralizada no ScannerScreen
-  useEffect(() => {
-    if (!incomingRemotePhoto) return;
-    const { file, id, target } = incomingRemotePhoto;
-    const sig = getFileSignature(file);
-    remoteIdBySignatureRef.current.set(sig, id);
-    if (target) {
-      remoteTargetBySignatureRef.current.set(sig, target);
-    }
-
-    dispatch({ type: 'ADD_FILES', files: [file] });
-    cancelRequestedRef.current = false;
-    inFlightIdsRef.current.clear();
-    dispatch({ type: 'START_PROCESSING' });
-  }, [incomingRemotePhoto]);
-
-  useEffect(() => {
-    if (typeof __DESKTOP__ === 'undefined' || !__DESKTOP__) return;
-
-    getRemoteCameraStatus().then((s) => {
-      if (s) setRemoteSession(s);
-    });
-    getNetworkInterfaces().then((list) => {
-      setAvailableInterfaces(list);
-    });
-
-    let unlistenPhoto: (() => void) | undefined;
-    let unlistenStopped: (() => void) | undefined;
-
-    if (!onOpenRemoteCamera) {
-      listenRemotePhotos((file, remoteId, target) => {
-        const sig = getFileSignature(file);
-        remoteIdBySignatureRef.current.set(sig, remoteId);
-        if (target) {
-          remoteTargetBySignatureRef.current.set(sig, target);
-        }
-        setLocalRemoteReceivedCount((c) => c + 1);
-
-        dispatch({ type: 'ADD_FILES', files: [file] });
-        cancelRequestedRef.current = false;
-        inFlightIdsRef.current.clear();
-        dispatch({ type: 'START_PROCESSING' });
-      }).then((unlisten) => {
-        unlistenPhoto = unlisten;
-      });
-    }
-
-    listenRemoteStopped(() => {
-      setRemoteSession(null);
-    }).then((unlisten) => {
-      unlistenStopped = unlisten;
-    });
-
-    return () => {
-      unlistenPhoto?.();
-      unlistenStopped?.();
-    };
-  }, [onOpenRemoteCamera]);
-
+  // Motor sequencial de processamento da fila
   const runQueue = useCallback(async () => {
     if (isRunningRef.current) return;
     isRunningRef.current = true;
@@ -295,83 +296,9 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
     dispatch({ type: 'START_PROCESSING' });
   };
 
-  const handleCancel = () => {
-    cancelRequestedRef.current = true;
-    inFlightIdsRef.current.clear();
-    dispatch({ type: 'CANCEL_PROCESSING' });
-  };
-
-  const handleStart = () => {
-    cancelRequestedRef.current = false;
-    inFlightIdsRef.current.clear();
-    dispatch({ type: 'START_PROCESSING' });
-  };
-
-  const handleRetryItem = (id: string) => {
-    inFlightIdsRef.current.delete(id);
-    dispatch({ type: 'RETRY_ITEM', id });
-    cancelRequestedRef.current = false;
-    dispatch({ type: 'START_PROCESSING' });
-  };
-
-  const handleSaveAllOk = () => {
-    const okItems = state.items.filter((it) => it.status === 'ok' && it.result?.record);
-    if (okItems.length === 0) return;
-
-    const recordsToSave = okItems.map((it) => {
-      const rec = it.result!.record!;
-      return {
-        ...rec,
-        classId: it.classId || rec.classId || activeClassId || undefined,
-        studentRef: it.studentRef ?? rec.studentRef,
-        studentName: it.studentName?.trim() || rec.studentName,
-        studentId: it.studentId?.trim() || rec.studentId,
-      };
-    });
-
-    onSaveRecords(recordsToSave);
-    dispatch({ type: 'MARK_ITEMS_SAVED', ids: okItems.map((it) => it.id) });
-  };
-
-  const handleConfirmSaveAllWithReview = () => {
-    const eligibleItems = state.items.filter(
-      (it) => (it.status === 'ok' || it.status === 'review') && it.result?.record
-    );
-    if (eligibleItems.length === 0) return;
-
-    const recordsToSave = eligibleItems.map((it) => {
-      const rec = it.result!.record!;
-      return {
-        ...rec,
-        classId: it.classId || rec.classId || activeClassId || undefined,
-        studentRef: it.studentRef ?? rec.studentRef,
-        studentName: it.studentName?.trim() || rec.studentName,
-        studentId: it.studentId?.trim() || rec.studentId,
-      };
-    });
-
-    onSaveRecords(recordsToSave);
-    dispatch({ type: 'MARK_ITEMS_SAVED', ids: eligibleItems.map((it) => it.id) });
-    setConfirmSaveAllOpen(false);
-  };
-
-  const handleSaveSingleItem = (item: BatchItem) => {
-    if (!item.result?.record) return;
-    const rec = item.result.record;
-    const finalized = {
-      ...rec,
-      classId: item.classId || rec.classId || activeClassId || undefined,
-      studentRef: item.studentRef ?? rec.studentRef,
-      studentName: item.studentName?.trim() || rec.studentName,
-      studentId: item.studentId?.trim() || rec.studentId,
-    };
-    onSaveRecords([finalized]);
-    dispatch({ type: 'MARK_SAVED', id: item.id });
-  };
-
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
-    setIsDragging(true);
+    if (!isDragging) setIsDragging(true);
   };
 
   const handleDragLeave = (e: React.DragEvent) => {
@@ -387,70 +314,163 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
     }
   };
 
-  const progressPercent =
-    summary.total > 0
-      ? Math.round((summary.processedCount / summary.total) * 100)
-      : 0;
+  const handleStart = () => {
+    cancelRequestedRef.current = false;
+    dispatch({ type: 'START_PROCESSING' });
+  };
+
+  const handleCancel = () => {
+    cancelRequestedRef.current = true;
+    inFlightIdsRef.current.clear();
+    dispatch({ type: 'CANCEL_PROCESSING' });
+  };
+
+  const handleRetryItem = (id: string) => {
+    inFlightIdsRef.current.delete(id);
+    dispatch({ type: 'RETRY_ITEM', id });
+    cancelRequestedRef.current = false;
+    dispatch({ type: 'START_PROCESSING' });
+  };
+
+  const summary = getBatchSummary(state.items);
+  const progressPercent = summary.total > 0 ? Math.round((summary.processedCount / summary.total) * 100) : 0;
+
+  const currentClass = classes.find((c) => c.id === activeClassId);
+
+  const buildFinalRecord = (item: BatchItem): GradingRecord | null => {
+    const raw = item.result?.record;
+    if (!raw) return null;
+
+    const chosenClassId = item.classId ?? activeClassId ?? raw.classId;
+    const chosenStudentRef = item.studentRef ?? raw.studentRef;
+    const chosenName = item.studentName ?? raw.studentName;
+    const chosenId = item.studentId ?? raw.studentId;
+
+    return {
+      ...raw,
+      classId: chosenClassId || undefined,
+      studentRef: chosenStudentRef || undefined,
+      studentName: chosenName,
+      studentId: chosenId,
+    };
+  };
+
+  const handleSaveAllOk = () => {
+    const okItems = state.items.filter((it) => it.status === 'ok' && it.result?.record);
+    const toSave: GradingRecord[] = [];
+    const ids: string[] = [];
+
+    for (const it of okItems) {
+      const rec = buildFinalRecord(it);
+      if (rec) {
+        toSave.push(rec);
+        ids.push(it.id);
+      }
+    }
+
+    if (toSave.length > 0) {
+      onSaveRecords(toSave);
+      for (const id of ids) {
+        dispatch({ type: 'MARK_SAVED', id });
+      }
+    }
+  };
+
+  const handleConfirmSaveAllWithReview = () => {
+    const candidates = state.items.filter(
+      (it) => (it.status === 'ok' || it.status === 'review') && it.result?.record
+    );
+    const toSave: GradingRecord[] = [];
+    const ids: string[] = [];
+
+    for (const it of candidates) {
+      const rec = buildFinalRecord(it);
+      if (rec) {
+        toSave.push(rec);
+        ids.push(it.id);
+      }
+    }
+
+    if (toSave.length > 0) {
+      onSaveRecords(toSave);
+      for (const id of ids) {
+        dispatch({ type: 'MARK_SAVED', id });
+      }
+    }
+
+    setConfirmSaveAllOpen(false);
+  };
+
+  const handleSaveSingleItem = (item: BatchItem) => {
+    const rec = buildFinalRecord(item);
+    if (!rec) return;
+
+    onSaveRecords([rec]);
+    dispatch({ type: 'MARK_SAVED', id: item.id });
+  };
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-6 space-y-6">
-      {/* Área de Seleção e Upload em Lote */}
-      <div>
-        <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-200 flex-wrap gap-2">
-          <div className="flex items-center gap-2">
-            <Files className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-            <h3 className="text-base font-bold text-slate-800">
-              Correção em Lote de Cartões-Resposta
-            </h3>
+    <div className="bg-white rounded-card shadow-sm border border-slate-200 p-6 space-y-6">
+      {/* Header do Lote */}
+      <div className="flex items-center justify-between pb-4 border-b border-slate-200 flex-wrap gap-3">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-indigo-50 rounded-xl text-indigo-600">
+            <Files className="w-5 h-5" />
           </div>
-          <div className="flex items-center gap-2.5 flex-wrap">
-            {typeof __DESKTOP__ !== 'undefined' && __DESKTOP__ && (
-              remoteSession ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (onOpenRemoteCamera) {
-                      onOpenRemoteCamera();
-                    } else {
-                      setRemotePanelOpen(true);
-                    }
-                  }}
-                  className="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30 flex items-center gap-2 shadow-2xs hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition cursor-pointer"
-                  title="Abrir painel da câmera do celular"
-                >
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                  </span>
-                  <span>Celular Conectado</span>
-                  <span className="font-mono text-[11px] opacity-75">(:{remoteSession.port})</span>
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (onOpenRemoteCamera) {
-                      onOpenRemoteCamera();
-                    } else {
-                      setRemotePanelOpen(true);
-                      if (!remoteSession) {
-                        handleStartRemote();
-                      }
-                    }
-                  }}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 transition flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Smartphone className="w-3.5 h-3.5" />
-                  <span>Usar câmera do celular</span>
-                </button>
-              )
-            )}
-            <span className="text-xs text-slate-500 font-medium hidden sm:inline">
-              Selecione dezenas de fotos de uma vez para processamento sequencial.
-            </span>
+          <div>
+            <h3 className="text-body font-display font-bold text-slate-900">
+              Correção Contínua em Lote
+            </h3>
+            <p className="text-meta text-slate-500 font-medium">
+              Fotografe várias provas seguidas ou selecione dezenas de arquivos de uma vez
+            </p>
           </div>
         </div>
 
+        <div className="flex items-center gap-2">
+          {typeof __DESKTOP__ !== 'undefined' && __DESKTOP__ && (
+            <Button
+              variant={remoteSession ? 'secondary' : 'primary'}
+              size="sm"
+              onClick={onOpenRemoteCamera || (() => setRemotePanelOpen(true))}
+            >
+              {remoteSession ? (
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  Celular Conectado
+                </span>
+              ) : (
+                'Parear Câmera do Celular'
+              )}
+            </Button>
+          )}
+
+          {summary.queued > 0 && !state.isProcessing && (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleStart}
+              icon={<Files className="w-4 h-4" />}
+            >
+              Iniciar Leitura ({summary.queued})
+            </Button>
+          )}
+
+          {state.isProcessing && (
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={handleCancel}
+              icon={<AlertTriangle className="w-4 h-4" />}
+            >
+              Pausar Fila
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Dropzone de Inclusão de Arquivos */}
+      <div>
         <input
           ref={fileInputRef}
           type="file"
@@ -468,24 +488,24 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
-          className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition ${
+          className={`border-2 border-dashed rounded-card p-8 text-center cursor-pointer transition transform ${
             isDragging
-              ? 'border-indigo-500 bg-indigo-50/40 dark:bg-indigo-500/10'
+              ? 'border-indigo-600 bg-indigo-50/60 scale-[1.01]'
               : 'border-slate-300 hover:border-indigo-400 bg-slate-50/60 hover:bg-slate-50'
           }`}
         >
-          <Upload className="w-10 h-10 mx-auto text-indigo-600 dark:text-indigo-400 mb-2 opacity-80" />
-          <p className="text-sm font-bold text-slate-800">
+          <Upload className="w-10 h-10 mx-auto text-indigo-600 mb-2 opacity-80" />
+          <p className="text-body font-bold text-slate-800">
             Clique aqui ou arraste várias fotos das folhas de respostas
           </p>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-meta text-slate-500 mt-1">
             Formatos suportados: JPG, PNG, WEBP. Fotos de celulares em qualquer orientação são processadas automaticamente.
           </p>
         </div>
 
         {state.lastDuplicateCount !== undefined && state.lastDuplicateCount > 0 && (
-          <div className="mt-3 p-2.5 bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/30 rounded-lg text-xs text-amber-900 dark:text-amber-300 flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+          <div className="mt-3 p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-meta text-amber-900 flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
             <span>
               {state.lastDuplicateCount}{' '}
               {state.lastDuplicateCount === 1 ? 'arquivo repetido foi ignorado' : 'arquivos repetidos foram ignorados'}.
@@ -494,111 +514,137 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
         )}
       </div>
 
-      {/* Barra de Progresso e Sumário da Fila */}
+      {/* Barra de Progresso e Sumário da Fila com CountUp e ProgressBar */}
       {summary.total > 0 && (
-        <div className="space-y-3 p-4 rounded-xl border border-slate-200 bg-slate-50">
-          <div className="flex items-center justify-between flex-wrap gap-2 text-xs">
+        <div className="space-y-3 p-4 rounded-card border border-slate-200 bg-slate-50">
+          <div className="flex items-center justify-between flex-wrap gap-2 text-meta">
             <div className="flex items-center gap-2">
               <span className="font-bold text-slate-800">
-                Progresso: {summary.processedCount} de {summary.total} fotos
+                Progresso: <CountUp value={summary.processedCount} /> de <CountUp value={summary.total} /> fotos
               </span>
-              <span className="text-slate-500 font-mono">({progressPercent}%)</span>
+              <span className="text-slate-500 font-mono tabular-nums">
+                (<CountUp value={progressPercent} />%)
+              </span>
             </div>
 
             <div className="flex items-center gap-2">
               {state.isProcessing ? (
-                <button
-                  type="button"
+                <Button
+                  variant="danger"
+                  size="sm"
                   onClick={handleCancel}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-500/20 border border-rose-200 dark:border-rose-500/30 transition flex items-center gap-1.5"
+                  icon={<AlertTriangle className="w-3.5 h-3.5" />}
                 >
-                  <AlertTriangle className="w-3.5 h-3.5" /> Pausar / Cancelar
-                </button>
+                  Pausar / Cancelar
+                </Button>
               ) : summary.queued > 0 ? (
-                <button
-                  type="button"
+                <Button
+                  variant="primary"
+                  size="sm"
                   onClick={handleStart}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-on-accent transition flex items-center gap-1.5 shadow-sm"
+                  icon={<Files className="w-3.5 h-3.5" />}
                 >
-                  <Files className="w-3.5 h-3.5" /> Continuar Fila ({summary.queued})
-                </button>
+                  Continuar Fila ({summary.queued})
+                </Button>
               ) : null}
 
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => dispatch({ type: 'CLEAR_COMPLETED' })}
                 disabled={summary.saved === 0 && summary.discarded === 0}
-                className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition disabled:opacity-40"
-                title="Limpar itens já salvos ou descartados da lista"
               >
                 Limpar concluídas
-              </button>
+              </Button>
             </div>
           </div>
 
-          {/* Barra Visual */}
-          <div className="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
-            <div
-              className="bg-indigo-600 h-full transition-all duration-300"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
+          {/* Barra Visual com ProgressBar primitive */}
+          <ProgressBar
+            value={progressPercent}
+            tone={progressPercent === 100 ? 'ok' : 'accent'}
+          />
 
-          {/* Chips de Sumário */}
-          <div className="flex items-center gap-2 flex-wrap pt-1 text-xs">
-            <span className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-white border border-slate-200 font-semibold text-slate-700">
-              Total: {summary.total}
+          {/* Chips de Sumário com CountUp */}
+          <div className="flex items-center gap-2 flex-wrap pt-1 text-meta">
+            <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white border border-slate-200 font-semibold text-slate-700 tabular-nums">
+              Total: <CountUp value={summary.total} />
             </span>
             {summary.ok > 0 && (
-              <span className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 font-semibold text-emerald-800 dark:text-emerald-300">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> {summary.ok} OK
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50 border border-emerald-200 font-semibold text-emerald-800 tabular-nums">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> <CountUp value={summary.ok} /> OK
               </span>
             )}
             {summary.review > 0 && (
-              <span className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/30 font-semibold text-amber-900 dark:text-amber-200">
-                <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /> {summary.review} Para Revisar
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-50 border border-amber-200 font-semibold text-amber-900 tabular-nums">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-600" /> <CountUp value={summary.review} /> Para Revisar
               </span>
             )}
             {summary.error > 0 && (
-              <span className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 font-semibold text-rose-800 dark:text-rose-300">
-                <XCircle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" /> {summary.error} Com Erro
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-rose-50 border border-rose-200 font-semibold text-rose-800 tabular-nums">
+                <XCircle className="w-3.5 h-3.5 text-rose-600" /> <CountUp value={summary.error} /> Com Erro
               </span>
             )}
             {summary.saved > 0 && (
-              <span className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 font-semibold text-indigo-800 dark:text-indigo-300">
-                <Check className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" /> {summary.saved} Salvas
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-indigo-50 border border-indigo-200 font-semibold text-indigo-800 tabular-nums">
+                <Check className="w-3.5 h-3.5 text-indigo-600" /> <CountUp value={summary.saved} /> Salvas
               </span>
             )}
           </div>
         </div>
       )}
 
-      {/* Lista de Itens da Fila */}
+      {/* Lista de Itens da Fila com m.ul e m.li layout="position" */}
       {state.items.length > 0 && (
         <div className="space-y-3">
-          <div className="max-h-[500px] overflow-y-auto border border-slate-200 rounded-xl divide-y divide-slate-100">
+          <m.ul className="max-h-[500px] overflow-y-auto border border-slate-200 rounded-card divide-y divide-slate-100 bg-white">
             {state.items.map((item, index) => {
               const rec = item.result?.record;
               const evidence = item.result?.evidence;
 
               return (
-                <div
+                <m.li
                   key={item.id}
-                  className={`p-3.5 text-xs transition flex flex-col md:flex-row md:items-center justify-between gap-3 ${
+                  layout="position"
+                  className={`p-3.5 text-body transition flex flex-col md:flex-row md:items-center justify-between gap-3 ${
                     item.status === 'processing'
-                      ? 'bg-indigo-50/40 dark:bg-indigo-500/10'
+                      ? 'bg-indigo-50/40'
                       : item.status === 'review'
-                      ? 'bg-amber-50/40 dark:bg-amber-500/15'
+                      ? 'bg-amber-50/40'
                       : item.status === 'error'
-                      ? 'bg-rose-50/30 dark:bg-rose-500/10'
+                      ? 'bg-rose-50/30'
                       : item.status === 'saved'
                       ? 'opacity-70 bg-slate-50/50'
                       : 'hover:bg-slate-50'
                   }`}
                 >
-                  {/* Miniatura e Identificação */}
+                  {/* Miniatura, Status Bubble e Identificação */}
                   <div className="flex items-center gap-3 min-w-[200px]">
-                    <span className="font-mono text-slate-400 text-[11px] w-6 shrink-0">
+                    <div className="shrink-0 flex items-center justify-center w-6">
+                      {item.status === 'queued' && (
+                        <Bubble state="empty" size="sm" label="Na fila" />
+                      )}
+                      {item.status === 'processing' && (
+                        <BubbleLoader size="sm" />
+                      )}
+                      {item.status === 'ok' && (
+                        <Bubble state="correct" size="sm" label="OK" />
+                      )}
+                      {item.status === 'review' && (
+                        <Bubble state="review" size="sm" label="Para revisar" />
+                      )}
+                      {item.status === 'error' && (
+                        <Bubble state="wrong" size="sm" label="Erro" />
+                      )}
+                      {item.status === 'saved' && (
+                        <Bubble state="correct" size="sm" label="Salva" />
+                      )}
+                      {item.status === 'discarded' && (
+                        <Bubble state="empty" size="sm" label="Descartada" />
+                      )}
+                    </div>
+
+                    <span className="font-mono text-slate-400 text-meta w-6 shrink-0 tabular-nums">
                       #{index + 1}
                     </span>
 
@@ -606,12 +652,12 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
                       <img
                         src={evidence.sheetThumbUrl}
                         alt="Miniatura da folha"
-                        className="w-12 h-16 object-cover rounded border border-slate-200 shrink-0 bg-[#ffffff]"
+                        className="w-12 h-16 object-cover rounded border border-slate-200 shrink-0 bg-white"
                       />
                     ) : (
                       <div className="w-12 h-16 rounded border border-dashed border-slate-300 flex items-center justify-center shrink-0 bg-slate-50 text-slate-400">
                         {item.status === 'processing' ? (
-                          <Loader2 className="w-5 h-5 animate-spin text-indigo-500" />
+                          <BubbleLoader size="sm" />
                         ) : (
                           <Files className="w-5 h-5" />
                         )}
@@ -622,13 +668,13 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
                       <span className="font-bold text-slate-800 block truncate" title={item.file.name}>
                         {item.file.name}
                       </span>
-                      <span className="text-[11px] text-slate-400 block font-mono">
+                      <span className="text-meta text-slate-400 block font-mono tabular-nums">
                         {(item.file.size / 1024).toFixed(0)} KB
                       </span>
 
                       {rec && (
                         <div className="flex items-center gap-1.5 pt-0.5 flex-wrap">
-                          <span className="px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-800 dark:text-indigo-300 font-bold text-[10px] rounded">
+                          <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-800 font-bold text-[10px] rounded">
                             Versão {rec.versionLetter}
                           </span>
                           {rec.examId && (
@@ -639,7 +685,7 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
                               {rec.examId.length > 8 ? rec.examId.slice(0, 8) : rec.examId}
                             </span>
                           )}
-                          <span className="font-mono font-bold text-slate-700 text-[11px]">
+                          <span className="font-mono font-bold text-slate-700 text-meta tabular-nums">
                             {rec.totalScore.toFixed(1)}/{rec.maxScore.toFixed(1)} pt
                           </span>
                         </div>
@@ -677,7 +723,7 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
                               });
                             }
                           }}
-                          className="px-2 py-1 text-xs border border-slate-300 rounded bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50"
+                          className="px-2 py-1 text-meta border border-slate-300 rounded-lg bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50"
                         >
                           <option value="">
                             -- Selecionar de {currentClass.name} (ou digite abaixo) --
@@ -725,7 +771,7 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
                               studentRef: undefined,
                             })
                           }
-                          className="px-2.5 py-1 text-xs border border-slate-300 rounded bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50"
+                          className="px-2.5 py-1 text-meta border border-slate-300 rounded-lg bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50"
                         />
                         <input
                           type="text"
@@ -740,7 +786,7 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
                               studentRef: undefined,
                             })
                           }
-                          className="px-2.5 py-1 text-xs font-mono border border-slate-300 rounded bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50"
+                          className="px-2.5 py-1 text-meta font-mono border border-slate-300 rounded-lg bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50"
                         />
                       </div>
                     </div>
@@ -749,43 +795,43 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
                   {/* Status e Motivo */}
                   <div className="flex flex-col items-start md:items-end gap-1 min-w-[130px]">
                     {item.status === 'queued' && (
-                      <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-600">
+                      <span className="px-2 py-0.5 rounded text-meta font-semibold bg-slate-100 text-slate-600">
                         Na fila
                       </span>
                     )}
                     {item.status === 'processing' && (
-                      <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 animate-pulse">
-                        <Loader2 className="w-3 h-3 animate-spin text-indigo-600 dark:text-indigo-400" /> Analisando...
+                      <span className="flex items-center gap-1.5 px-2 py-0.5 rounded text-meta font-semibold bg-indigo-50 text-indigo-700 animate-pulse">
+                        <BubbleLoader size="sm" /> Analisando...
                       </span>
                     )}
                     {item.status === 'ok' && (
-                      <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> OK
+                      <span className="flex items-center gap-1 px-2 py-0.5 rounded text-meta font-semibold bg-emerald-100 text-emerald-800">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> OK
                       </span>
                     )}
                     {item.status === 'review' && (
-                      <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-300">
-                        <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /> Revisar
+                      <span className="flex items-center gap-1 px-2 py-0.5 rounded text-meta font-semibold bg-amber-100 text-amber-800">
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-600" /> Revisar
                       </span>
                     )}
                     {item.status === 'error' && (
-                      <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-rose-100 dark:bg-rose-500/20 text-rose-800 dark:text-rose-300">
-                        <XCircle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" /> Erro
+                      <span className="flex items-center gap-1 px-2 py-0.5 rounded text-meta font-semibold bg-rose-100 text-rose-800">
+                        <XCircle className="w-3.5 h-3.5 text-rose-600" /> Erro
                       </span>
                     )}
                     {item.status === 'saved' && (
-                      <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-200 text-slate-700">
-                        <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> Salva no Livro
+                      <span className="flex items-center gap-1 px-2 py-0.5 rounded text-meta font-semibold bg-slate-200 text-slate-700">
+                        <Check className="w-3.5 h-3.5 text-emerald-600" /> Salva no Livro
                       </span>
                     )}
                     {item.status === 'discarded' && (
-                      <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-400 line-through">
+                      <span className="px-2 py-0.5 rounded text-meta font-semibold bg-slate-100 text-slate-400 line-through">
                         Descartada
                       </span>
                     )}
 
                     {item.reason && (
-                      <span className="text-[10px] text-slate-500 max-w-[200px] text-left md:text-right">
+                      <span className="text-meta text-slate-500 max-w-[200px] text-left md:text-right">
                         {item.reason}
                       </span>
                     )}
@@ -794,80 +840,85 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
                   {/* Ações por Item */}
                   <div className="flex items-center gap-1.5 shrink-0">
                     {(item.status === 'review' || item.status === 'ok') && rec && (
-                      <button
-                        type="button"
+                      <Button
+                        variant="secondary"
+                        size="sm"
                         onClick={() => setReviewingItem(item)}
-                        className="px-2.5 py-1 rounded text-xs font-semibold bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 flex items-center gap-1 transition"
+                        icon={<Eye className="w-3.5 h-3.5 text-indigo-600" />}
                         title="Abrir espelho para conferência manual"
                       >
-                        <Eye className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" /> Revisar
-                      </button>
+                        Revisar
+                      </Button>
                     )}
 
                     {item.status === 'ok' && (
-                      <button
-                        type="button"
+                      <Button
+                        variant="primary"
+                        size="sm"
                         onClick={() => handleSaveSingleItem(item)}
-                        className="px-2.5 py-1 rounded text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-on-accent transition shadow-sm flex items-center gap-1"
+                        icon={<Save className="w-3.5 h-3.5" />}
                         title="Salvar esta nota individualmente"
                       >
-                        <Save className="w-3.5 h-3.5" /> Salvar
-                      </button>
+                        Salvar
+                      </Button>
                     )}
 
                     {item.status === 'error' && (
-                      <button
-                        type="button"
+                      <Button
+                        variant="secondary"
+                        size="sm"
                         onClick={() => handleRetryItem(item.id)}
-                        className="px-2.5 py-1 rounded text-xs font-semibold bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 flex items-center gap-1 transition"
+                        icon={<RotateCcw className="w-3.5 h-3.5 text-indigo-600" />}
                         title="Tentar ler novamente esta foto"
                       >
-                        <RotateCcw className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" /> Tentar de novo
-                      </button>
+                        Tentar de novo
+                      </Button>
                     )}
 
                     {item.status !== 'saved' && item.status !== 'discarded' && (
-                      <button
-                        type="button"
+                      <IconButton
+                        label="Descartar esta foto do lote"
+                        size="sm"
+                        tone="danger"
                         onClick={() => dispatch({ type: 'DISCARD_ITEM', id: item.id })}
-                        className="p-1 rounded text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition"
-                        title="Descartar esta foto do lote"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      </IconButton>
                     )}
                   </div>
-                </div>
+                </m.li>
               );
             })}
-          </div>
+          </m.ul>
 
           {/* Barra de Ações do Rodapé */}
           <div className="flex items-center justify-between pt-3 border-t border-slate-200 flex-wrap gap-3">
-            <span className="text-xs text-slate-500">
+            <span className="text-meta text-slate-500">
               {summary.saved > 0 && `${summary.saved} ${summary.saved === 1 ? 'nota já gravada' : 'notas já gravadas'}.`}
             </span>
 
             <div className="flex items-center gap-2 flex-wrap">
               {summary.canSaveOkCount > 0 && (
-                <button
-                  type="button"
+                <Button
+                  variant="primary"
+                  size="sm"
                   onClick={handleSaveAllOk}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-on-accent rounded-lg text-xs font-bold transition shadow-sm flex items-center gap-1.5"
+                  icon={<FileCheck className="w-4 h-4" />}
                 >
-                  <FileCheck className="w-4 h-4" /> Salvar {summary.canSaveOkCount} aprovadas
-                </button>
+                  Salvar {summary.canSaveOkCount} aprovadas
+                </Button>
               )}
 
               {summary.pendingReview > 0 && (
-                <button
-                  type="button"
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={() => setConfirmSaveAllOpen(true)}
-                  className="px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-on-accent rounded-lg text-xs font-bold transition shadow-sm flex items-center gap-1.5"
+                  icon={<AlertTriangle className="w-4 h-4 text-amber-600" />}
                   title="Salva todas as notas, incluindo as que foram classificadas com dúvida"
                 >
-                  <AlertTriangle className="w-4 h-4" /> Salvar todas ({summary.canSaveOkCount + summary.pendingReview})
-                </button>
+                  Salvar todas ({summary.canSaveOkCount + summary.pendingReview})
+                </Button>
               )}
             </div>
           </div>
@@ -875,39 +926,34 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
       )}
 
       {/* Modal de Confirmação para Salvar com Itens Pendentes de Revisão */}
-      {confirmSaveAllOpen && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl border border-slate-200 space-y-4">
-            <div className="flex items-center gap-2.5 text-amber-600 dark:text-amber-400">
-              <AlertTriangle className="w-6 h-6 shrink-0" />
-              <h4 className="text-base font-bold text-slate-800">
-                Salvar notas não revisadas?
-              </h4>
-            </div>
-
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Existem <strong>{summary.pendingReview} {summary.pendingReview === 1 ? 'folha' : 'folhas'}</strong> com dúvidas de marcação ou rasuras que ainda não foram verificadas manualmente. Deseja salvá-las mesmo assim?
-            </p>
-
-            <div className="flex items-center justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setConfirmSaveAllOpen(false)}
-                className="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100 transition"
-              >
-                Voltar e revisar
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmSaveAllWithReview}
-                className="px-4 py-1.5 bg-amber-600 hover:bg-amber-700 text-on-accent rounded-lg text-xs font-bold transition shadow-sm"
-              >
-                Sim, salvar todas
-              </button>
-            </div>
+      <Modal
+        open={confirmSaveAllOpen}
+        onOpenChange={(open) => setConfirmSaveAllOpen(open)}
+        title="Salvar notas não revisadas?"
+        size="sm"
+        footer={
+          <div className="flex items-center justify-end gap-2 w-full">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setConfirmSaveAllOpen(false)}
+            >
+              Voltar e revisar
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleConfirmSaveAllWithReview}
+            >
+              Sim, salvar todas
+            </Button>
           </div>
-        </div>
-      )}
+        }
+      >
+        <p className="text-meta text-slate-600 leading-relaxed pt-1">
+          Existem <strong>{summary.pendingReview} {summary.pendingReview === 1 ? 'folha' : 'folhas'}</strong> com dúvidas de marcação ou rasuras que ainda não foram verificadas manualmente. Deseja salvá-las mesmo assim?
+        </p>
+      </Modal>
 
       {/* Modal de Revisão Individual de Item da Fila */}
       {reviewingItem && reviewingItem.result?.record && (

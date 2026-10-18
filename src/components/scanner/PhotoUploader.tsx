@@ -3,7 +3,6 @@ import { ExamVersion, GradingRecord } from '../../types/exam';
 import { DecryptedQrPayload, OmrDebugInfo, GradingEvidence } from '../../types/omr';
 import { gradePhotoFile } from '../../utils/photoPipeline';
 import {
-  AlertTriangle,
   Image as ImageIcon,
   CheckCircle2,
   QrCode,
@@ -14,16 +13,19 @@ import {
   Download,
   Eye,
   Maximize2,
-  X,
   ChevronDown,
   ChevronUp,
   RefreshCw,
   FileCheck,
   Smartphone,
+  Upload,
 } from 'lucide-react';
 
 import { PasswordModal } from './PasswordModal';
 import { reportRemotePhoto } from '../../platform/remoteCamera';
+import { Button } from '../ui/Button';
+import { Modal } from '../ui/Modal';
+import { Alert } from '../ui/Alert';
 
 interface PhotoUploaderProps {
   teacherPassword: string;
@@ -57,6 +59,8 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
 }) => {
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [scanTarget, setScanTarget] = useState<'qr' | 'sheet'>(activePayload ? 'sheet' : 'qr');
+  const [isDragOver, setIsDragOver] = useState<boolean>(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [needsManualPassword, setNeedsManualPassword] = useState<boolean>(false);
   const [showManualPasswordModal, setShowManualPasswordModal] = useState<boolean>(false);
@@ -95,6 +99,14 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
     }
   }, [activePayload]);
 
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
+
   // Processa automaticamente fotos recebidas da câmera remota
   useEffect(() => {
     if (!incomingRemotePhoto) return;
@@ -113,6 +125,16 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
     overrideTarget?: 'qr' | 'sheet'
   ) => {
     lastProcessedFileRef.current = file;
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    try {
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+    } catch {
+      setPreviewUrl(null);
+    }
+
     setIsProcessing(true);
     setErrorMessage(null);
     setNeedsManualPassword(false);
@@ -219,8 +241,28 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
     a.click();
   };
 
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (!isDragOver) setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    if (isProcessing) return;
+    if (scanTarget === 'sheet' && !activePayload) return;
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleProcessImage(e.dataTransfer.files[0]);
+    }
+  };
+
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col justify-between">
+    <div className="bg-white rounded-card shadow-sm border border-slate-200 p-6 flex flex-col justify-between">
       <div>
         <div
           id="hidden-qr-reader"
@@ -238,12 +280,12 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
         {/* Header com Toggle do Modo Diagnóstico */}
         <div className="flex items-center justify-between pb-4 mb-5 border-b border-slate-200 flex-wrap gap-3">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-indigo-50 dark:bg-indigo-500/10 rounded-xl text-indigo-600 dark:text-indigo-400">
+            <div className="p-2 bg-indigo-50 rounded-xl text-indigo-600">
               <Camera className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-900">Leitor Óptico de Gabaritos (OMR)</h3>
-              <p className="text-xs text-slate-500 font-medium">
+              <h3 className="text-body font-display font-bold text-slate-900">Leitor Óptico de Gabaritos (OMR)</h3>
+              <p className="text-meta text-slate-500 font-medium">
                 Tire uma foto ou faça upload da folha para correção automática
               </p>
             </div>
@@ -251,57 +293,54 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
 
           {isDebugAllowed && (
             <div className="flex items-center gap-2">
-              <button
-                type="button"
+              <Button
+                variant={isDebugMode ? 'secondary' : 'ghost'}
+                size="sm"
                 onClick={() => setIsDebugMode(!isDebugMode)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-sm ${
-                  isDebugMode
-                    ? 'bg-amber-500 text-on-accent shadow-amber-500/20'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
+                icon={<Bug className="w-3.5 h-3.5" />}
               >
-                <Bug className="w-3.5 h-3.5" />
                 <span>Modo Diagnóstico OMR {isDebugMode ? 'ATIVO' : 'DESATIVADO'}</span>
-              </button>
+              </Button>
             </div>
           )}
         </div>
 
         {/* Status da Versão Travada */}
-        <div className="mb-5 p-4 rounded-xl border flex items-center justify-between flex-wrap gap-3 text-xs bg-slate-50/80 border-slate-200">
+        <div className="mb-5 p-4 rounded-xl border flex items-center justify-between flex-wrap gap-3 text-meta bg-slate-50/80 border-slate-200">
           {activePayload ? (
             <div className="flex items-center justify-between w-full flex-wrap gap-2">
               <div className="flex items-center gap-2.5">
-                <span className="px-3 py-1 bg-emerald-600 text-on-accent font-black rounded-lg flex items-center gap-1.5 shadow-sm text-xs">
+                <span className="px-3 py-1 bg-emerald-600 text-on-accent font-black rounded-lg flex items-center gap-1.5 shadow-sm text-meta">
                   <CheckCircle2 className="w-4 h-4" /> VERSÃO {activePayload.version} TRAVADA
                 </span>
-                <span className="text-slate-700 font-medium text-xs">
+                <span className="text-slate-700 font-medium text-meta">
                   Pronto! Enquadre e fotografe a folha de respostas.
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1 text-[11px] text-emerald-700 dark:text-emerald-300 font-semibold bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-500/30">
+                <div className="flex items-center gap-1 text-meta text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
                   <Sparkles className="w-3.5 h-3.5" /> OMR com auto-alinhamento ativo
                 </div>
                 {onLockPayload && (
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => {
                       lockedPayloadRef.current = null;
                       setScanTarget('qr');
                       onLockPayload(null);
                     }}
-                    className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-slate-600 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 rounded-lg transition border border-slate-200 bg-white"
+                    icon={<RefreshCw className="w-3 h-3" />}
                   >
-                    <RefreshCw className="w-3 h-3" /> Destravar
-                  </button>
+                    Destravar
+                  </Button>
                 )}
               </div>
             </div>
           ) : (
             <div className="flex items-center justify-between w-full flex-wrap gap-3">
               <div className="flex items-center gap-2 text-slate-700 font-medium">
-                <QrCode className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                <QrCode className="w-4 h-4 text-indigo-600 shrink-0" />
                 <span>Selecione a versão da prova ou fotografe o QR Code da folha:</span>
               </div>
               {availableVersions.length > 0 && onSelectExamVersion && (
@@ -311,7 +350,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
                       key={v?.versionLetter || idx}
                       type="button"
                       onClick={() => onSelectExamVersion(v)}
-                      className="px-3 py-1 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-600 hover:text-on-accent text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 rounded-lg font-bold text-xs transition active:scale-95 shadow-sm"
+                      className="px-3 py-1 bg-indigo-50 hover:bg-indigo-600 hover:text-on-accent text-indigo-700 border border-indigo-200 rounded-lg font-bold text-meta transition active:scale-95 shadow-sm"
                     >
                       Versão {v?.versionLetter || '?'}
                     </button>
@@ -324,7 +363,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
 
         {/* Painel do Modo Diagnóstico OMR / Resultado Debug */}
         {isDebugAllowed && isDebugMode && debugResult && (
-          <div className="keep-light-palette mb-6 p-5 bg-slate-900 text-slate-100 rounded-2xl shadow-xl border border-slate-800 space-y-5 animate-in fade-in duration-300">
+          <div className="keep-light-palette mb-6 p-5 bg-slate-900 text-slate-100 rounded-2xl shadow-xl border border-slate-800 space-y-5">
             {/* Barra de Título do Debug */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-800 flex-wrap gap-2">
               <div className="flex items-center gap-2">
@@ -335,7 +374,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
                   <h4 className="font-extrabold text-sm text-on-accent">
                     Diagnóstico OMR. Visualização em Tempo Real
                   </h4>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-meta text-slate-400">
                     Método:{' '}
                     <span className="text-sky-400 font-bold">
                       {debugResult.debugInfo.method === 'fiducials_timing_marks'
@@ -355,56 +394,49 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
               </div>
 
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={handleDownloadDebugImage}
-                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition"
+                  icon={<Download className="w-3.5 h-3.5" />}
                 >
-                  <Download className="w-3.5 h-3.5" /> Baixar Imagem Anotada
-                </button>
-                <button
-                  type="button"
+                  Baixar
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
                   onClick={() => setIsImageModalOpen(true)}
-                  className="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-on-accent rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow-sm"
+                  icon={<Maximize2 className="w-3.5 h-3.5" />}
                 >
-                  <Maximize2 className="w-3.5 h-3.5" /> Zoom da Leitura
-                </button>
+                  Ampliar
+                </Button>
               </div>
             </div>
 
-            {/* Imagem Anotada e Tabela de Diagnóstico */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-              {/* Preview da Imagem com Anotações Visuais */}
-              <div className="lg:col-span-5 bg-black rounded-xl overflow-hidden border border-slate-800 relative group">
-                {debugResult.debugCanvasUrl ? (
-                  <img
-                    src={debugResult.debugCanvasUrl}
-                    alt="OMR Debug Annotated"
-                    className="w-full h-auto object-contain max-h-[380px] mx-auto cursor-pointer"
-                    onClick={() => setIsImageModalOpen(true)}
-                  />
-                ) : (
-                  <div className="p-8 text-center text-xs text-slate-500">
-                    Sem preview disponível
-                  </div>
-                )}
-                <div className="absolute bottom-2 left-2 right-2 bg-slate-900/90 backdrop-blur px-2.5 py-1.5 rounded-lg text-[10px] text-slate-300 flex items-center justify-between border border-slate-700/50">
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" /> Marcada
-                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block ml-1" /> Suspeita
-                    <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block ml-1" /> Vazia
-                  </span>
-                  <span className="text-slate-400 font-mono">Clique para ampliar</span>
-                </div>
+            {/* Imagem Processada Anotada */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+              <div className="lg:col-span-5 bg-black rounded-xl overflow-hidden border border-slate-800 flex items-center justify-center relative group min-h-[220px]">
+                <img
+                  src={debugResult.debugCanvasUrl}
+                  alt="OMR Debug Canvas"
+                  className="max-h-64 object-contain"
+                />
+                <button
+                  type="button"
+                  onClick={() => setIsImageModalOpen(true)}
+                  className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-on-accent font-bold text-xs gap-1.5"
+                >
+                  <Maximize2 className="w-4 h-4" /> Clique para ampliar inspeção
+                </button>
               </div>
 
               {/* Tabela de Porcentagens de Escuridão por Opção */}
               <div className="lg:col-span-7 bg-slate-950/60 rounded-xl p-3 border border-slate-800 overflow-x-auto">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-bold text-slate-300">
+                  <span className="text-meta font-bold text-slate-300">
                     Valores de Preenchimento Detectados (% de Escuridão)
                   </span>
-                  <span className="text-[11px] font-mono text-emerald-400 font-semibold">
+                  <span className="text-meta font-mono text-emerald-400 font-semibold tabular-nums">
                     Acertos: {debugResult.record.totalScore} / {debugResult.record.maxScore} (
                     {debugResult.record.percentage.toFixed(0)}%)
                   </span>
@@ -412,7 +444,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
 
                 <table className="w-full text-xs text-left">
                   <thead>
-                    <tr className="text-slate-400 border-b border-slate-800 text-[11px]">
+                    <tr className="text-slate-400 border-b border-slate-800 text-meta">
                       <th className="py-1 px-2 font-semibold">Q#</th>
                       <th className="py-1 px-2 font-semibold text-center">Gabarito</th>
                       <th className="py-1 px-2 font-semibold text-center">Detectado</th>
@@ -432,7 +464,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
                             Q{ans.questionNumber < 10 ? `0${ans.questionNumber}` : ans.questionNumber}
                           </td>
                           <td className="py-1.5 px-2 text-center">
-                            <span className="px-1.5 py-0.5 bg-slate-800 font-bold rounded text-slate-300 text-[11px]">
+                            <span className="px-1.5 py-0.5 bg-slate-800 font-bold rounded text-slate-300 text-meta">
                               {ans.correctOption}
                             </span>
                           </td>
@@ -448,7 +480,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
                                 {ans.markedOption}
                               </span>
                             ) : (
-                              <span className="text-slate-500 font-mono text-[11px]">—</span>
+                              <span className="text-slate-500 font-mono text-meta">—</span>
                             )}
                           </td>
                           <td className="py-1.5 px-2">
@@ -478,16 +510,16 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
                           </td>
                           <td className="py-1.5 px-2 text-right">
                             {ans.status === 'correct' && (
-                              <span className="text-emerald-400 font-bold text-[11px]">Correta</span>
+                              <span className="text-emerald-400 font-bold text-meta">Correta</span>
                             )}
                             {ans.status === 'wrong' && (
-                              <span className="text-rose-400 font-bold text-[11px]">Incorreta</span>
+                              <span className="text-rose-400 font-bold text-meta">Incorreta</span>
                             )}
                             {ans.status === 'blank' && (
-                              <span className="text-slate-500 text-[11px]">Em branco</span>
+                              <span className="text-slate-500 text-meta">Em branco</span>
                             )}
                             {ans.status === 'multiple' && (
-                              <span className="text-amber-400 font-bold text-[11px]">Múltipla</span>
+                              <span className="text-amber-400 font-bold text-meta">Múltipla</span>
                             )}
                           </td>
                         </tr>
@@ -509,7 +541,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
                 {showLogs ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </button>
               {showLogs && (
-                <div className="p-3 bg-slate-950 font-mono text-[11px] text-slate-400 space-y-1 max-h-40 overflow-y-auto border-t border-slate-800">
+                <div className="p-3 bg-slate-950 font-mono text-meta text-slate-400 space-y-1 max-h-40 overflow-y-auto border-t border-slate-800">
                   {debugResult.debugInfo.logs.map((log, idx) => (
                     <div key={idx} className="flex items-start gap-2">
                       <span className="text-slate-600 select-none">{idx + 1}.</span>
@@ -522,33 +554,35 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
 
             {/* Ações do Diagnóstico */}
             <div className="flex items-center justify-end gap-3 pt-2">
-              <button
-                type="button"
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={() => setDebugResult(null)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5"
+                icon={<RefreshCw className="w-3.5 h-3.5" />}
               >
-                <RefreshCw className="w-3.5 h-3.5" /> Escanear Outra Folha
-              </button>
-              <button
-                type="button"
+                Escanear Outra Folha
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
                 onClick={() => {
                   onGraded(debugResult.record, debugResult.evidence);
                   setSuccessMessage('Correção confirmada e registrada com sucesso!');
                 }}
-                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-on-accent rounded-xl text-xs font-black transition shadow-lg shadow-emerald-900/30 flex items-center gap-2"
+                icon={<Check className="w-4 h-4" />}
               >
-                <Check className="w-4 h-4" /> Confirmar e Salvar no Livro de Notas
-              </button>
+                Confirmar e Salvar no Livro de Notas
+              </Button>
             </div>
           </div>
         )}
 
         {/* Seletor de Etapa: QR Code vs Folha de Gabarito */}
         <div className="mb-5">
-          <div className="text-xs font-bold text-slate-800 mb-2 flex items-center justify-between">
+          <div className="text-meta font-bold text-slate-800 mb-2 flex items-center justify-between">
             <span>O que você deseja escanear agora?</span>
             {!activePayload && (
-              <span className="text-[11px] font-medium text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-500/15 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-500/30">
+              <span className="text-meta font-medium text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
                 Trave uma versão antes de ler o gabarito
               </span>
             )}
@@ -565,14 +599,14 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
               }}
               className={`flex items-center gap-2.5 p-3 rounded-lg text-left transition ${
                 scanTarget === 'qr'
-                  ? 'bg-white shadow-sm font-bold border border-indigo-400 dark:border-indigo-500/60'
+                  ? 'bg-white shadow-sm font-bold border border-indigo-400'
                   : 'text-slate-700 hover:text-slate-900 hover:bg-white/50'
               }`}
             >
               <div
                 className={`p-2 rounded-lg ${
                   scanTarget === 'qr'
-                    ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300'
+                    ? 'bg-indigo-100 text-indigo-700'
                     : 'bg-slate-200/80 text-slate-700'
                 }`}
               >
@@ -580,19 +614,13 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
               </div>
               <div className="min-w-0">
                 <div
-                  className={`text-xs font-bold leading-tight ${
-                    scanTarget === 'qr'
-                      ? 'text-indigo-700 dark:text-indigo-300'
-                      : 'text-slate-800'
+                  className={`text-body font-bold leading-tight ${
+                    scanTarget === 'qr' ? 'text-indigo-700' : 'text-slate-800'
                   }`}
                 >
                   1. Ler QR Code da Prova
                 </div>
-                <div
-                  className={`text-[10px] font-medium leading-tight mt-0.5 ${
-                    scanTarget === 'qr' ? 'text-slate-600' : 'text-slate-500'
-                  }`}
-                >
+                <div className="text-meta font-medium leading-tight mt-0.5 text-slate-500">
                   Identifica a versão e desbloqueia com a senha
                 </div>
               </div>
@@ -613,7 +641,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
                 !activePayload
                   ? 'opacity-40 cursor-not-allowed bg-transparent'
                   : scanTarget === 'sheet'
-                  ? 'bg-white shadow-sm font-bold border border-emerald-400 dark:border-emerald-500/60'
+                  ? 'bg-white shadow-sm font-bold border border-emerald-400'
                   : 'text-slate-700 hover:text-slate-900 hover:bg-white/50'
               }`}
             >
@@ -622,7 +650,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
                   !activePayload
                     ? 'bg-slate-200/40 text-slate-400'
                     : scanTarget === 'sheet'
-                    ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
+                    ? 'bg-emerald-100 text-emerald-700'
                     : 'bg-slate-200/80 text-slate-700'
                 }`}
               >
@@ -630,30 +658,22 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
               </div>
               <div className="min-w-0">
                 <div
-                  className={`text-xs font-bold leading-tight flex items-center gap-1.5 ${
+                  className={`text-body font-bold leading-tight flex items-center gap-1.5 ${
                     !activePayload
                       ? 'text-slate-400'
                       : scanTarget === 'sheet'
-                      ? 'text-emerald-700 dark:text-emerald-300'
+                      ? 'text-emerald-700'
                       : 'text-slate-800'
                   }`}
                 >
                   <span>2. Ler Folha de Gabarito</span>
                   {activePayload && (
-                    <span className="text-[10px] px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30 rounded font-black">
+                    <span className="text-meta px-1.5 py-0.5 bg-emerald-100 text-emerald-800 border border-emerald-300 rounded font-black">
                       Versão {activePayload.version}
                     </span>
                   )}
                 </div>
-                <div
-                  className={`text-[10px] font-medium leading-tight mt-0.5 ${
-                    !activePayload
-                      ? 'text-slate-400'
-                      : scanTarget === 'sheet'
-                      ? 'text-slate-600'
-                      : 'text-slate-500'
-                  }`}
-                >
+                <div className="text-meta font-medium leading-tight mt-0.5 text-slate-500">
                   {activePayload
                     ? 'Corrige o cartão-resposta e marcações'
                     : 'Bloqueado (trave a versão primeiro)'}
@@ -711,11 +731,11 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
               disabled={isProcessing}
               className={`w-full py-4 px-5 font-extrabold text-sm rounded-xl border-2 transition flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50 active:scale-[0.99] shadow-xs ${
                 isRemoteConnected
-                  ? 'border-emerald-300 dark:border-emerald-500/40 bg-emerald-50/70 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-500/20'
-                  : 'border-dashed border-indigo-300 dark:border-indigo-500/40 bg-indigo-50/70 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-500/20'
+                  ? 'border-emerald-300 bg-emerald-50/70 text-emerald-800 hover:bg-emerald-100'
+                  : 'border-dashed border-indigo-300 bg-indigo-50/70 text-indigo-700 hover:bg-indigo-100'
               }`}
             >
-              <Smartphone className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+              <Smartphone className="w-5 h-5 text-indigo-600" />
               <span>
                 {isRemoteConnected
                   ? 'Celular Conectado. Ver QR Code / Instruções'
@@ -748,94 +768,139 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
             </button>
           )}
 
+          {/* Dropzone com estados: idle / drag-over / reading */}
           <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
             onClick={() => {
               if (!isProcessing && !(scanTarget === 'sheet' && !activePayload)) {
                 if (fileInputRef.current) fileInputRef.current.value = '';
                 fileInputRef.current?.click();
               }
             }}
-            className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition ${
+            className={`border-2 border-dashed rounded-card p-6 text-center cursor-pointer transition transform ${
               scanTarget === 'sheet' && !activePayload
                 ? 'opacity-50 cursor-not-allowed border-slate-200 bg-slate-50'
                 : isProcessing
-                ? 'border-indigo-400 bg-indigo-50/50 dark:bg-indigo-500/10'
+                ? 'border-indigo-500 bg-indigo-50/50'
+                : isDragOver
+                ? 'border-indigo-600 bg-indigo-50/60 scale-[1.01]'
                 : scanTarget === 'sheet'
-                ? 'border-slate-300 hover:border-emerald-400 hover:bg-emerald-50/30 dark:hover:bg-emerald-500/10'
-                : 'border-slate-300 hover:border-indigo-400 hover:bg-indigo-50/30 dark:hover:bg-indigo-500/10'
+                ? 'border-slate-300 hover:border-emerald-500 hover:bg-emerald-50/20'
+                : 'border-slate-300 hover:border-indigo-500 hover:bg-indigo-50/20'
             }`}
           >
-            <div className="flex flex-col items-center justify-center">
-              {scanTarget === 'qr' ? (
-                <QrCode className="w-6 h-6 text-indigo-500 dark:text-indigo-400 mb-1.5" />
-              ) : (
-                <ImageIcon className="w-6 h-6 text-emerald-500 dark:text-emerald-400 mb-1.5" />
-              )}
-              <span className="text-xs font-semibold text-slate-700">
-                {scanTarget === 'qr'
-                  ? 'Selecionar foto do QR Code da prova'
-                  : activePayload
-                  ? `Selecionar foto da folha de respostas (Versão ${activePayload.version})`
-                  : 'Trave uma versão antes de ler o gabarito'}
-              </span>
-              <span className="text-[10px] text-slate-400 mt-0.5">
-                {scanTarget === 'qr'
-                  ? 'Busca estritamente o QR Code para destravar a versão com a senha'
-                  : 'Busca estritamente os fiduciais e marcações das bolinhas'}
-              </span>
-            </div>
+            {isProcessing ? (
+              <div className="flex flex-col items-center justify-center py-2 space-y-3">
+                <div className="relative w-28 h-36 rounded-lg overflow-hidden border border-indigo-300 bg-slate-100 flex items-center justify-center shadow-xs">
+                  {previewUrl ? (
+                    <img
+                      src={previewUrl}
+                      alt="Folha em leitura"
+                      className="w-full h-full object-cover opacity-80"
+                    />
+                  ) : (
+                    <ImageIcon className="w-8 h-8 text-indigo-400 opacity-60" />
+                  )}
+                  {/* Linha de varredura do leitor óptico */}
+                  <div
+                    className="absolute inset-x-0 h-1 bg-indigo-600 shadow-sm animate-scan-sweep pointer-events-none"
+                    aria-hidden="true"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <span className="text-body font-bold text-indigo-900 block">
+                    {scanTarget === 'qr' ? 'Lendo QR Code...' : 'Lendo folha…'}
+                  </span>
+                  <span className="text-meta text-slate-500 block">
+                    Retificando perspectiva e alinhando fiduciais ópticos
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center">
+                {isDragOver ? (
+                  <Upload className="w-8 h-8 text-indigo-600 mb-2 animate-bounce" />
+                ) : scanTarget === 'qr' ? (
+                  <QrCode className="w-8 h-8 text-indigo-500 mb-2" />
+                ) : (
+                  <ImageIcon className="w-8 h-8 text-emerald-500 mb-2" />
+                )}
+                <span className="text-body font-bold text-slate-800">
+                  {isDragOver
+                    ? 'Solte a foto aqui para iniciar a leitura'
+                    : scanTarget === 'qr'
+                    ? 'Clique ou arraste a foto do QR Code da prova'
+                    : activePayload
+                    ? `Clique ou arraste a foto da folha de respostas (Versão ${activePayload.version})`
+                    : 'Trave uma versão antes de ler o gabarito'}
+                </span>
+                <span className="text-meta text-slate-500 mt-1">
+                  {scanTarget === 'qr'
+                    ? 'Busca estritamente o QR Code para destravar a versão com a senha'
+                    : 'Busca estritamente os fiduciais e marcações das bolinhas'}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Mensagens de Sucesso e Erro */}
         {successMessage && (
-          <div className="mt-4 p-3.5 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 rounded-xl text-xs text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
-            <Check className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400 font-bold" />
-            <span className="font-medium">{successMessage}</span>
+          <div className="mt-4">
+            <Alert tone="success">
+              {successMessage}
+            </Alert>
           </div>
         )}
 
         {errorMessage && (
-          <div className="mt-4 p-3.5 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 rounded-xl text-xs text-rose-700 dark:text-rose-300 space-y-2">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 shrink-0 text-rose-500 dark:text-rose-400" />
-              <span className="font-medium">{errorMessage}</span>
-            </div>
-            {needsManualPassword && lastProcessedFileRef.current && (
-              <div className="pt-1">
-                <button
-                  type="button"
-                  onClick={() => setShowManualPasswordModal(true)}
-                  className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-on-accent text-xs font-bold rounded-lg shadow-sm transition"
-                >
-                  Digitar senha manualmente
-                </button>
-              </div>
-            )}
+          <div className="mt-4">
+            <Alert
+              tone="danger"
+              action={
+                needsManualPassword && lastProcessedFileRef.current ? (
+                  <div className="pt-2">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => setShowManualPasswordModal(true)}
+                    >
+                      Digitar senha manualmente
+                    </Button>
+                  </div>
+                ) : undefined
+              }
+            >
+              {errorMessage}
+            </Alert>
           </div>
         )}
 
         {isDebugAllowed && isDebugMode && errorDebugUrl && !debugResult && (
           <div className="keep-light-palette mt-4 p-4 bg-slate-900 text-slate-100 rounded-2xl border border-slate-800 space-y-3">
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <span className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+              <span className="text-meta font-bold text-amber-400 flex items-center gap-1.5">
                 <Bug className="w-4 h-4" /> Diagnóstico Visual da Imagem (Falha na Detecção)
               </span>
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={handleDownloadDebugImage}
-                  className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1 transition"
+                  icon={<Download className="w-3.5 h-3.5" />}
                 >
-                  <Download className="w-3.5 h-3.5" /> Baixar
-                </button>
-                <button
-                  type="button"
+                  Baixar
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
                   onClick={() => setIsImageModalOpen(true)}
-                  className="px-2.5 py-1 bg-sky-600 hover:bg-sky-500 text-on-accent rounded-lg text-xs font-semibold flex items-center gap-1 transition"
+                  icon={<Maximize2 className="w-3.5 h-3.5" />}
                 >
-                  <Maximize2 className="w-3.5 h-3.5" /> Ampliar
-                </button>
+                  Ampliar
+                </Button>
               </div>
             </div>
             <div className="bg-black rounded-xl overflow-hidden border border-slate-800 flex justify-center">
@@ -850,9 +915,9 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
         )}
       </div>
 
-      <div className="mt-6 p-4 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 space-y-1.5">
+      <div className="mt-6 p-4 bg-slate-50 border border-slate-200 rounded-card text-meta text-slate-600 space-y-1.5">
         <p className="font-bold text-slate-800 flex items-center gap-1.5">
-          <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" /> Como funciona o alinhamento OMR:
+          <Sparkles className="w-3.5 h-3.5 text-indigo-600" /> Como funciona o alinhamento OMR:
         </p>
         <p>
           • Os <strong>fiduciais de canto</strong> mapeiam a folha e retificam a perspectiva em tempo real, compensando inclinações e distorções de lente.
@@ -864,39 +929,33 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
 
       {/* Modal de Zoom da Imagem Anotada */}
       {isImageModalOpen && (debugResult?.debugCanvasUrl || errorDebugUrl) && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="keep-light-palette bg-slate-900 border border-slate-700 rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
-            <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-              <h4 className="font-bold text-sm text-on-accent flex items-center gap-2">
-                <Eye className="w-4 h-4 text-sky-400" /> Inspeção Visual de Alta Resolução do OMR
-              </h4>
-              <button
-                type="button"
-                onClick={() => setIsImageModalOpen(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-on-accent hover:bg-slate-800 transition"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-4 overflow-auto flex-1 flex items-center justify-center bg-black">
-              <img
-                src={debugResult?.debugCanvasUrl || errorDebugUrl || ''}
-                alt="OMR Debug Full View"
-                className="max-w-full max-h-[75vh] object-contain"
-              />
-            </div>
-            <div className="p-3 border-t border-slate-800 bg-slate-900 flex items-center justify-between text-xs text-slate-400">
+        <Modal
+          open={true}
+          onOpenChange={(open) => setIsImageModalOpen(open)}
+          title="Inspeção Visual de Alta Resolução do OMR"
+          size="xl"
+          footer={
+            <div className="flex items-center justify-between w-full text-meta text-slate-500">
               <span>Círculos verdes = marcados | Linhas amarelas = timing marks | Bordas ciano = limites do gabarito</span>
-              <button
-                type="button"
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={handleDownloadDebugImage}
-                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg font-semibold flex items-center gap-1.5 transition"
+                icon={<Download className="w-3.5 h-3.5" />}
               >
-                <Download className="w-3.5 h-3.5" /> Baixar Imagem
-              </button>
+                Baixar Imagem
+              </Button>
             </div>
+          }
+        >
+          <div className="p-2 overflow-auto flex items-center justify-center bg-black rounded-xl">
+            <img
+              src={debugResult?.debugCanvasUrl || errorDebugUrl || ''}
+              alt="OMR Debug Full View"
+              className="max-w-full max-h-[70vh] object-contain"
+            />
           </div>
-        </div>
+        </Modal>
       )}
 
       {showManualPasswordModal && (
