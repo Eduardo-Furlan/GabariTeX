@@ -65,15 +65,7 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
 
   const [showTeacherPassword, setShowTeacherPassword] = useState<boolean>(false);
 
-  const isPreviewModeFromUrl =
-    typeof window !== 'undefined' &&
-    (window.location.search.includes('preview=1') ||
-      window.location.search.includes('corretor=1') ||
-      window.location.hash.includes('preview=1') ||
-      window.location.hash.includes('corretor=1'));
-
-  const [forceBrowserScanner, setForceBrowserScanner] = useState<boolean>(isPreviewModeFromUrl);
-  const isDesktopUI = Boolean(__DESKTOP__ || forceBrowserScanner);
+  const isDesktopUI = Boolean(__DESKTOP__);
 
   // Estado e controle da Câmera Remota Desktop (Plano 13)
   const [remotePanelOpen, setRemotePanelOpen] = useState<boolean>(false);
@@ -162,26 +154,11 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
   }, [handleProcessRemotePhoto]);
 
   const handleStartRemote = async (ip?: string) => {
+    if (!__DESKTOP__) return;
     setIsStartingRemote(true);
     try {
-      if (__DESKTOP__) {
-        const s = await startRemoteCamera(ip);
-        setRemoteSession(s);
-      } else {
-        // Modo preview no navegador (permite interagir e tirar screenshots da Câmera Remota no Firefox/Chrome)
-        const mockSession: RemoteSessionInfo = {
-          url: `http://${ip || '192.168.1.105'}:47831/#token=EXEMPLO1`,
-          ip: ip || '192.168.1.105',
-          port: 47831,
-          token: 'EXEMPLO1',
-          interfaces: [
-            { name: 'wlan0 (Wi-Fi Local)', ip: '192.168.1.105' },
-            { name: 'eth0 (Rede Cabeada)', ip: '192.168.1.50' },
-          ],
-        };
-        setRemoteSession(mockSession);
-        setAvailableInterfaces(mockSession.interfaces);
-      }
+      const s = await startRemoteCamera(ip);
+      setRemoteSession(s);
     } finally {
       setIsStartingRemote(false);
     }
@@ -195,22 +172,11 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
   };
 
   const handleChangeRemoteInterface = async (ip: string) => {
+    if (!__DESKTOP__) return;
     setIsStartingRemote(true);
     try {
-      if (__DESKTOP__) {
-        const s = await startRemoteCamera(ip);
-        setRemoteSession(s);
-      } else {
-        setRemoteSession((prev) =>
-          prev
-            ? {
-                ...prev,
-                ip,
-                url: `http://${ip}:${prev.port}/#token=${prev.token}`,
-              }
-            : null
-        );
-      }
+      const s = await startRemoteCamera(ip);
+      setRemoteSession(s);
     } finally {
       setIsStartingRemote(false);
     }
@@ -630,14 +596,6 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
                   <span>Baixar GabariTeX Desktop (GitHub Releases)</span>
                 </a>
 
-                <button
-                  type="button"
-                  onClick={() => setForceBrowserScanner(true)}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl border border-indigo-300 dark:border-indigo-500/30 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 text-sm font-semibold transition shadow-2xs"
-                >
-                  <Camera className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                  <span>Abrir Corretor no Navegador (Preview)</span>
-                </button>
 
                 <button
                   type="button"

@@ -131,9 +131,19 @@ jobs:
           "C:\Program Files\LLVM\bin" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
 
           New-Item -ItemType Directory -Force -Path "src-tauri\resources\windows"
-          Copy-Item "$opencv_vc_path\bin\opencv_world*.dll" -Destination "src-tauri\resources\windows\"
+          Copy-Item "$opencv_vc_path\bin\*.dll" -Destination "src-tauri\resources\windows\"
+          New-Item -ItemType Directory -Force -Path "src-tauri\target\debug\deps"
+          Copy-Item "$opencv_vc_path\bin\*.dll" -Destination "src-tauri\target\debug\deps\"
+          Copy-Item "$opencv_vc_path\bin\*.dll" -Destination "src-tauri\"
           Get-ChildItem "src-tauri\resources\windows"
 
       - name: Run Cargo test
-        run: cargo test --manifest-path src-tauri/Cargo.toml
+        shell: pwsh
+        run: |
+          $opencv_vc = Get-ChildItem "C:\tools\opencv\build\x64" -Directory | Where-Object { $_.Name -like "vc*" } | Select-Object -Last 1
+          if ($opencv_vc) {
+            $env:PATH = "$($opencv_vc.FullName)\bin;$env:PATH"
+          }
+          cargo test --manifest-path src-tauri/Cargo.toml
+
 
