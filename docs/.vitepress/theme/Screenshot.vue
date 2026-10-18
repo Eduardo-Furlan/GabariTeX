@@ -30,14 +30,8 @@ const showPlaceholders = isDev || (typeof __DOCS_SHOW_PLACEHOLDERS__ !== 'undefi
 <template>
   <figure v-if="imgSrc" class="screenshot-figure">
     <img :src="imgSrc" :alt="entry.alt" loading="lazy" class="screenshot-img" />
-    <figcaption v-if="entry.caption || (entry.callouts && entry.callouts.length)" class="screenshot-caption">
-      <div v-if="entry.caption" class="screenshot-caption-text">{{ entry.caption }}</div>
-      <ol v-if="entry.callouts && entry.callouts.length" class="screenshot-legend">
-        <li v-for="callout in entry.callouts" :key="callout.n" class="screenshot-legend-item">
-          <span class="legend-badge">{{ callout.n }}</span>
-          <span>{{ callout.label }}</span>
-        </li>
-      </ol>
+    <figcaption v-if="entry.caption" class="screenshot-caption">
+      <div class="screenshot-caption-text">{{ entry.caption }}</div>
     </figcaption>
   </figure>
   <div v-else-if="showPlaceholders" class="screenshot-placeholder">
@@ -61,14 +55,6 @@ const showPlaceholders = isDev || (typeof __DOCS_SHOW_PLACEHOLDERS__ !== 'undefi
         </ul>
       </div>
       <div class="placeholder-row"><strong>Corte:</strong> {{ entry.crop }}</div>
-      <div v-if="entry.callouts && entry.callouts.length" class="placeholder-callouts">
-        <strong>Marcações:</strong>
-        <ol>
-          <li v-for="callout in entry.callouts" :key="callout.n">
-            {{ callout.target }}
-          </li>
-        </ol>
-      </div>
     </div>
   </div>
 </template>
@@ -96,36 +82,7 @@ const showPlaceholders = isDev || (typeof __DOCS_SHOW_PLACEHOLDERS__ !== 'undefi
 
 .screenshot-caption-text {
   font-weight: 500;
-  margin-bottom: 0.5rem;
-}
-
-.screenshot-legend {
-  list-style: none;
-  padding-left: 0;
-  margin: 0.5rem 0 0 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.screenshot-legend-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.legend-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  min-width: 22px;
-  border-radius: 50%;
-  background-color: #d92d20;
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: bold;
+  color: var(--vp-c-text-2);
 }
 
 .screenshot-placeholder {

@@ -14,109 +14,14 @@
       "Modelo Matemática",
       "Importar Perfil"
     ],
-    "mustNotShow": ["OS taskbar", "window manager borders"],
-    "crop": "Full app window at 1280x800",
-    "callouts": [
-      {
-        "n": 1,
-        "target": "Criar Prova do Zero button",
-        "label": "Criar Prova do Zero"
-      },
-      {
-        "n": 2,
-        "target": "Modelo Matemática button",
-        "label": "Modelo Matemática"
-      },
-      {
-        "n": 3,
-        "target": "Importar Perfil button",
-        "label": "Importar Perfil"
-      }
+    "mustNotShow": [
+      "OS taskbar",
+      "window manager borders"
     ],
+    "crop": "Full app window at 1280x800",
+    "callouts": [],
     "alt": "Visão geral da tela inicial do GabariTeX",
     "caption": "Tela inicial do GabariTeX com acesso às avaliações, turmas e corretor."
-  },
-  {
-    "id": "instalacao-01-smartscreen",
-    "page": "instalacao",
-    "after": "No Windows, dê um duplo clique no instalador baixado; quando o aviso de fornecedor não reconhecido for exibido pelo sistema, clique em `Mais informações`.",
-    "target": "windows",
-    "window": "1280x800",
-    "screen": "Windows SmartScreen Dialog",
-    "state": "SmartScreen blue overlay with Mais informações text link",
-    "setup": "Run the GabariTeX_Setup.exe installer on Windows",
-    "mustShow": [
-      "O Windows protegeu o seu computador",
-      "Mais informações"
-    ],
-    "mustNotShow": ["personal files", "desktop icons"],
-    "crop": "Centered crop around the SmartScreen dialog box",
-    "callouts": [
-      {
-        "n": 1,
-        "target": "Mais informações link",
-        "label": "Link Mais informações"
-      }
-    ],
-    "alt": "Aviso inicial do Windows SmartScreen com o link Mais informações destacado",
-    "caption": "Aviso de fornecedor não reconhecido no Windows com o link Mais informações."
-  },
-  {
-    "id": "instalacao-02-executar",
-    "page": "instalacao",
-    "after": "Em seguida, confirme a inicialização clicando no botão `Executar assim mesmo` para concluir a instalação normalmente.",
-    "target": "windows",
-    "window": "1280x800",
-    "screen": "Windows SmartScreen Expanded Dialog",
-    "state": "SmartScreen dialog displaying Executar assim mesmo action button",
-    "setup": "Click Mais informações in the SmartScreen prompt",
-    "mustShow": [
-      "Executar assim mesmo",
-      "Não executar",
-      "Aplicativo: GabariTeX"
-    ],
-    "mustNotShow": ["desktop clutter", "taskbar notifications"],
-    "crop": "Centered crop around the expanded SmartScreen dialog",
-    "callouts": [
-      {
-        "n": 1,
-        "target": "Executar assim mesmo button",
-        "label": "Botão Executar assim mesmo"
-      }
-    ],
-    "alt": "Janela expandida do Windows SmartScreen com o botão Executar assim mesmo",
-    "caption": "Confirmação de execução no Windows SmartScreen."
-  },
-  {
-    "id": "instalacao-03-web-pwa",
-    "page": "instalacao",
-    "after": "Na versão web, para criar um atalho direto na área de trabalho e usar o programa sem abrir o navegador, clique no botão **Perfil** no canto superior direito e selecione a opção **Instalar Aplicativo**.",
-    "target": "web",
-    "window": "1280x800",
-    "screen": "Web App Header and Profile Menu",
-    "state": "Profile menu open displaying Instalar Aplicativo option",
-    "setup": "Open the web app in Chrome and click the Perfil menu button",
-    "mustShow": [
-      "Perfil",
-      "Instalar Aplicativo",
-      "Usar direto da tela inicial e operar offline"
-    ],
-    "mustNotShow": ["browser extensions", "bookmarks bar"],
-    "crop": "Top-right header and profile dropdown menu",
-    "callouts": [
-      {
-        "n": 1,
-        "target": "Perfil menu trigger",
-        "label": "Menu Perfil"
-      },
-      {
-        "n": 2,
-        "target": "Instalar Aplicativo menu option",
-        "label": "Opção Instalar Aplicativo"
-      }
-    ],
-    "alt": "Menu de perfil na versão web exibindo a opção Instalar Aplicativo",
-    "caption": "Instalação da versão web como aplicativo independente no navegador."
   },
   {
     "id": "primeiros-passos-01-biblioteca",
@@ -134,20 +39,12 @@
       "Corretor",
       "Nova Prova"
     ],
-    "mustNotShow": ["OS taskbar", "external windows"],
-    "crop": "Full app window at 1280x800",
-    "callouts": [
-      {
-        "n": 1,
-        "target": "Header navigation bar",
-        "label": "Navegação principal: Provas, Turmas e Corretor"
-      },
-      {
-        "n": 2,
-        "target": "Exam card in library",
-        "label": "Cartão da avaliação ativa"
-      }
+    "mustNotShow": [
+      "OS taskbar",
+      "external windows"
     ],
+    "crop": "Full app window at 1280x800",
+    "callouts": [],
     "alt": "Tela da Biblioteca de Provas com avaliação carregada e barra de navegação",
     "caption": "Visão geral da Biblioteca de Provas e áreas de navegação do sistema."
   },
@@ -167,20 +64,12 @@
       "Importar Perfil (ZIP)",
       "Salvo"
     ],
-    "mustNotShow": ["OS clutter", "taskbar"],
-    "crop": "Top-right header and profile dropdown menu",
-    "callouts": [
-      {
-        "n": 1,
-        "target": "Salvo status pill",
-        "label": "Indicador de salvamento automático local"
-      },
-      {
-        "n": 2,
-        "target": "Exportar Perfil (ZIP) menu item",
-        "label": "Exportar Perfil (ZIP)"
-      }
+    "mustNotShow": [
+      "OS clutter",
+      "taskbar"
     ],
+    "crop": "Top-right header and profile dropdown menu",
+    "callouts": [],
     "alt": "Menu do Perfil aberto com contador de dados e opções de backup",
     "caption": "Menu do Perfil com contador de provas, turmas e notas salvas no aparelho."
   },
@@ -203,25 +92,12 @@
       "Embaralhar Questões",
       "Embaralhar Alternativas"
     ],
-    "mustNotShow": ["OS taskbar", "external windows"],
-    "crop": "Header editor panel at 1280x800",
-    "callouts": [
-      {
-        "n": 1,
-        "target": "Senha da Prova field",
-        "label": "Senha da Prova (QR Code)"
-      },
-      {
-        "n": 2,
-        "target": "Qtd. Versões selector",
-        "label": "Seleção de quantidade de versões"
-      },
-      {
-        "n": 3,
-        "target": "Embaralhar Questões checkbox",
-        "label": "Embaralhar Questões"
-      }
+    "mustNotShow": [
+      "OS taskbar",
+      "external windows"
     ],
+    "crop": "Header editor panel at 1280x800",
+    "callouts": [],
     "alt": "Painel de cabeçalho e configurações gerais da avaliação",
     "caption": "Configuração do cabeçalho institucional, senha e parâmetros de embaralhamento."
   },
@@ -241,20 +117,11 @@
       "Alternativas (Selecione a correta para o gabarito)",
       "Valor:"
     ],
-    "mustNotShow": ["OS clutter"],
-    "crop": "Question card for Question 1",
-    "callouts": [
-      {
-        "n": 1,
-        "target": "Objetiva type button",
-        "label": "Tipo Objetiva"
-      },
-      {
-        "n": 2,
-        "target": "Correct option checkmark on alternative A",
-        "label": "Marcação da alternativa correta"
-      }
+    "mustNotShow": [
+      "OS clutter"
     ],
+    "crop": "Question card for Question 1",
+    "callouts": [],
     "alt": "Editor de questão objetiva com quatro alternativas e gabarito definido",
     "caption": "Editor de questão de múltipla escolha com gabarito definido."
   },
@@ -272,20 +139,11 @@
       "Atalhos LaTeX:",
       "Pré-visualização do Enunciado:"
     ],
-    "mustNotShow": ["OS clutter"],
-    "crop": "Prompt and MathView preview area of Question 2",
-    "callouts": [
-      {
-        "n": 1,
-        "target": "LaTeX toolbar shortcut buttons",
-        "label": "Atalhos rápidos para fórmulas LaTeX"
-      },
-      {
-        "n": 2,
-        "target": "Pré-visualização do Enunciado box",
-        "label": "Pré-visualização renderizada com KaTeX"
-      }
+    "mustNotShow": [
+      "OS clutter"
     ],
+    "crop": "Prompt and MathView preview area of Question 2",
+    "callouts": [],
     "alt": "Enunciado com fórmulas em LaTeX e pré-visualização matemática em tempo real",
     "caption": "Digitação de equações em LaTeX com visualização matemática em tempo real."
   },
@@ -302,20 +160,11 @@
       "Figura da questão",
       "Legenda da figura (ex: Figura 1: Esboço da curva)"
     ],
-    "mustNotShow": ["OS clutter"],
-    "crop": "Image uploader area of Question 3",
-    "callouts": [
-      {
-        "n": 1,
-        "target": "Attached image thumbnail preview",
-        "label": "Figura otimizada anexada à questão"
-      },
-      {
-        "n": 2,
-        "target": "Image caption input",
-        "label": "Legenda da figura impressa no caderno"
-      }
+    "mustNotShow": [
+      "OS clutter"
     ],
+    "crop": "Image uploader area of Question 3",
+    "callouts": [],
     "alt": "Bloco de anexo de imagem com figura carregada e campo de legenda preenchido",
     "caption": "Anexo de diagramas e figuras com legenda para impressão."
   },
@@ -333,20 +182,11 @@
       "Linhas pautadas para resposta:",
       "(Esta questão não entrará no gabarito óptico de bolinhas)"
     ],
-    "mustNotShow": ["OS clutter"],
-    "crop": "Question card for Question 5",
-    "callouts": [
-      {
-        "n": 1,
-        "target": "Dissertativa type button",
-        "label": "Tipo Dissertativa"
-      },
-      {
-        "n": 2,
-        "target": "Linhas pautadas input",
-        "label": "Configuração de linhas pautadas para a resposta"
-      }
+    "mustNotShow": [
+      "OS clutter"
     ],
+    "crop": "Question card for Question 5",
+    "callouts": [],
     "alt": "Editor de questão dissertativa com configuração de linhas pautadas",
     "caption": "Configuração de questão dissertativa com linhas pautadas no caderno de prova."
   },
@@ -366,20 +206,12 @@
       "Apenas Cartão",
       "Imprimir / Salvar PDF"
     ],
-    "mustNotShow": ["OS taskbar", "external windows"],
-    "crop": "Top toolbar of the PrintScreen at 1280x800",
-    "callouts": [
-      {
-        "n": 1,
-        "target": "Print mode buttons group",
-        "label": "Modos de impressão: Prova Completa, Apenas Caderno, Apenas Cartão"
-      },
-      {
-        "n": 2,
-        "target": "Imprimir / Salvar PDF action button",
-        "label": "Imprimir / Salvar PDF"
-      }
+    "mustNotShow": [
+      "OS taskbar",
+      "external windows"
     ],
+    "crop": "Top toolbar of the PrintScreen at 1280x800",
+    "callouts": [],
     "alt": "Barra de ferramentas da Central de Impressão com seleção de modos e botão de imprimir",
     "caption": "Central de Impressão com seleção de cadernos e folhas de resposta."
   },
@@ -398,25 +230,11 @@
       "Folha 1 de 1 (Gabarito Oficial)",
       "ASSINATURA DO ALUNO(A):"
     ],
-    "mustNotShow": ["OS borders"],
-    "crop": "Full A4 page preview of the answer sheet",
-    "callouts": [
-      {
-        "n": 1,
-        "target": "Encrypted QR code box",
-        "label": "Código QR com gabarito criptografado"
-      },
-      {
-        "n": 2,
-        "target": "Top-left and corner fiducial square markers",
-        "label": "Marcadores fiduciais nos 4 cantos"
-      },
-      {
-        "n": 3,
-        "target": "Row sync squares next to questions",
-        "label": "Grade de bolinhas com sincronizadores"
-      }
+    "mustNotShow": [
+      "OS borders"
     ],
+    "crop": "Full A4 page preview of the answer sheet",
+    "callouts": [],
     "alt": "Visualização da folha de respostas A4 padronizada com código QR e marcadores",
     "caption": "Folha de respostas oficial com código QR encriptado e marcadores fiduciais."
   },
@@ -433,20 +251,11 @@
       "Todas",
       "Imprimir / Salvar PDF"
     ],
-    "mustNotShow": ["OS clutter"],
-    "crop": "Print toolbar and multi-version document separator",
-    "callouts": [
-      {
-        "n": 1,
-        "target": "Todas version button",
-        "label": "Opção para imprimir todas as versões de uma só vez"
-      },
-      {
-        "n": 2,
-        "target": "Imprimir / Salvar PDF button",
-        "label": "Imprimir / Salvar PDF"
-      }
+    "mustNotShow": [
+      "OS clutter"
     ],
+    "crop": "Print toolbar and multi-version document separator",
+    "callouts": [],
     "alt": "Modo de impressão com todas as versões combinadas para envio à impressora",
     "caption": "Impressão em lote de todas as versões randomizadas em um único arquivo."
   },
@@ -465,20 +274,12 @@
       "Em Lote",
       "Câmera do Celular"
     ],
-    "mustNotShow": ["OS taskbar", "external windows"],
-    "crop": "Full app window at 1280x800",
-    "callouts": [
-      {
-        "n": 1,
-        "target": "Foto Individual and Em Lote mode selector tabs",
-        "label": "Modos de correção: Foto Individual ou Em Lote"
-      },
-      {
-        "n": 2,
-        "target": "Exam password input field",
-        "label": "Senha da Prova (QR Code)"
-      }
+    "mustNotShow": [
+      "OS taskbar",
+      "external windows"
     ],
+    "crop": "Full app window at 1280x800",
+    "callouts": [],
     "alt": "Tela do corretor óptico com abas de correção e campo de senha da prova",
     "caption": "Tela inicial do corretor com abas de modo e senha da avaliação."
   },
@@ -495,20 +296,11 @@
       "Corretor Óptico em 2 Passos",
       "Foto Individual"
     ],
-    "mustNotShow": ["OS clutter"],
-    "crop": "Step 1 QR lock container area",
-    "callouts": [
-      {
-        "n": 1,
-        "target": "Step 1 QR lock box",
-        "label": "Passo 1: Leitura do código QR da folha"
-      },
-      {
-        "n": 2,
-        "target": "QR upload or camera capture button",
-        "label": "Carregar imagem do código QR"
-      }
+    "mustNotShow": [
+      "OS clutter"
     ],
+    "crop": "Step 1 QR lock container area",
+    "callouts": [],
     "alt": "Passo 1 do corretor para identificação e trava da versão da prova",
     "caption": "Passo 1: leitura de aproximação do código QR para destravar a versão da folha."
   },
@@ -524,20 +316,11 @@
     "mustShow": [
       "Em Lote"
     ],
-    "mustNotShow": ["OS clutter"],
-    "crop": "BatchGrader dropzone box at 1280x800",
-    "callouts": [
-      {
-        "n": 1,
-        "target": "Batch files drag-and-drop zone",
-        "label": "Área de envio de fotos em lote"
-      },
-      {
-        "n": 2,
-        "target": "Browse file selection button",
-        "label": "Selecionar arquivos de imagem do computador"
-      }
+    "mustNotShow": [
+      "OS clutter"
     ],
+    "crop": "BatchGrader dropzone box at 1280x800",
+    "callouts": [],
     "alt": "Área de importação em lote para arrastar múltiplas fotos de gabaritos",
     "caption": "Envio de múltiplos gabaritos para processamento automático em fila."
   },
@@ -553,20 +336,11 @@
     "mustShow": [
       "Salvar Nota no Livro"
     ],
-    "mustNotShow": ["OS clutter"],
-    "crop": "GradingModal review dialog box",
-    "callouts": [
-      {
-        "n": 1,
-        "target": "Ambiguous question review option",
-        "label": "Inspeção de marcação ambígua ou rasurada"
-      },
-      {
-        "n": 2,
-        "target": "Confirm score button",
-        "label": "Pontuação calculada e botão de confirmação"
-      }
+    "mustNotShow": [
+      "OS clutter"
     ],
+    "crop": "GradingModal review dialog box",
+    "callouts": [],
     "alt": "Janela de revisão de correção com detalhamento de alternativas e ajuste manual",
     "caption": "Revisão individual de marcações ambíguas e confirmação manual."
   },
@@ -583,53 +357,13 @@
       "Em Lote",
       "Corretor"
     ],
-    "mustNotShow": ["OS clutter"],
-    "crop": "BatchGrader processed results table",
-    "callouts": [
-      {
-        "n": 1,
-        "target": "Processed sheet row with student name and grade",
-        "label": "Lista de folhas processadas com notas calculadas"
-      },
-      {
-        "n": 2,
-        "target": "Save batch grades button",
-        "label": "Confirmação e gravação no Livro de Notas"
-      }
+    "mustNotShow": [
+      "OS clutter"
     ],
+    "crop": "BatchGrader processed results table",
+    "callouts": [],
     "alt": "Lista de folhas corrigidas em lote prontas para gravação no livro de notas",
     "caption": "Resumo do lote com notas individuais e envio para o diário da turma."
-  },
-  {
-    "id": "camera-celular-01-painel-desktop",
-    "page": "camera-celular",
-    "after": "No computador, abra o corretor e clique em **Câmera do Celular** para exibir o código QR e o endereço de pareamento da rede local.",
-    "target": "desktop",
-    "window": "1280x800",
-    "screen": "RemoteCameraPanel Desktop Dialog",
-    "state": "Remote camera modal open showing QR Code, local IP address, and status Aguardando fotos do celular",
-    "setup": "Click Câmera do Celular in desktop Corretor screen",
-    "mustShow": [
-      "Usar Câmera do Celular",
-      "Aponte o app de câmera do celular para este código",
-      "Aguardando fotos do celular"
-    ],
-    "mustNotShow": ["OS clutter"],
-    "crop": "RemoteCameraPanel modal dialog box",
-    "callouts": [
-      {
-        "n": 1,
-        "target": "QR Code element",
-        "label": "Código QR de pareamento sem fio"
-      },
-      {
-        "n": 2,
-        "target": "Network address input",
-        "label": "Endereço local da rede (IP e porta 47831)"
-      }
-    ],
-    "alt": "Painel de conexão da câmera do celular no computador com QR Code e endereço de rede",
-    "caption": "Painel de pareamento da câmera remota com código QR e endereço local."
   },
   {
     "id": "camera-celular-02-navegador-mobile",
@@ -645,20 +379,12 @@
       "Conectado",
       "O que você deseja enviar agora?"
     ],
-    "mustNotShow": ["Browser URL bar", "OS status bar"],
-    "crop": "Full phone viewport 390x844",
-    "callouts": [
-      {
-        "n": 1,
-        "target": "Status badge",
-        "label": "Status de conexão com o computador"
-      },
-      {
-        "n": 2,
-        "target": "Mode buttons",
-        "label": "Seletor de envio: QR Code ou Gabarito"
-      }
+    "mustNotShow": [
+      "Browser URL bar",
+      "OS status bar"
     ],
+    "crop": "Full phone viewport 390x844",
+    "callouts": [],
     "alt": "Tela do navegador no celular conectada ao GabariTeX exibindo seletor de modo",
     "caption": "Interface web do celular com indicação de conexão ativa e modos de captura."
   },
@@ -675,20 +401,11 @@
       "2. Gabarito",
       "Fotografar Gabarito"
     ],
-    "mustNotShow": ["OS status bar"],
-    "crop": "Full phone viewport 390x844",
-    "callouts": [
-      {
-        "n": 1,
-        "target": "Active Gabarito mode button",
-        "label": "Modo de folha de respostas ativo"
-      },
-      {
-        "n": 2,
-        "target": "Primary capture button",
-        "label": "Botão de disparo para foto da folha"
-      }
+    "mustNotShow": [
+      "OS status bar"
     ],
+    "crop": "Full phone viewport 390x844",
+    "callouts": [],
     "alt": "Modo de envio de gabarito ativo no celular com botão de disparo da foto",
     "caption": "Modo de gabarito selecionado com acionamento da câmera fotográfica do celular."
   },
@@ -705,20 +422,11 @@
       "Celular Conectado",
       "Em Lote"
     ],
-    "mustNotShow": ["OS clutter"],
-    "crop": "Batch queue section at 1280x800",
-    "callouts": [
-      {
-        "n": 1,
-        "target": "Celular Conectado badge in top bar",
-        "label": "Indicador de celular conectado"
-      },
-      {
-        "n": 2,
-        "target": "Received item row in batch queue",
-        "label": "Folha recebida remotamente pronta para correção"
-      }
+    "mustNotShow": [
+      "OS clutter"
     ],
+    "crop": "Batch queue section at 1280x800",
+    "callouts": [],
     "alt": "Fila de correção no computador recebendo automaticamente a foto enviada pelo celular",
     "caption": "Recepção imediata da foto do gabarito na fila de processamento do computador."
   },
@@ -736,20 +444,11 @@
       "Nome do Aluno",
       "Definir como Turma Ativa"
     ],
-    "mustNotShow": ["OS clutter"],
-    "crop": "Full ClassroomManager view at 1280x800",
-    "callouts": [
-      {
-        "n": 1,
-        "target": "Left sidebar with class names",
-        "label": "Lista de turmas cadastradas"
-      },
-      {
-        "n": 2,
-        "target": "Right student roster table",
-        "label": "Lista de estudantes com nome e matrícula"
-      }
+    "mustNotShow": [
+      "OS clutter"
     ],
+    "crop": "Full ClassroomManager view at 1280x800",
+    "callouts": [],
     "alt": "Tela do gerenciador de turmas com painel lateral de turmas e lista de estudantes",
     "caption": "Gerenciamento de turmas com listagem de estudantes e cadastro de matrículas."
   },
@@ -767,20 +466,11 @@
       "Imprimir Espelhos (A4)",
       "Recalcular"
     ],
-    "mustNotShow": ["OS clutter"],
-    "crop": "GradebookTable at 1280x800",
-    "callouts": [
-      {
-        "n": 1,
-        "target": "Student grades rows",
-        "label": "Notas, acertos e versões dos estudantes"
-      },
-      {
-        "n": 2,
-        "target": "Export and print buttons",
-        "label": "Exportação para Excel/CSV e impressão de espelhos"
-      }
+    "mustNotShow": [
+      "OS clutter"
     ],
+    "crop": "GradebookTable at 1280x800",
+    "callouts": [],
     "alt": "Tabela de notas dos estudantes com colunas de versão, acertos e nota final",
     "caption": "Livro de notas com notas consolidadas, filtros por turma e ações de exportação."
   },
@@ -798,20 +488,11 @@
       "Média da Turma",
       "Taxa de Acerto"
     ],
-    "mustNotShow": ["OS clutter"],
-    "crop": "Item analysis section at 1280x800",
-    "callouts": [
-      {
-        "n": 1,
-        "target": "Statistical summary cards",
-        "label": "Média, mediana, menor e maior nota da turma"
-      },
-      {
-        "n": 2,
-        "target": "Item accuracy table",
-        "label": "Taxa de acerto e distribuição de alternativas por questão"
-      }
+    "mustNotShow": [
+      "OS clutter"
     ],
+    "crop": "Item analysis section at 1280x800",
+    "callouts": [],
     "alt": "Painel de análise estatística de itens com taxa de acerto por questão e distribuição",
     "caption": "Análise pedagógica por item com taxas de acerto e alternativas mais marcadas."
   },
@@ -827,20 +508,11 @@
     "mustShow": [
       "Imprimir Espelhos (A4)"
     ],
-    "mustNotShow": ["OS clutter"],
-    "crop": "Student slips preview window",
-    "callouts": [
-      {
-        "n": 1,
-        "target": "Individual slip container",
-        "label": "Comprovante do aluno com nota e gabarito"
-      },
-      {
-        "n": 2,
-        "target": "Answers grid",
-        "label": "Detalhamento de acertos e erros questão a questão"
-      }
+    "mustNotShow": [
+      "OS clutter"
     ],
+    "crop": "Student slips preview window",
+    "callouts": [],
     "alt": "Espelhos de resposta individuais em formato A4 prontos para impressão e entrega",
     "caption": "Espelhos individuais de resposta com detalhamento de acertos para entrega aos alunos."
   },
@@ -858,20 +530,11 @@
       "Exportar Perfil (ZIP)",
       "Importar Perfil (ZIP)"
     ],
-    "mustNotShow": ["OS clutter"],
-    "crop": "Top navigation area with ProfileMenu open",
-    "callouts": [
-      {
-        "n": 1,
-        "target": "Exportar Perfil (ZIP) menu item",
-        "label": "Opção para exportar perfil em arquivo ZIP"
-      },
-      {
-        "n": 2,
-        "target": "Importar Perfil (ZIP) menu item",
-        "label": "Opção para importar backup e restaurar dados"
-      }
+    "mustNotShow": [
+      "OS clutter"
     ],
+    "crop": "Top navigation area with ProfileMenu open",
+    "callouts": [],
     "alt": "Menu do perfil do professor com opções de exportação e importação de arquivo ZIP",
     "caption": "Menu de perfil com atalhos para exportação e restauração de dados."
   },
@@ -889,20 +552,11 @@
       "Arquivo de Perfil (ZIP)",
       "Exportar Arquivo ZIP"
     ],
-    "mustNotShow": ["OS clutter"],
-    "crop": "ProfileExportImportModal dialog box",
-    "callouts": [
-      {
-        "n": 1,
-        "target": "Escopo da Exportação radio options",
-        "label": "Seleção de escopo: Perfil Completo ou Personalizado"
-      },
-      {
-        "n": 2,
-        "target": "Export button",
-        "label": "Botão de exportação do arquivo ZIP compactado"
-      }
+    "mustNotShow": [
+      "OS clutter"
     ],
+    "crop": "ProfileExportImportModal dialog box",
+    "callouts": [],
     "alt": "Janela de exportação de perfil com seleção de escopo e botão de download",
     "caption": "Configurações de exportação de perfil com seleção de turmas, provas e notas."
   },
@@ -920,82 +574,12 @@
       "Conteúdo Identificado no Arquivo",
       "Confirmar e Importar"
     ],
-    "mustNotShow": ["OS clutter"],
-    "crop": "ProfileExportImportModal import summary dialog",
-    "callouts": [
-      {
-        "n": 1,
-        "target": "Content summary count boxes",
-        "label": "Contagem de provas, turmas e notas identificadas no arquivo"
-      },
-      {
-        "n": 2,
-        "target": "Merge and Replace radio options",
-        "label": "Modo de aplicação: Mesclar (recomendado) ou Substituir tudo"
-      }
+    "mustNotShow": [
+      "OS clutter"
     ],
+    "crop": "ProfileExportImportModal import summary dialog",
+    "callouts": [],
     "alt": "Resumo dos dados encontrados no arquivo ZIP e escolha do modo de mesclagem ou substituição",
     "caption": "Resumo do arquivo importado com opção de mesclar ou substituir o perfil."
-  },
-  {
-    "id": "perfis-backup-04-pasta-backups",
-    "page": "perfis-backup",
-    "after": "No computador, acesse a pasta de documentos para encontrar as cópias diárias salvas automaticamente pelo GabariTeX Desktop.",
-    "target": "desktop",
-    "window": "1280x800",
-    "screen": "Desktop Backups Folder",
-    "state": "File manager displaying Documentos/GabariTeX/Backups folder with daily rotated ZIP snapshots",
-    "setup": "Show file manager view of Documentos/GabariTeX/Backups with snapshot files",
-    "mustShow": [
-      "Documentos",
-      "Backups"
-    ],
-    "mustNotShow": ["Private files", "Personal user names in paths"],
-    "crop": "File manager window showing backup files",
-    "callouts": [
-      {
-        "n": 1,
-        "target": "Folder path breadcrumb",
-        "label": "Caminho da pasta: Documentos/GabariTeX/Backups"
-      },
-      {
-        "n": 2,
-        "target": "Snapshot zip files list",
-        "label": "Histórico rotativo com as cópias diárias mais recentes"
-      }
-    ],
-    "alt": "Pasta de documentos do computador com arquivos de backup diários do GabariTeX",
-    "caption": "Pasta de backups automáticos diários em Documentos/GabariTeX/Backups."
-  },
-  {
-    "id": "problemas-comuns-01-aviso-web",
-    "page": "problemas-comuns",
-    "after": "Ao acessar o corretor pela versão web do GabariTeX, o sistema apresenta o painel informativo destacando as vantagens do aplicativo para computador.",
-    "target": "web",
-    "window": "1280x800",
-    "screen": "Scanner Web Fallback Card",
-    "state": "Web fallback card showing Corretor Óptico (OMR) no GabariTeX Desktop presentation and download button",
-    "setup": "Open Corretor in browser web version",
-    "mustShow": [
-      "Corretor Óptico (OMR) no GabariTeX Desktop",
-      "Baixar GabariTeX Desktop (GitHub Releases)",
-      "Continuar na Versão Web"
-    ],
-    "mustNotShow": ["OS clutter"],
-    "crop": "Web fallback presentation card",
-    "callouts": [
-      {
-        "n": 1,
-        "target": "Download button",
-        "label": "Botão para baixar o GabariTeX Desktop"
-      },
-      {
-        "n": 2,
-        "target": "Benefit cards",
-        "label": "Destaque dos benefícios do motor nativo: OpenCV, câmera sem fio e criptografia"
-      }
-    ],
-    "alt": "Painel informativo do corretor óptico na versão web convidando a baixar o aplicativo para computador",
-    "caption": "Apresentação do corretor óptico e link para download do aplicativo desktop no GitHub."
   }
 ]
