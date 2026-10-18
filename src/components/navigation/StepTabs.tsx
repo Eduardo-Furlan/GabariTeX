@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from 'motion/react-m';
 import {
   FileEdit,
   Shuffle,
@@ -8,6 +9,8 @@ import {
 } from 'lucide-react';
 import { Route, StepId } from '../../router/hashRouter';
 import { useProfile } from '../../context/ProfileContext';
+import { Bubble } from '../ui/Bubble';
+import { cn } from '../ui/cn';
 
 interface StepTabsProps {
   currentRoute: Route;
@@ -28,7 +31,6 @@ export const StepTabs: React.FC<StepTabsProps> = ({ currentRoute, onNavigate }) 
   const isExamRoute = currentRoute.type === 'exam_step';
   const activeStep = isExamRoute ? currentRoute.step : null;
 
-  // Filtra registros da prova ativa (ou todos se não houver isolamento por examId)
   const examRecordsCount = activeExamId
     ? records.filter((r) => !r.examId || r.examId === activeExamId).length
     : 0;
@@ -81,10 +83,10 @@ export const StepTabs: React.FC<StepTabsProps> = ({ currentRoute, onNavigate }) 
   };
 
   return (
-    <div className="no-print bg-white border-b border-slate-200">
+    <div className="hidden md:block border-t border-slate-200/80 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <nav
-          className="flex space-x-1 sm:space-x-2 overflow-x-auto py-1.5 scrollbar-none"
+          className="flex space-x-1 sm:space-x-1.5 overflow-x-auto py-1 scrollbar-none"
           aria-label="Etapas da avaliação"
         >
           {steps.map((s) => {
@@ -98,28 +100,46 @@ export const StepTabs: React.FC<StepTabsProps> = ({ currentRoute, onNavigate }) 
                 disabled={isDisabled}
                 onClick={() => handleStepClick(s.id)}
                 aria-current={isActive ? 'page' : undefined}
-                title={isDisabled ? 'Abra ou crie uma prova para acessar as etapas' : `Ir para etapa ${s.number}: ${s.label}`}
-                className={`shrink-0 flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
+                title={
+                  isDisabled
+                    ? 'Abra ou crie uma prova para acessar as etapas'
+                    : `Ir para etapa ${s.number}: ${s.label}`
+                }
+                className={cn(
+                  'relative shrink-0 flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
                   isActive
-                    ? 'bg-indigo-50 dark:bg-indigo-500/10 border-indigo-200 dark:border-indigo-500/30 text-indigo-700 dark:text-indigo-300 shadow-2xs'
+                    ? 'text-indigo-700 dark:text-indigo-300 font-bold'
                     : isDisabled
-                    ? 'border-transparent text-slate-400 cursor-not-allowed opacity-60'
-                    : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                }`}
+                    ? 'text-slate-400 cursor-not-allowed opacity-60'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                )}
               >
-                <span
-                  className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                    isActive
-                      ? 'bg-indigo-600 text-on-accent'
-                      : 'bg-slate-200 text-slate-700'
-                  }`}
+                {isActive && (
+                  <m.span
+                    layoutId="step-pill"
+                    className="absolute inset-0 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 shadow-2xs -z-0"
+                    transition={{ type: 'spring', stiffness: 420, damping: 34, mass: 0.9 }}
+                    aria-hidden="true"
+                  />
+                )}
+                <Bubble
+                  state={isActive ? 'filled' : 'empty'}
+                  size="sm"
+                  className={cn(
+                    'relative z-10 w-4 h-4 text-[10px] font-bold',
+                    !isActive && 'border-slate-300 text-slate-600'
+                  )}
+                  aria-hidden="true"
                 >
                   {s.number}
-                </span>
-                {s.icon}
-                <span>{s.label}</span>
+                </Bubble>
+                <span className="relative z-10">{s.icon}</span>
+                <span className="relative z-10">{s.label}</span>
                 {s.badge !== undefined && (
-                  <span className="ml-1 px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold rounded-full">
+                  <span
+                    key={s.badge}
+                    className="relative z-10 ml-0.5 px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold rounded-full animate-pop"
+                  >
                     {s.badge}
                   </span>
                 )}
@@ -131,4 +151,3 @@ export const StepTabs: React.FC<StepTabsProps> = ({ currentRoute, onNavigate }) 
     </div>
   );
 };
-

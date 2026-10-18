@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { ProfileProvider, useProfile } from './context/ProfileContext';
-import { useHashRouter } from './router/hashRouter';
+import { useHashRouter, StepId } from './router/hashRouter';
 import { decideRouteSync } from './router/examSync';
 import { AppHeader } from './components/navigation/AppHeader';
 import { ContextBar } from './components/navigation/ContextBar';
@@ -18,11 +18,19 @@ import { GradebookScreen } from './screens/GradebookScreen';
 import { ProfileExportImportModal } from './components/profile/ProfileExportImportModal';
 import { GradingModal } from './components/scanner/GradingModal';
 import { UpdatePrompt } from './components/pwa/UpdatePrompt';
+import { ToastHost } from './components/ui/Toast';
+import { ConfirmHost } from './components/ui/ConfirmHost';
+import { Modal } from './components/ui/Modal';
+import { Button } from './components/ui/Button';
+import { BubbleLoader } from './components/ui/BubbleLoader';
+import { useScrolled } from './hooks/useScrolled';
+import { useRetained } from './hooks/useRetained';
 import { triggerDesktopSnapshot } from './platform/snapshots';
 import { Exam } from './types/exam';
 import { ProfileData, ProfileSettings } from './types/profile';
-import { BookOpen, Loader2 } from 'lucide-react';
 import './styles/print.css';
+
+const VALID_STEPS: StepId[] = ['criar', 'versoes', 'imprimir', 'corrigir', 'notas'];
 
 const AppContent: React.FC = () => {
   const {
@@ -55,6 +63,44 @@ const AppContent: React.FC = () => {
   const { route, navigate } = useHashRouter();
 
   const lastSyncedExamIdRef = useRef<string | null>(null);
+  const chromeRef = useRef<HTMLDivElement>(null);
+  const isScrolled = useScrolled(4);
+  const retainedSwitchPrompt = useRetained(examSwitchPrompt);
+
+  const prevStepRef = useRef<StepId | null>(null);
+  const [navDir, setNavDir] = useState<'forward' | 'back' | undefined>(undefined);
+
+  // Calcula direção da transição entre etapas
+  useEffect(() => {
+    if (route.type === 'exam_step') {
+      if (prevStepRef.current && prevStepRef.current !== route.step) {
+        const prevIdx = VALID_STEPS.indexOf(prevStepRef.current);
+        const nextIdx = VALID_STEPS.indexOf(route.step);
+        if (prevIdx !== -1 && nextIdx !== -1) {
+          setNavDir(nextIdx > prevIdx ? 'forward' : 'back');
+        }
+      }
+      prevStepRef.current = route.step;
+    } else {
+      prevStepRef.current = null;
+      setNavDir(undefined);
+    }
+  }, [route]);
+
+  // Mede altura do chrome sticky para publicação de --chrome-h
+  useEffect(() => {
+    if (typeof window === 'undefined' || !chromeRef.current) return;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const h = Math.round(entry.borderBoxSize?.[0]?.blockSize ?? entry.contentRect.height);
+        if (h > 0) {
+          document.documentElement.style.setProperty('--chrome-h', `${h}px`);
+        }
+      }
+    });
+    ro.observe(chromeRef.current);
+    return () => ro.disconnect();
+  }, []);
 
   // Sincroniza rota e prova ativa sem disputa ou vai-e-volta
   useEffect(() => {
@@ -136,9 +182,9 @@ const AppContent: React.FC = () => {
   if (isLoadingProfile) {
     return (
       <div className="min-h-screen bg-page flex items-center justify-center p-4">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-8 h-8 text-indigo-600 dark:text-indigo-300 animate-spin" />
-          <span className="text-xs font-semibold text-slate-500">
+        <div className="flex flex-col items-center gap-4">
+          <BubbleLoader size="lg" />
+          <span className="text-meta font-medium text-slate-500">
             Carregando avaliações e perfil...
           </span>
         </div>
@@ -148,23 +194,25 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-page text-slate-800 flex flex-col pb-16 md:pb-0">
-      {/* 1. Cabeçalho de Navegação (Nível 1) */}
-      <AppHeader
-        currentRoute={route}
-        onNavigate={navigate}
-        onOpenExportImport={handleOpenExportImport}
-      />
-
-      {/* 2. Barra de Contexto (Prova e Turma ativas) */}
-      <ContextBar currentRoute={route} onNavigate={navigate} />
-
-      {/* 3. Etapas da Prova Ativa (Nível 2 - Desktop) */}
-      {route.type === 'exam_step' && (
-        <StepTabs currentRoute={route} onNavigate={navigate} />
-      )}
+      {/* 1-3. Chrome Unificado Sticky (Nível 1, Contexto e Etapas) */}
+      <div
+        ref={chromeRef}
+        className="no-print sticky top-0 z-30 chrome-surface transition-shadow duration-150"
+        data-scrolled={isScrolled}
+      >
+        <AppHeader
+          currentRoute={route}
+          onNavigate={navigate}
+          onOpenExportImport={handleOpenExportImport}
+        />
+        <ContextBar currentRoute={route} onNavigate={navigate} />
+        {route.type === 'exam_step' && (
+          <StepTabs currentRoute={route} onNavigate={navigate} />
+        )}
+      </div>
 
       {/* 4. Telas / Conteúdo Principal */}
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col" data-nav-dir={navDir}>
         {route.type === 'exams' && (
           <ExamsScreen
             onNavigate={navigate}
@@ -192,11 +240,10 @@ const AppContent: React.FC = () => {
         )}
       </main>
 
-      {/* 5. Barra Inferior Fixa para Mobile (Plano 10 §2.2) */}
+      {/* 5. Barra Inferior Fixa para Mobile */}
       <MobileTabBar currentRoute={route} onNavigate={navigate} />
 
       {/* 6. Modais Globais */}
-      {/* Modal de confirmação/edição manual de nota pós-leitura OMR */}
       {gradingSession && (
         <GradingModal
           initialRecord={gradingSession.record}
@@ -225,56 +272,54 @@ const AppContent: React.FC = () => {
       )}
 
       {/* Diálogo de troca de prova ativa caso folha de outra prova seja escaneada */}
-      {examSwitchPrompt && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-start gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 flex items-center justify-center text-indigo-600 dark:text-indigo-300 shrink-0">
-                <BookOpen className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-slate-800">
-                  Trocar para a prova desta folha?
-                </h3>
-                <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                  Esta folha pertence à prova <strong>&quot;{examSwitchPrompt.targetExamName}&quot;</strong> da sua biblioteca.
-                </p>
-              </div>
-            </div>
-            <p className="text-xs text-slate-500 mb-6">
-              Deseja alternar a prova ativa para continuar a correção nela?
-            </p>
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setExamSwitchPrompt(null)}
-                className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition"
-              >
-                Permanecer na prova atual
-              </button>
-              <button
-                type="button"
-                onClick={async () => {
-                  const targetId = examSwitchPrompt.targetExamId;
-                  const pending = examSwitchPrompt.pendingPayload;
-                  const pendingRec = examSwitchPrompt.pendingRecord;
-                  setExamSwitchPrompt(null);
-                  await selectActiveExam(targetId);
-                  if (pending) setActivePayload(pending);
-                  if (pendingRec) handleGradeSaved(pendingRec);
-                  navigate({ type: 'exam_step', examId: targetId, step: 'corrigir' });
-                }}
-                className="px-4 py-2 text-xs font-bold text-on-accent bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition"
-              >
-                Trocar para &quot;{examSwitchPrompt.targetExamName}&quot;
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal
+        open={Boolean(examSwitchPrompt)}
+        onOpenChange={(open) => {
+          if (!open) setExamSwitchPrompt(null);
+        }}
+        title="Trocar para a prova desta folha?"
+        size="sm"
+        footer={
+          <>
+            <Button
+              variant="secondary"
+              onClick={() => setExamSwitchPrompt(null)}
+            >
+              Permanecer na prova atual
+            </Button>
+            <Button
+              variant="primary"
+              onClick={async () => {
+                if (!retainedSwitchPrompt) return;
+                const targetId = retainedSwitchPrompt.targetExamId;
+                const pending = retainedSwitchPrompt.pendingPayload;
+                const pendingRec = retainedSwitchPrompt.pendingRecord;
+                setExamSwitchPrompt(null);
+                await selectActiveExam(targetId);
+                if (pending) setActivePayload(pending);
+                if (pendingRec) handleGradeSaved(pendingRec);
+                navigate({ type: 'exam_step', examId: targetId, step: 'corrigir' });
+              }}
+            >
+              Trocar de prova
+            </Button>
+          </>
+        }
+      >
+        <p className="text-body text-slate-600 leading-relaxed">
+          Esta folha pertence à prova <strong>&quot;{retainedSwitchPrompt?.targetExamName}&quot;</strong> da sua biblioteca.
+        </p>
+        <p className="mt-2 text-meta text-slate-500">
+          Deseja alternar a prova ativa para continuar a correção nela?
+        </p>
+      </Modal>
 
       {/* Notificações e controle de versão do PWA */}
       <UpdatePrompt isBatchProcessing={isBatchProcessing} />
+
+      {/* Hosts Globais de Toast e Confirmação */}
+      <ToastHost />
+      <ConfirmHost />
     </div>
   );
 };

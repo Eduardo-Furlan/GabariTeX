@@ -11,6 +11,13 @@
   animation: screen-in var(--dur-slow) var(--ease-out) backwards;
 }
 
+main[data-nav-dir="back"] .screen-enter {
+  --enter-x: -10px;
+}
+main[data-nav-dir="forward"] .screen-enter {
+  --enter-x: 10px;
+}
+
 @keyframes pop {
   0% { transform: scale(0.92); }
   60% { transform: scale(1.08); }
