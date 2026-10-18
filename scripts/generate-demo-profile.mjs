@@ -124,82 +124,130 @@ const classroom = {
   ],
 };
 
-// 4. Definir registros de correção para o livro de notas (Gradebook)
+// 4. Funções determinísticas para gerar os layouts das versões embaralhadas
+function mulberry32(a) {
+  return function () {
+    let t = (a += 0x6d2b79f5);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function shuffleArray(array, prng) {
+  const result = [...array];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(prng() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
+const OPTION_LABELS = ['A', 'B', 'C', 'D', 'E'];
+
+function buildVersionLayouts(examDef) {
+  const layouts = [];
+  const versionLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+  for (let v = 0; v < examDef.versionCount; v++) {
+    const versionLetter = versionLetters[v] || `V${v + 1}`;
+    const seed = (v + 1) * 123456789 + examDef.questions.length;
+    const prng = mulberry32(seed);
+
+    let processedQuestions = examDef.questions.map((q) => ({
+      ...q,
+      options: q.options ? q.options.map((opt) => ({ ...opt })) : undefined,
+    }));
+
+    if (examDef.shuffleQuestions) {
+      processedQuestions = shuffleArray(processedQuestions, prng);
+    }
+
+    const answerKey = {};
+
+    processedQuestions = processedQuestions.map((q, idx) => {
+      const qNum = idx + 1;
+      if (q.type === 'objective' && q.options && q.options.length > 0) {
+        let options = [...q.options];
+        if (examDef.shuffleOptions) {
+          options = shuffleArray(options, prng);
+        }
+
+        options = options.map((opt, optIdx) => ({
+          ...opt,
+          label: OPTION_LABELS[optIdx] || 'A',
+        }));
+
+        const correctOpt = options.find((opt) => opt.isCorrect);
+        if (correctOpt) {
+          answerKey[qNum] = correctOpt.label;
+        }
+
+        return { ...q, options };
+      }
+      return q;
+    });
+
+    layouts.push({
+      versionLetter,
+      seed,
+      questions: processedQuestions,
+      objectiveAnswerKey: answerKey,
+    });
+  }
+
+  return layouts;
+}
+
+const layouts = buildVersionLayouts(exam);
+
+// 5. Definir respostas dos estudantes (referenciando as opções da prova original)
 const studentsData = [
   { ref: 'std-202601', name: 'Ana Beatriz Silva', reg: '202601', v: 'A', q1: 'A', q2: 'B', q3: 'C', q4: 'D', q6: 'A', q5pts: 2.5 },
   { ref: 'std-202602', name: 'Bruno Carvalho Lima', reg: '202602', v: 'A', q1: 'A', q2: 'B', q3: 'C', q4: 'D', q6: 'B', q5pts: 2.0 },
   { ref: 'std-202603', name: 'Camila Duarte Santos', reg: '202603', v: 'A', q1: 'A', q2: 'B', q3: 'A', q4: 'D', q6: 'A', q5pts: 2.0 },
   { ref: 'std-202604', name: 'Daniel Ferreira Rocha', reg: '202604', v: 'B', q1: 'A', q2: 'C', q3: 'C', q4: 'D', q6: 'A', q5pts: 1.5 },
   { ref: 'std-202605', name: 'Elena Martins Ramos', reg: '202605', v: 'A', q1: 'A', q2: 'B', q3: 'C', q4: 'D', q6: 'A', q5pts: 2.5 },
-  { ref: 'std-202606', name: 'Felipe Augusto Souza', reg: '202606', v: 'A', q1: 'B', q2: 'B', q3: 'C', q4: 'A', q6: 'A', q5pts: 1.0 },
+  { ref: 'std-202606', name: 'Felipe Augusto Souza', reg: '202606', v: 'A', q1: 'A', q2: 'B', q3: 'C', q4: 'A', q6: 'A', q5pts: 0.0 },
   { ref: 'std-202607', name: 'Gabriela Costa Ribeiro', reg: '202607', v: 'A', q1: 'A', q2: 'B', q3: 'C', q4: 'D', q6: 'A', q5pts: 2.0 },
   { ref: 'std-202608', name: 'Henrique Dias Moreira', reg: '202608', v: 'A', q1: 'A', q2: 'B', q3: 'C', q4: 'D', q6: 'D', q5pts: 1.5 },
 ];
 
-const officialKeys = {
-  q1: { correct: 'A', maxPts: 1.0 },
-  q2: { correct: 'B', maxPts: 1.5 },
-  q3: { correct: 'C', maxPts: 1.5 },
-  q4: { correct: 'D', maxPts: 1.5 },
-  q6: { correct: 'A', maxPts: 2.0 },
-};
-
 const records = studentsData.map((std, idx) => {
-  const answers = [
-    {
-      questionNumber: 1,
-      markedOption: std.q1,
-      correctOption: officialKeys.q1.correct,
-      isCorrect: std.q1 === officialKeys.q1.correct,
-      status: std.q1 === officialKeys.q1.correct ? 'correct' : 'wrong',
-      pointsEarned: std.q1 === officialKeys.q1.correct ? officialKeys.q1.maxPts : 0,
-      maxPoints: officialKeys.q1.maxPts,
-    },
-    {
-      questionNumber: 2,
-      markedOption: std.q2,
-      correctOption: officialKeys.q2.correct,
-      isCorrect: std.q2 === officialKeys.q2.correct,
-      status: std.q2 === officialKeys.q2.correct ? 'correct' : 'wrong',
-      pointsEarned: std.q2 === officialKeys.q2.correct ? officialKeys.q2.maxPts : 0,
-      maxPoints: officialKeys.q2.maxPts,
-    },
-    {
-      questionNumber: 3,
-      markedOption: std.q3,
-      correctOption: officialKeys.q3.correct,
-      isCorrect: std.q3 === officialKeys.q3.correct,
-      status: std.q3 === officialKeys.q3.correct ? 'correct' : 'wrong',
-      pointsEarned: std.q3 === officialKeys.q3.correct ? officialKeys.q3.maxPts : 0,
-      maxPoints: officialKeys.q3.maxPts,
-    },
-    {
-      questionNumber: 4,
-      markedOption: std.q4,
-      correctOption: officialKeys.q4.correct,
-      isCorrect: std.q4 === officialKeys.q4.correct,
-      status: std.q4 === officialKeys.q4.correct ? 'correct' : 'wrong',
-      pointsEarned: std.q4 === officialKeys.q4.correct ? officialKeys.q4.maxPts : 0,
-      maxPoints: officialKeys.q4.maxPts,
-    },
-    {
-      questionNumber: 6,
-      markedOption: std.q6,
-      correctOption: officialKeys.q6.correct,
-      isCorrect: std.q6 === officialKeys.q6.correct,
-      status: std.q6 === officialKeys.q6.correct ? 'correct' : 'wrong',
-      pointsEarned: std.q6 === officialKeys.q6.correct ? officialKeys.q6.maxPts : 0,
-      maxPoints: officialKeys.q6.maxPts,
-    },
-  ];
+  const layout = layouts.find((l) => l.versionLetter === std.v);
+  const answers = [];
+  const subjectiveAnswers = [];
 
-  const subjectiveAnswers = [
-    {
-      questionNumber: 5,
-      maxPoints: 2.5,
-      pointsEarned: std.q5pts,
-    },
-  ];
+  layout.questions.forEach((lq, lIdx) => {
+    const qNum = lIdx + 1;
+    const origQ = exam.questions.find((q) => q.id === lq.id);
+
+    if (lq.type === 'objective') {
+      const chosenLabel = std[origQ.id];
+      const origOpt = origQ.options.find((o) => o.label === chosenLabel);
+      const sheetOpt = lq.options.find((o) => o.id === origOpt.id);
+      const markedOption = sheetOpt.label;
+      const correctOption = layout.objectiveAnswerKey[qNum];
+      const isCorrect = markedOption === correctOption;
+      const pointsEarned = isCorrect ? lq.points : 0;
+
+      answers.push({
+        questionNumber: qNum,
+        markedOption,
+        correctOption,
+        isCorrect,
+        status: isCorrect ? 'correct' : 'wrong',
+        pointsEarned,
+        maxPoints: lq.points,
+      });
+    } else if (lq.type === 'subjective') {
+      subjectiveAnswers.push({
+        questionNumber: qNum,
+        pointsEarned: std.q5pts,
+        maxPoints: lq.points,
+      });
+    }
+  });
 
   const objTotal = answers.reduce((acc, a) => acc + a.pointsEarned, 0);
   const subjTotal = subjectiveAnswers.reduce((acc, s) => acc + (s.pointsEarned || 0), 0);
