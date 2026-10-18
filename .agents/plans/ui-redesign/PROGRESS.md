@@ -249,3 +249,27 @@
 - **Docs Check**: clean (`npm run docs:check` exit 0, 0 bold label warnings)
 - **Gate P9**: GREEN
 
+---
+
+### Phase 10: Performance & Loading
+- **Date**: 2026-10-18
+- **Commit SHA**: 4e6f016 (feature), 17d79fd (gate green)
+- **TypeScript Check**: clean (`npx tsc --noEmit` exit 0)
+- **Test Suite**: 48 files / 292 tests passed (all green)
+- **Features Implemented**:
+  - Route-level code splitting using `lazyWithRetry` in `src/App.tsx` for `ScannerScreen`, `GradebookScreen`, `ClassesScreen`, `PrintScreen`, `VersionsScreen`, and `ProfileExportImportModal`
+  - Eager entry routes preserved: `ExamsScreen` and `EditorScreen`
+  - Route switch in `<main>` wrapped in `<Suspense fallback={<ScreenSkeleton />}>`
+  - Modal wrapped in `<Suspense fallback={null}>`
+  - SSR compatibility verified (`tests/plan10Interface.test.tsx` green)
+  - Hard budgets exceeded: first-load JS reduced to 212.0 kB gz (target <= 238 kB, limit <= 250 kB, baseline was 238.3 kB)
+- **Bundle Metrics** (`measure-bundle.mjs dist`):
+  - First-load JS (gzip): 212.0 kB (budget: <= 250 kB, target <= 238 kB) - EXCEEDED EXPECTATION
+  - First-load CSS (gzip): 20.1 kB (budget: <= 24 kB) - PASSED
+  - Total JS (gzip): 417.4 kB (budget: <= 430 kB) - PASSED
+  - Total CSS (gzip): 20.1 kB (budget: <= 24 kB) - PASSED
+  - UI Webfonts (woff2 raw): 107.3 kB (budget: <= 110 kB) - PASSED
+- **Desktop Target Build**: clean (`VITE_TARGET=desktop npx vite build` exit 0)
+- **Docs Check**: clean (`npm run docs:check` exit 0, 0 bold label warnings)
+- **Gate P10**: GREEN
+
