@@ -11,7 +11,7 @@
 
 <br />
 
-[**Acessar Versão Web (GitHub Pages)**](https://eduardo-furlan.github.io/GabariTeX/) • [**Baixar Aplicativo Desktop**](https://github.com/Eduardo-Furlan/GabariTeX/releases/latest) • [**Reportar Problema**](https://github.com/Eduardo-Furlan/GabariTeX/issues)
+[**Acessar Versão Web (GitHub Pages)**](https://eduardo-furlan.github.io/GabariTeX/) • [**Documentação do Usuário**](https://eduardo-furlan.github.io/GabariTeX/docs/) • [**Baixar Aplicativo Desktop**](https://github.com/Eduardo-Furlan/GabariTeX/releases/latest) • [**Reportar Problema**](https://github.com/Eduardo-Furlan/GabariTeX/issues)
 
 <br />
 
@@ -39,8 +39,9 @@ O sistema integra:
 
 | Canal | Acesso | Descrição |
 | :--- | :--- | :--- |
+| **Documentação Oficial** | [Guia do Usuário](https://eduardo-furlan.github.io/GabariTeX/docs/) | Manual completo com tutoriais passo a passo, capturas de tela e resolução de problemas comuns. |
 | **Aplicação Web** | [eduardo-furlan.github.io/GabariTeX](https://eduardo-furlan.github.io/GabariTeX/) | Elaboração de provas, randomização, gestão de turmas e impressão A4 diretamente no navegador (PWA offline). |
-| **Última Release** | [GitHub Releases (v0.3.0)](https://github.com/Eduardo-Furlan/GabariTeX/releases/latest) | Instaladores e executáveis nativos desktop para **Linux** (`.deb`, `.AppImage`, `.rpm`) e **Windows** (`.exe`, `.msi`). |
+| **Versão Desktop** | [GitHub Releases](https://github.com/Eduardo-Furlan/GabariTeX/releases/latest) | Instaladores e executáveis nativos desktop para **Linux** (`.deb`, `.AppImage`, `.rpm`) e **Windows** (`.exe`, `.msi`). |
 | **Corretor OMR** | [Página do Corretor](https://eduardo-furlan.github.io/GabariTeX/#/corretor) | Detalhes e instruções do corretor óptico com OpenCV nativo e câmera sem fio. |
 
 ---
@@ -108,14 +109,14 @@ flowchart LR
 | **Visão Computacional** | OpenCV (C++ / Rust Bindings) | Detecção de contornos, homografia de perspectiva e amostragem óptica OMR. |
 | **Câmera Remota** | Axum (HTTP / WebSocket) | Servidor local sem fio para pareamento de câmera móvel. |
 | **Persistência Offline** | IndexedDB & SQLite (Tauri Plugin FS) | Armazenamento local com backup exportável em formato `.zip`. |
-| **Qualidade & Testes** | Vitest (223+ testes unitários) | Cobertura rigorosa de criptografia, randomização, OMR e geometria de impressão. |
+| **Qualidade & Testes** | Vitest (251 testes unitários) | Cobertura rigorosa de criptografia, randomização, OMR e geometria de impressão. |
 
 ---
 
 ## Como Executar Localmente
 
 ### Pré-requisitos
-- [Node.js](https://nodejs.org/) (v18 ou superior)
+- [Node.js](https://nodejs.org/) (v20 ou superior)
 - [Rust & Cargo](https://rustup.rs/) (apenas para compilar a versão desktop nativa)
 - Dependências de sistema para o Tauri (consulte o [Guia Oficial do Tauri v2](https://v2.tauri.app/start/prerequisites/))
 
@@ -137,6 +138,19 @@ npm test
 
 # 5. Gerar build estático otimizado
 npm run build
+```
+
+### Passos para Documentação (VitePress)
+
+```bash
+# Iniciar o servidor de desenvolvimento da documentação
+npm run docs:dev
+
+# Validar integridade de capturas e texto
+npm run docs:check
+
+# Compilar documentação estática
+npm run docs:build
 ```
 
 ### Passos para Desenvolvimento Desktop (Tauri)
