@@ -13,7 +13,7 @@ export const ClassesScreen: React.FC = () => {
   } = useProfile();
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col flex-1">
+    <div className="screen-enter max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col flex-1">
       <ClassroomManager
         isOpen={true}
         asScreen={true}
