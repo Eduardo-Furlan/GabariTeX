@@ -5,12 +5,14 @@ import { ImageUploader } from '../ImageUploader';
 import {
   Trash2,
   Plus,
-  CheckCircle2,
-  Circle,
   ChevronUp,
   ChevronDown,
   Copy,
 } from 'lucide-react';
+import { Surface } from '../ui/Surface';
+import { Bubble } from '../ui/Bubble';
+import { IconButton } from '../ui/IconButton';
+import { cn } from '../ui/cn';
 
 interface QuestionEditorProps {
   question: Question;
@@ -112,34 +114,38 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 mb-4 transition hover:border-slate-300">
+    <Surface tone="default" className="p-4 sm:p-6 mb-4 transition hover:border-slate-300">
       <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100 flex-wrap gap-2">
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-          <span className="flex items-center justify-center w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300 font-bold text-sm shrink-0">
+          <span className="flex items-center justify-center w-7 h-7 rounded-full bg-indigo-50 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300 font-bold text-xs shrink-0 select-none">
             {index + 1}
           </span>
-          <span className="font-semibold text-slate-800 text-sm sm:text-base">Questão {index + 1}</span>
+          <span className="font-semibold text-slate-800 text-sm sm:text-base">
+            {`Questão ${index + 1}`}
+          </span>
 
-          <div className="flex items-center bg-slate-100 rounded-lg p-0.5 text-xs font-medium">
+          <div className="flex items-center bg-slate-100 p-0.5 rounded-lg text-xs font-medium">
             <button
               type="button"
               onClick={() => handleTypeChange('objective')}
-              className={`px-2.5 sm:px-3 py-1 rounded-md transition ${
+              className={cn(
+                'px-2.5 sm:px-3 py-1 rounded-md transition select-none',
                 question.type === 'objective'
-                  ? 'bg-white text-indigo-700 dark:text-indigo-300 shadow-sm font-semibold'
+                  ? 'bg-white text-indigo-700 dark:text-indigo-300 shadow-2xs font-semibold'
                   : 'text-slate-600 hover:text-slate-900'
-              }`}
+              )}
             >
               Objetiva
             </button>
             <button
               type="button"
               onClick={() => handleTypeChange('subjective')}
-              className={`px-2.5 sm:px-3 py-1 rounded-md transition ${
+              className={cn(
+                'px-2.5 sm:px-3 py-1 rounded-md transition select-none',
                 question.type === 'subjective'
-                  ? 'bg-white text-indigo-700 dark:text-indigo-300 shadow-sm font-semibold'
+                  ? 'bg-white text-indigo-700 dark:text-indigo-300 shadow-2xs font-semibold'
                   : 'text-slate-600 hover:text-slate-900'
-              }`}
+              )}
             >
               Dissertativa
             </button>
@@ -161,13 +167,14 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
                   annulled: val ? val : undefined,
                 });
               }}
-              className={`border rounded px-2 py-1 text-xs font-medium transition ${
+              className={cn(
+                'border rounded-lg px-2 py-1 text-xs font-medium transition focus:outline-none focus:ring-2 focus:ring-indigo-500',
                 question.annulled === 'give_points'
                   ? 'border-amber-200 bg-amber-50 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30'
                   : question.annulled === 'discard'
                   ? 'border-rose-200 bg-rose-50 text-rose-800 dark:bg-rose-500/15 dark:text-rose-300 dark:border-rose-500/30'
                   : 'border-slate-300 bg-white text-slate-700'
-              }`}
+              )}
             >
               <option value="">Válida</option>
               <option value="give_points">Anulada (pontos para todos)</option>
@@ -181,7 +188,7 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
               type="number"
               step="0.1"
               min="0"
-              className="w-16 px-2 py-1 border border-slate-300 rounded text-sm text-right font-medium"
+              className="w-16 px-2 py-1 border border-slate-300 rounded-lg text-sm text-right font-medium tabular-nums focus:outline-none focus:ring-2 focus:ring-indigo-500"
               value={question.points}
               onChange={(e) => onChange({ ...question, points: parseFloat(e.target.value) || 0 })}
             />
@@ -190,61 +197,58 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
 
           <div className="flex items-center gap-0.5 border-l border-slate-200 pl-2">
             {onMoveUp && (
-              <button
-                type="button"
+              <IconButton
+                label="Mover questão para cima"
+                size="sm"
+                tone="ghost"
                 disabled={!canMoveUp}
                 onClick={onMoveUp}
-                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition disabled:opacity-30 disabled:pointer-events-none"
-                title="Mover questão para cima"
-                aria-label="Mover questão para cima"
               >
                 <ChevronUp className="w-4 h-4" />
-              </button>
+              </IconButton>
             )}
             {onMoveDown && (
-              <button
-                type="button"
+              <IconButton
+                label="Mover questão para baixo"
+                size="sm"
+                tone="ghost"
                 disabled={!canMoveDown}
                 onClick={onMoveDown}
-                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition disabled:opacity-30 disabled:pointer-events-none"
-                title="Mover questão para baixo"
-                aria-label="Mover questão para baixo"
               >
                 <ChevronDown className="w-4 h-4" />
-              </button>
+              </IconButton>
             )}
             {onDuplicate && (
-              <button
-                type="button"
+              <IconButton
+                label="Duplicar questão"
+                size="sm"
+                tone="ghost"
                 disabled={!canDuplicate}
                 onClick={onDuplicate}
-                className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg transition disabled:opacity-30 disabled:pointer-events-none"
-                title="Duplicar questão"
-                aria-label="Duplicar questão"
               >
                 <Copy className="w-4 h-4" />
-              </button>
+              </IconButton>
             )}
-            <button
-              type="button"
+            <IconButton
+              label="Excluir questão"
+              size="sm"
+              tone="danger"
               onClick={onDelete}
-              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 dark:hover:text-rose-300 rounded-lg transition"
-              title="Excluir questão"
-              aria-label="Excluir questão"
             >
               <Trash2 className="w-4 h-4" />
-            </button>
+            </IconButton>
           </div>
         </div>
       </div>
 
       {question.annulled && (
         <div
-          className={`mb-3 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center justify-between ${
+          className={cn(
+            'mb-3 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center justify-between',
             question.annulled === 'give_points'
               ? 'bg-amber-50 text-amber-900 border border-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30'
               : 'bg-rose-50 text-rose-900 border border-rose-200 dark:bg-rose-500/15 dark:text-rose-300 dark:border-rose-500/30'
-          }`}
+          )}
         >
           <span>
             {question.annulled === 'give_points'
@@ -275,7 +279,7 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
                 key={btn.label}
                 type="button"
                 onClick={() => insertMathSnippet(btn.val)}
-                className="px-1.5 py-0.5 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-500/20 dark:hover:text-indigo-300 border border-slate-200 rounded font-mono text-[10px]"
+                className="px-1.5 py-0.5 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-500/20 dark:hover:text-indigo-300 border border-slate-200 rounded font-mono text-[10px] transition"
               >
                 {btn.label}
               </button>
@@ -285,7 +289,7 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
 
         <textarea
           rows={3}
-          className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:outline-none"
+          className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:outline-none transition"
           placeholder="Digite o enunciado da questão. Use $...$ para equações na linha ou \[...\] para fórmulas destacadas..."
           value={question.prompt}
           onChange={(e) => onChange({ ...question, prompt: e.target.value })}
@@ -319,7 +323,7 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
               <button
                 type="button"
                 onClick={handleAddOption}
-                className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium"
+                className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium transition"
               >
                 <Plus className="w-3.5 h-3.5" /> Adicionar Alternativa ({OPTION_LABELS[question.options.length]})
               </button>
@@ -330,33 +334,42 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
             {question.options.map((opt, optIndex) => (
               <div
                 key={opt.id}
-                className={`flex items-start gap-2 p-2.5 rounded-lg border transition ${
+                className={cn(
+                  'flex items-start gap-2.5 p-2.5 rounded-lg border transition duration-150',
                   opt.isCorrect
                     ? 'border-emerald-300 bg-emerald-50/40 dark:border-emerald-500/30 dark:bg-emerald-500/10'
                     : 'border-slate-200 bg-slate-50/50'
-                }`}
+                )}
               >
+                {/* Folha Óptica signature answer bubble */}
                 <button
                   type="button"
+                  aria-pressed={opt.isCorrect}
                   onClick={() => handleSetCorrectOption(optIndex)}
-                  className="mt-1 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition"
-                  title={opt.isCorrect ? 'Alternativa Correta' : 'Marcar como correta'}
+                  className="mt-0.5 transition active:scale-95 focus-visible:outline-none shrink-0"
+                  title={
+                    opt.isCorrect
+                      ? 'Alternativa Correta (Gabarito)'
+                      : 'Marcar como alternativa correta'
+                  }
                 >
-                  {opt.isCorrect ? (
-                    <CheckCircle2 className="w-5 h-5 text-emerald-600 fill-emerald-100 dark:text-emerald-400 dark:fill-emerald-500/20" />
-                  ) : (
-                    <Circle className="w-5 h-5 text-slate-400" />
-                  )}
+                  <Bubble
+                    state={opt.isCorrect ? 'correct' : 'empty'}
+                    size="md"
+                    label={
+                      opt.isCorrect
+                        ? `Alternativa ${opt.label} (correta)`
+                        : `Alternativa ${opt.label}`
+                    }
+                  >
+                    {opt.label}
+                  </Bubble>
                 </button>
-
-                <span className="font-bold text-sm text-slate-700 mt-1 min-w-[18px]">
-                  {opt.label})
-                </span>
 
                 <div className="flex-1 min-w-0">
                   <input
                     type="text"
-                    className="w-full px-2.5 py-1 text-sm border border-slate-300 rounded bg-white font-mono focus:ring-1 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:outline-none"
+                    className="w-full px-2.5 py-1 text-sm border border-slate-300 rounded-lg bg-white text-slate-900 font-mono focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:outline-none transition"
                     placeholder={`Texto da alternativa ${opt.label} (suporta $LaTeX$)...`}
                     value={opt.text}
                     onChange={(e) => handleOptionTextChange(optIndex, e.target.value)}
@@ -369,14 +382,15 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
                 </div>
 
                 {question.options && question.options.length > 2 && (
-                  <button
-                    type="button"
+                  <IconButton
+                    label="Excluir alternativa"
+                    size="sm"
+                    tone="ghost"
                     onClick={() => handleRemoveOption(optIndex)}
-                    className="mt-1 p-1 text-slate-300 hover:text-red-500 dark:hover:text-red-400 transition"
-                    title="Excluir alternativa"
+                    className="mt-0.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  </IconButton>
                 )}
               </div>
             ))}
@@ -385,7 +399,7 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
       )}
 
       {question.type === 'subjective' && (
-        <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-3">
+        <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-3 flex-wrap">
           <label className="text-xs font-semibold text-slate-600 uppercase">
             Linhas pautadas para resposta:
           </label>
@@ -393,7 +407,7 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
             type="number"
             min="3"
             max="30"
-            className="w-20 px-2 py-1 border border-slate-300 rounded text-sm text-center"
+            className="w-20 px-2 py-1 border border-slate-300 rounded-lg text-sm text-center tabular-nums focus:outline-none focus:ring-2 focus:ring-indigo-500"
             value={question.linesForAnswer || 8}
             onChange={(e) =>
               onChange({ ...question, linesForAnswer: parseInt(e.target.value) || 8 })
@@ -404,6 +418,6 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
           </span>
         </div>
       )}
-    </div>
+    </Surface>
   );
 };

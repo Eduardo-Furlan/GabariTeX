@@ -13,6 +13,9 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { generateExamPassword } from '../../utils/crypto';
+import { Surface } from '../ui/Surface';
+import { Button } from '../ui/Button';
+import { Modal } from '../ui/Modal';
 
 interface ExamHeaderEditorProps {
   exam: Exam;
@@ -68,10 +71,12 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+    <Surface tone="default" className="p-6 mb-6">
       <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
         <FileText className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-        <h2 className="text-lg font-semibold text-slate-800">Cabeçalho & Configurações da Prova</h2>
+        <h2 className="font-display text-lg font-semibold text-slate-800">
+          Cabeçalho & Configurações da Prova
+        </h2>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -85,7 +90,7 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
           <input
             type="text"
             maxLength={70}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:outline-none"
+            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:outline-none transition"
             placeholder="Ex: Universidade Federal..."
             value={exam.header.institution}
             onChange={(e) => updateHeader('institution', e.target.value)}
@@ -102,7 +107,7 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
           <input
             type="text"
             maxLength={40}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:outline-none"
+            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:outline-none transition"
             placeholder="Ex: Cálculo I, Álgebra Linear..."
             value={exam.header.course}
             onChange={(e) => updateHeader('course', e.target.value)}
@@ -119,7 +124,7 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
           <input
             type="text"
             maxLength={50}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:outline-none"
+            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:outline-none transition"
             placeholder="Ex: Prova 1, Exame Final..."
             value={exam.header.examTitle}
             onChange={(e) => updateHeader('examTitle', e.target.value)}
@@ -136,7 +141,7 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
           <input
             type="text"
             maxLength={40}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:outline-none"
+            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:outline-none transition"
             placeholder="Nome do docente"
             value={exam.header.professor}
             onChange={(e) => updateHeader('professor', e.target.value)}
@@ -147,7 +152,7 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
           <label className="block text-xs font-semibold text-slate-600 uppercase mb-1">Data</label>
           <input
             type="text"
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:outline-none"
+            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:outline-none transition"
             placeholder="DD/MM/AAAA"
             value={exam.header.date}
             onChange={(e) => updateHeader('date', e.target.value)}
@@ -155,7 +160,7 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
         </div>
 
         <div>
-          <label className="block text-xs font-semibold uppercase mb-1 flex items-center justify-between text-amber-700 dark:text-amber-300">
+          <label className="text-xs font-semibold uppercase mb-1 flex items-center justify-between text-amber-700 dark:text-amber-300">
             <span className="flex items-center gap-1">
               <Shield className="w-3.5 h-3.5" /> Senha da Prova (QR Code)
             </span>
@@ -166,7 +171,11 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
                 className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-500/20 transition"
                 title="Copiar senha para a área de transferência"
               >
-                {copied ? <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                {copied ? (
+                  <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                ) : (
+                  <Copy className="w-3 h-3" />
+                )}
                 <span>{copied ? 'Copiada' : 'Copiar'}</span>
               </button>
               <button
@@ -208,7 +217,7 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
         </label>
         <textarea
           rows={2}
-          className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:outline-none"
+          className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:outline-none transition"
           placeholder="Instruções impressas no cabeçalho da prova..."
           value={exam.header.instructions}
           onChange={(e) => updateHeader('instructions', e.target.value)}
@@ -221,13 +230,18 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
             <Shuffle className="w-4 h-4 text-slate-500" />
             <label className="text-sm font-medium text-slate-700">Qtd. Versões:</label>
             <select
-              className="px-2 py-1 border border-slate-300 rounded text-sm bg-white font-semibold"
+              className="px-2.5 py-1 border border-slate-300 rounded-lg text-sm bg-white text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500"
               value={exam.versionCount}
               onChange={(e) => onChange({ ...exam, versionCount: Number(e.target.value) })}
             >
               {[1, 2, 3, 4, 5, 6, 8, 10].map((n) => (
                 <option key={n} value={n}>
-                  {n} {n === 1 ? 'versão (Única)' : `versões (${Array.from({ length: n }, (_, i) => String.fromCharCode(65 + i)).join(', ')})`}
+                  {n}{' '}
+                  {n === 1
+                    ? 'versão (Única)'
+                    : `versões (${Array.from({ length: n }, (_, i) =>
+                        String.fromCharCode(65 + i)
+                      ).join(', ')})`}
                 </option>
               ))}
             </select>
@@ -243,7 +257,7 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
               min="1"
               max="1000"
               step="0.5"
-              className="w-20 px-2 py-1 border border-slate-300 rounded text-sm bg-white font-semibold text-right"
+              className="w-20 px-2 py-1 border border-slate-300 rounded-lg text-sm bg-white font-semibold text-right tabular-nums focus:outline-none focus:ring-2 focus:ring-indigo-500"
               value={exam.header.targetScore ?? 10}
               onChange={(e) => {
                 const parsed = parseFloat(e.target.value);
@@ -259,7 +273,7 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
             />
           </div>
 
-          <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+          <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={exam.shuffleQuestions}
@@ -269,7 +283,7 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
             Embaralhar Questões
           </label>
 
-          <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+          <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={exam.shuffleOptions}
@@ -279,7 +293,7 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
             Embaralhar Alternativas
           </label>
 
-          <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+          <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer select-none">
             <Columns className="w-4 h-4 text-slate-500" />
             <input
               type="checkbox"
@@ -292,45 +306,48 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
         </div>
       </div>
 
-      {confirmModalOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full border border-slate-200 p-6 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-start gap-3.5 mb-4">
-              <div className="w-10 h-10 rounded-full bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-300 shrink-0">
-                <AlertTriangle className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-slate-800">Alterar senha da prova?</h3>
-                <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                  Folhas de resposta que já foram impressas com a senha anterior <strong>deixarão de abrir no corretor</strong>. Deseja realmente aplicar a nova senha?
-                </p>
-                <div className="mt-2.5 p-2 rounded-lg bg-slate-50 border border-slate-200 text-xs font-mono font-bold text-slate-800">
-                  Nova senha: {pendingPassword}
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-200">
-              <button
-                type="button"
-                onClick={() => {
-                  setConfirmModalOpen(false);
-                  setPendingPassword('');
-                }}
-                className="px-3.5 py-1.5 text-xs font-semibold border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg transition"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmPasswordChange}
-                className="px-3.5 py-1.5 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-on-accent rounded-lg transition shadow-sm"
-              >
-                Sim, alterar senha
-              </button>
-            </div>
+      {/* Modal de Confirmação de Alteração de Senha */}
+      <Modal
+        open={confirmModalOpen}
+        onOpenChange={(open) => {
+          setConfirmModalOpen(open);
+          if (!open) setPendingPassword('');
+        }}
+        size="sm"
+        title="Alterar senha da prova?"
+        description="Folhas de resposta que já foram impressas com a senha anterior deixarão de abrir no corretor. Deseja realmente aplicar a nova senha?"
+        footer={
+          <div className="flex items-center justify-end gap-2.5 w-full">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                setConfirmModalOpen(false);
+                setPendingPassword('');
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              className="bg-amber-600 hover:bg-amber-700 text-on-accent shadow-xs active:bg-amber-800"
+              onClick={handleConfirmPasswordChange}
+            >
+              Sim, alterar senha
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-3">
+          <div className="w-10 h-10 rounded-full bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-300">
+            <AlertTriangle className="w-5 h-5" />
+          </div>
+          <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 text-xs font-mono font-bold text-slate-800">
+            Nova senha: {pendingPassword}
           </div>
         </div>
-      )}
-    </div>
+      </Modal>
+    </Surface>
   );
 };
