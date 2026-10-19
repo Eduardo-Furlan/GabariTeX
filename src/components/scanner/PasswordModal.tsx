@@ -61,7 +61,9 @@ export const PasswordModal: React.FC<PasswordModalProps> = ({
             <input
               type={showPassword ? 'text' : 'password'}
               className={`w-full pl-9 pr-10 py-2 border rounded-lg text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:outline-none ${
-                error ? 'border-rose-400 bg-rose-50/30' : 'border-slate-300 bg-white'
+                error
+                  ? 'border-rose-400 dark:border-rose-500/40 bg-rose-50/30 dark:bg-rose-500/10'
+                  : 'border-slate-300 bg-white'
               }`}
               placeholder="Senha da prova"
               value={inputVal}
@@ -82,7 +84,7 @@ export const PasswordModal: React.FC<PasswordModalProps> = ({
             </button>
           </div>
           {error && (
-            <p className="text-meta text-rose-600 mt-1 font-medium" role="alert">
+            <p className="text-meta text-rose-600 dark:text-rose-400 mt-1 font-medium" role="alert">
               {error}
             </p>
           )}

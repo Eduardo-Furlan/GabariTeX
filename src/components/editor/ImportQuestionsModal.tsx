@@ -16,6 +16,7 @@ import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { EmptyState } from '../ui/EmptyState';
+import { Select } from '../ui/Select';
 
 interface ImportQuestionsModalProps {
   isOpen: boolean;
@@ -199,20 +200,20 @@ export const ImportQuestionsModal: React.FC<ImportQuestionsModalProps> = ({
                 >
                   Prova de Origem
                 </label>
-                <select
+                <Select
                   id="source-exam-select"
                   value={selectedSourceExamId}
-                  onChange={(e) => setSelectedSourceExamId(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-semibold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  {otherExams.map((ex) => (
-                    <option key={ex.id} value={ex.id}>
-                      {`${ex.name} (${ex.questionCount} ${
-                        ex.questionCount === 1 ? 'questão' : 'questões'
-                      })`}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => setSelectedSourceExamId(val)}
+                  size="sm"
+                  className="w-full"
+                  buttonClassName="w-full"
+                  options={otherExams.map((ex) => ({
+                    value: ex.id,
+                    label: `${ex.name} (${ex.questionCount} ${
+                      ex.questionCount === 1 ? 'questão' : 'questões'
+                    })`,
+                  }))}
+                />
               </div>
 
               <div>

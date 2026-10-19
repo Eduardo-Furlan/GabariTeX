@@ -117,7 +117,7 @@ export const SubjectiveScoreInput: React.FC<SubjectiveScoreInputProps> = ({
             onClick={() => onMaxPointsChange && setIsEditingMax(true)}
             className={`flex items-center gap-1 font-medium text-meta transition ${
               onMaxPointsChange
-                ? 'text-slate-500 hover:text-indigo-600 cursor-pointer'
+                ? 'text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer'
                 : 'text-slate-500 cursor-default'
             }`}
             title={onMaxPointsChange ? 'Clique para ajustar a pontuação máxima desta dissertativa' : undefined}
@@ -128,11 +128,11 @@ export const SubjectiveScoreInput: React.FC<SubjectiveScoreInputProps> = ({
         )}
 
         {isPending ? (
-          <span className="px-1.5 py-0.5 rounded text-meta font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+          <span className="px-1.5 py-0.5 rounded text-meta font-semibold bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30">
             Pendente
           </span>
         ) : (
-          <span className="px-1.5 py-0.5 rounded text-meta font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+          <span className="px-1.5 py-0.5 rounded text-meta font-semibold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30">
             Lançada
           </span>
         )}
@@ -165,7 +165,7 @@ export const SubjectiveScoreInput: React.FC<SubjectiveScoreInputProps> = ({
             disabled={disabled}
             onClick={handleSetMax}
             title={`Atribuir nota máxima (${formattedMax})`}
-            className="px-2 py-1 text-meta font-semibold rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition disabled:opacity-50"
+            className="px-2 py-1 text-meta font-semibold rounded bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 transition disabled:opacity-50"
           >
             Máx
           </button>

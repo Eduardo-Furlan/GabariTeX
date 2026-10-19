@@ -16,6 +16,7 @@ import { RemoteSessionInfo, NetworkInterfaceInfo } from '../../platform/remoteCa
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { CountUp } from '../ui/CountUp';
+import { Select } from '../ui/Select';
 
 interface RemoteCameraPanelProps {
   isOpen: boolean;
@@ -102,7 +103,7 @@ export const RemoteCameraPanel: React.FC<RemoteCameraPanelProps> = ({
         {/* Estado: Sem Sessão Ativa */}
         {!session && !isStarting && (
           <div className="space-y-4 text-center py-4">
-            <div className="w-16 h-16 mx-auto rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600">
+            <div className="w-16 h-16 mx-auto rounded-xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
               <Radio className="w-8 h-8" />
             </div>
             <div className="space-y-1">
@@ -119,17 +120,17 @@ export const RemoteCameraPanel: React.FC<RemoteCameraPanelProps> = ({
                 <label className="font-semibold text-slate-700 block">
                   Interface de Rede Local (IP):
                 </label>
-                <select
+                <Select
                   value={selectedIp}
-                  onChange={(e) => setSelectedIp(e.target.value)}
-                  className="w-full text-meta px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                >
-                  {availableInterfaces.map((iface) => (
-                    <option key={iface.ip} value={iface.ip}>
-                      {iface.ip} ({iface.name})
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => setSelectedIp(val)}
+                  options={availableInterfaces.map((iface) => ({
+                    value: iface.ip,
+                    label: `${iface.ip} (${iface.name})`,
+                  }))}
+                  className="w-full"
+                  buttonClassName="w-full"
+                  size="sm"
+                />
               </div>
             )}
 
@@ -208,32 +209,30 @@ export const RemoteCameraPanel: React.FC<RemoteCameraPanelProps> = ({
             {session.interfaces.length > 1 && (
               <div className="flex items-center justify-between gap-2 p-2.5 bg-slate-50 rounded-lg border border-slate-200 text-meta">
                 <span className="text-slate-600 font-medium">Trocar IP da rede:</span>
-                <select
+                <Select
                   value={selectedIp}
-                  onChange={(e) => handleIpChange(e.target.value)}
-                  className="text-meta px-2 py-1 rounded border border-slate-300 bg-white font-medium"
-                >
-                  {session.interfaces.map((iface) => (
-                    <option key={iface.ip} value={iface.ip}>
-                      {iface.ip} ({iface.name})
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => handleIpChange(val)}
+                  options={session.interfaces.map((iface) => ({
+                    value: iface.ip,
+                    label: `${iface.ip} (${iface.name})`,
+                  }))}
+                  size="sm"
+                />
               </div>
             )}
 
             {/* Status e Contadores com CountUp */}
-            <div className="flex items-center justify-between p-3 rounded-card bg-emerald-50 border border-emerald-200 text-meta">
+            <div className="flex items-center justify-between p-3 rounded-card bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-meta">
               <div className="flex items-center gap-2">
                 <span className="relative flex h-2.5 w-2.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                 </span>
-                <span className="font-bold text-emerald-900">
+                <span className="font-bold text-emerald-900 dark:text-emerald-300">
                   Aguardando fotos do celular
                 </span>
               </div>
-              <span className="font-bold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded border border-emerald-300 tabular-nums">
+              <span className="font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-500/20 px-2.5 py-0.5 rounded border border-emerald-300 dark:border-emerald-500/30 tabular-nums">
                 <CountUp value={receivedCount} /> {receivedCount === 1 ? 'foto recebida' : 'fotos recebidas'}
               </span>
             </div>

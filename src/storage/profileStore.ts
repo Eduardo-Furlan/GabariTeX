@@ -1,5 +1,5 @@
 import { Exam, Classroom, GradingRecord } from '../types/exam';
-import { ProfileSettings, ExamMeta } from '../types/profile';
+import { ProfileSettings, ExamMeta, ProfileData } from '../types/profile';
 import { SaveResult } from '../utils/storage';
 
 export interface ProfileStore {
@@ -13,5 +13,6 @@ export interface ProfileStore {
   putClasses(classes: Classroom[]): Promise<SaveResult>;
   getSettings(): Promise<ProfileSettings>;
   putSettings(s: ProfileSettings): Promise<void>;
+  replaceProfile(data: ProfileData, settings?: ProfileSettings): Promise<SaveResult>;
 }
 

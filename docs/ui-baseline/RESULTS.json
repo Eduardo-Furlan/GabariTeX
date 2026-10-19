@@ -1,0 +1,260 @@
+{
+  "timestamp": "2026-10-19T19:05:20.850Z",
+  "overflows": [],
+  "flickerMetrics": [
+    {
+      "viewport": "1280",
+      "theme": "light",
+      "route": "provas",
+      "layoutShifts": 0,
+      "longTasks": 0,
+      "mutations": 0
+    },
+    {
+      "viewport": "1280",
+      "theme": "light",
+      "route": "turmas",
+      "layoutShifts": 0,
+      "longTasks": 0,
+      "mutations": 7
+    },
+    {
+      "viewport": "1280",
+      "theme": "light",
+      "route": "criar",
+      "layoutShifts": 0,
+      "longTasks": 0,
+      "mutations": 0
+    },
+    {
+      "viewport": "1280",
+      "theme": "light",
+      "route": "versoes",
+      "layoutShifts": 0,
+      "longTasks": 0,
+      "mutations": 0
+    },
+    {
+      "viewport": "1280",
+      "theme": "light",
+      "route": "imprimir",
+      "layoutShifts": 0,
+      "longTasks": 0,
+      "mutations": 0
+    },
+    {
+      "viewport": "1280",
+      "theme": "light",
+      "route": "corrigir",
+      "layoutShifts": 0,
+      "longTasks": 0,
+      "mutations": 1
+    },
+    {
+      "viewport": "1280",
+      "theme": "light",
+      "route": "notas",
+      "layoutShifts": 0,
+      "longTasks": 0,
+      "mutations": 1
+    },
+    {
+      "viewport": "1280",
+      "theme": "dark",
+      "route": "provas",
+      "layoutShifts": 0,
+      "longTasks": 0,
+      "mutations": 0
+    },
+    {
+      "viewport": "1280",
+      "theme": "dark",
+      "route": "turmas",
+      "layoutShifts": 0,
+      "longTasks": 0,
+      "mutations": 8
+    },
+    {
+      "viewport": "1280",
+      "theme": "dark",
+      "route": "criar",
+      "layoutShifts": 0,
+      "longTasks": 0,
+      "mutations": 0
+    },
+    {
+      "viewport": "1280",
+      "theme": "dark",
+      "route": "versoes",
+      "layoutShifts": 0,
+      "longTasks": 0,
+      "mutations": 0
+    },
+    {
+      "viewport": "1280",
+      "theme": "dark",
+      "route": "imprimir",
+      "layoutShifts": 0,
+      "longTasks": 0,
+      "mutations": 0
+    },
+    {
+      "viewport": "1280",
+      "theme": "dark",
+      "route": "corrigir",
+      "layoutShifts": 0,
+      "longTasks": 0,
+      "mutations": 1
+    },
+    {
+      "viewport": "1280",
+      "theme": "dark",
+      "route": "notas",
+      "layoutShifts": 0,
+      "longTasks": 0,
+      "mutations": 1
+    },
+    {
+      "viewport": "390",
+      "theme": "light",
+      "route": "provas",
+      "layoutShifts": 0,
+      "longTasks": 0,
+      "mutations": 0
+    },
+    {
+      "viewport": "390",
+      "theme": "light",
+      "route": "turmas",
+      "layoutShifts": 0,
+      "longTasks": 0,
+      "mutations": 0
+    },
+    {
+      "viewport": "390",
+      "theme": "light",
+      "route": "criar",
+      "layoutShifts": 0,
+      "longTasks": 0,
+      "mutations": 0
+    },
+    {
+      "viewport": "390",
+      "theme": "light",
+      "route": "versoes",
+      "layoutShifts": 0,
+      "longTasks": 0,
+      "mutations": 0
+    },
+    {
+      "viewport": "390",
+      "theme": "light",
+      "route": "imprimir",
+      "layoutShifts": 0,
+      "longTasks": 0,
+      "mutations": 0
+    },
+    {
+      "viewport": "390",
+      "theme": "light",
+      "route": "corrigir",
+      "layoutShifts": 0,
+      "longTasks": 0,
+      "mutations": 0
+    },
+    {
+      "viewport": "390",
+      "theme": "light",
+      "route": "notas",
+      "layoutShifts": 0,
+      "longTasks": 0,
+      "mutations": 0
+    },
+    {
+      "viewport": "390",
+      "theme": "dark",
+      "route": "provas",
+      "layoutShifts": 0,
+      "longTasks": 0,
+      "mutations": 0
+    },
+    {
+      "viewport": "390",
+      "theme": "dark",
+      "route": "turmas",
+      "layoutShifts": 0,
+      "longTasks": 0,
+      "mutations": 0
+    },
+    {
+      "viewport": "390",
+      "theme": "dark",
+      "route": "criar",
+      "layoutShifts": 0,
+      "longTasks": 0,
+      "mutations": 0
+    },
+    {
+      "viewport": "390",
+      "theme": "dark",
+      "route": "versoes",
+      "layoutShifts": 0,
+      "longTasks": 0,
+      "mutations": 0
+    },
+    {
+      "viewport": "390",
+      "theme": "dark",
+      "route": "imprimir",
+      "layoutShifts": 0,
+      "longTasks": 0,
+      "mutations": 0
+    },
+    {
+      "viewport": "390",
+      "theme": "dark",
+      "route": "corrigir",
+      "layoutShifts": 0,
+      "longTasks": 0,
+      "mutations": 0
+    },
+    {
+      "viewport": "390",
+      "theme": "dark",
+      "route": "notas",
+      "layoutShifts": 0,
+      "longTasks": 0,
+      "mutations": 0
+    }
+  ],
+  "screenshots": [
+    "provas-light-1280.png",
+    "turmas-light-1280.png",
+    "criar-light-1280.png",
+    "versoes-light-1280.png",
+    "imprimir-light-1280.png",
+    "corrigir-light-1280.png",
+    "notas-light-1280.png",
+    "provas-dark-1280.png",
+    "turmas-dark-1280.png",
+    "criar-dark-1280.png",
+    "versoes-dark-1280.png",
+    "imprimir-dark-1280.png",
+    "corrigir-dark-1280.png",
+    "notas-dark-1280.png",
+    "provas-light-390.png",
+    "turmas-light-390.png",
+    "criar-light-390.png",
+    "versoes-light-390.png",
+    "imprimir-light-390.png",
+    "corrigir-light-390.png",
+    "notas-light-390.png",
+    "provas-dark-390.png",
+    "turmas-dark-390.png",
+    "criar-dark-390.png",
+    "versoes-dark-390.png",
+    "imprimir-dark-390.png",
+    "corrigir-dark-390.png",
+    "notas-dark-390.png"
+  ]
+}

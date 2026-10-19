@@ -1,8 +1,9 @@
-import { Route } from './hashRouter';
+import { Route, StepId } from './hashRouter';
 
 export type RouteSyncAction =
   | { type: 'noop' }
   | { type: 'redirect_to_exams' }
+  | { type: 'redirect_to_exam_step'; examId: string; step: StepId }
   | { type: 'select_exam'; examId: string }
   | { type: 'select_none' };
 
@@ -24,7 +25,7 @@ export interface DecideRouteSyncOutput {
  * Evita disputas e vai-e-volta entre rota e estado de exame ao trocar de prova.
  */
 export function decideRouteSync(input: DecideRouteSyncInput): DecideRouteSyncOutput {
-  const { route, exams, lastSyncedExamId, currentExamId, activeExamId } = input;
+  const { route, exams, lastSyncedExamId } = input;
 
   if (route.type === 'exam_step') {
     const exists = exams.some((e) => e.id === route.examId);
@@ -41,9 +42,6 @@ export function decideRouteSync(input: DecideRouteSyncInput): DecideRouteSyncOut
   }
 
   if (route.type === 'scanner') {
-    if (currentExamId || activeExamId) {
-      return { action: { type: 'select_none' }, nextLastSyncedExamId: null };
-    }
     return { action: { type: 'noop' }, nextLastSyncedExamId: null };
   }
 

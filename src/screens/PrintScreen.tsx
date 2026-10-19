@@ -11,6 +11,7 @@ import { Surface } from '../components/ui/Surface';
 import { Segmented } from '../components/ui/Segmented';
 import { Button } from '../components/ui/Button';
 import { Alert } from '../components/ui/Alert';
+import { Select } from '../components/ui/Select';
 
 type PrintMode = 'complete' | 'exam_only' | 'answersheet_only' | 'all_versions';
 
@@ -62,17 +63,15 @@ export const PrintScreen: React.FC = () => {
             {printMode !== 'all_versions' && (
               <div className="flex items-center gap-1.5">
                 <span className="text-xs text-slate-600 font-medium">Versão:</span>
-                <select
-                  className="px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs font-bold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                <Select
+                  size="sm"
                   value={selectedVersionLetter}
-                  onChange={(e) => setSelectedVersionLetter(e.target.value)}
-                >
-                  {versions.map((v) => (
-                    <option key={v.versionLetter} value={v.versionLetter}>
-                      {`Versão ${v.versionLetter}`}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => setSelectedVersionLetter(val)}
+                  options={versions.map((v) => ({
+                    value: v.versionLetter,
+                    label: `Versão ${v.versionLetter}`,
+                  }))}
+                />
               </div>
             )}
 

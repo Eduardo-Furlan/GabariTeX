@@ -34,10 +34,16 @@ import { Route } from '../router/hashRouter';
 import { Surface } from '../components/ui/Surface';
 import { Button } from '../components/ui/Button';
 import { Segmented } from '../components/ui/Segmented';
+import { Select } from '../components/ui/Select';
 
 interface ScannerScreenProps {
   onNavigate: (route: Route) => void;
 }
+
+const SCANNER_MODE_OPTIONS = [
+  { value: 'single', label: 'Foto Individual', icon: <Camera className="w-4 h-4" /> },
+  { value: 'batch', label: 'Em Lote', icon: <Files className="w-4 h-4" /> },
+];
 
 export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
   const {
@@ -215,7 +221,7 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
             {/* Header: Título + Senha */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-lg bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600 shrink-0">
+                <div className="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
                   <Camera className="w-5 h-5" />
                 </div>
                 <div>
@@ -231,10 +237,10 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
               </div>
 
               {/* Senha mestra / de leitura */}
-              <div className="flex items-center gap-2 bg-amber-50/70 border border-amber-200 rounded-lg p-2 shrink-0">
-                <KeyRound className="w-4 h-4 text-amber-700 shrink-0" />
+              <div className="flex items-center gap-2 bg-amber-50/70 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-lg p-2 shrink-0">
+                <KeyRound className="w-4 h-4 text-amber-700 dark:text-amber-300 shrink-0" />
                 <div className="flex items-center gap-1.5">
-                  <label className="text-meta font-bold text-amber-900 hidden sm:inline">
+                  <label className="text-meta font-bold text-amber-900 dark:text-amber-200 hidden sm:inline">
                     {isAutonomous ? 'Senha QR:' : 'Senha:'}
                   </label>
                   <div className="relative flex items-center">
@@ -243,7 +249,7 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
                       placeholder="Senha da prova"
                       value={teacherPassword}
                       onChange={(e) => updateTeacherPassword(e.target.value)}
-                      className="px-2 pr-7 py-1 text-meta border border-amber-300 rounded font-mono font-bold bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-amber-500 w-32 sm:w-36"
+                      className="px-2 pr-7 py-1 text-meta border border-amber-300 dark:border-amber-500/40 rounded font-mono font-bold bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-amber-500 w-32 sm:w-36"
                     />
                     <button
                       type="button"
@@ -303,29 +309,29 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
                 {/* Turma Context Chip */}
                 <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 border border-slate-200 font-semibold text-slate-800">
                   <GraduationCap className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                  <span>{activeClassName}</span>
                   {classes.length === 0 ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onNavigate({ type: 'classes' })}
-                      className="h-6 px-1.5 text-meta text-indigo-700"
-                    >
-                      + Criar
-                    </Button>
+                    <>
+                      <span>{activeClassName}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onNavigate({ type: 'classes' })}
+                        className="h-6 px-1.5 text-meta text-indigo-700"
+                      >
+                        + Criar
+                      </Button>
+                    </>
                   ) : (
-                    <select
+                    <Select
+                      variant="inline"
                       value={activeClassId || ''}
-                      onChange={(e) => setActiveClassId(e.target.value || null)}
-                      className="text-meta bg-transparent text-slate-700 border-none font-semibold focus:outline-none cursor-pointer"
-                    >
-                      <option value="">Sem turma fixa</option>
-                      {classes.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(val) => setActiveClassId(val || null)}
+                      options={[
+                        { value: '', label: 'Sem turma fixa' },
+                        ...classes.map((c) => ({ value: c.id, label: c.name })),
+                      ]}
+                      size="sm"
+                    />
                   )}
                   <Button
                     variant="ghost"
@@ -359,7 +365,7 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
                           className={`w-5 h-5 rounded text-[10px] font-bold transition flex items-center justify-center ${
                             activePayload?.version === v?.versionLetter
                               ? 'bg-emerald-600 text-on-accent'
-                              : 'bg-white text-indigo-700 border border-indigo-200 hover:bg-indigo-50'
+                              : 'bg-white border border-slate-200 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/15'
                           }`}
                         >
                           {v?.versionLetter || '?'}
@@ -384,15 +390,14 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
 
             {/* Linha 2: Modo Segmented + Status Câmera Remota */}
             <div className="flex items-center justify-between flex-wrap gap-3 pt-2 border-t border-slate-100">
-              <Segmented
-                options={[
-                  { value: 'single', label: 'Foto Individual', icon: <Camera className="w-4 h-4" /> },
-                  { value: 'batch', label: 'Em Lote', icon: <Files className="w-4 h-4" /> },
-                ]}
-                value={scannerMode}
-                onChange={(val) => setScannerMode(val as 'single' | 'batch')}
-                layoutId="scanner-mode-pill"
-              />
+              <div className="w-full sm:w-auto">
+                <Segmented
+                  options={SCANNER_MODE_OPTIONS}
+                  value={scannerMode}
+                  onChange={(val) => setScannerMode(val as 'single' | 'batch')}
+                  layoutId="scanner-mode-pill"
+                />
+              </div>
 
               {/* Status da Câmera do Celular com pulse ring */}
               <div className="flex items-center gap-2">
@@ -400,7 +405,7 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
                   <button
                     type="button"
                     onClick={handleOpenRemoteCamera}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-300 text-emerald-800 text-meta font-bold transition hover:bg-emerald-100 cursor-pointer"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-300 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-200 text-meta font-bold transition hover:bg-emerald-100 dark:hover:bg-emerald-500/20 cursor-pointer"
                     role="status"
                     aria-live="polite"
                   >
@@ -483,7 +488,7 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
             <Surface className="p-4 sm:p-5 mt-6 border-slate-200 bg-slate-50/60 space-y-2">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600 shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
                     <Monitor className="w-4 h-4" />
                   </div>
                   <div>

@@ -24,4 +24,7 @@
 
   /* Layout dimensions */
   --chrome-h: 96px;
+
+  /* Scrim token (constant in both light and dark) */
+  --scrim: 2 6 23;
 }

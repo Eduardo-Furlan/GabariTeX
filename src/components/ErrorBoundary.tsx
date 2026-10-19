@@ -62,7 +62,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       return (
         <div className="max-w-3xl mx-auto my-8 p-6 bg-white rounded-card shadow-sm border border-slate-200 screen-enter">
           <div className="flex items-start gap-3.5 mb-5">
-            <div className="w-12 h-12 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 shrink-0">
+            <div className="w-12 h-12 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 flex items-center justify-center text-rose-600 dark:text-rose-400 shrink-0">
               <AlertTriangle className="w-6 h-6" />
             </div>
             <div>
@@ -76,7 +76,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           </div>
 
           {error && (
-            <div className="mb-4 p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-mono break-words leading-relaxed">
+            <div className="mb-4 p-3.5 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 rounded-xl text-xs text-rose-700 dark:text-rose-300 font-mono break-words leading-relaxed">
               <span className="font-bold block mb-1">
                 {error.name || 'Erro'}: {error.message}
               </span>
@@ -84,7 +84,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           )}
 
           {error?.stack && (
-            <details className="mb-5 bg-slate-950 rounded-xl border border-slate-800 overflow-hidden text-xs">
+            <details className="mb-5 bg-scrim rounded-xl border border-slate-800 overflow-hidden text-xs">
               <summary className="px-4 py-2.5 font-mono font-semibold text-slate-400 hover:text-slate-200 cursor-pointer select-none transition">
                 Exibir rastreamento técnico detalhado (stack trace)
               </summary>

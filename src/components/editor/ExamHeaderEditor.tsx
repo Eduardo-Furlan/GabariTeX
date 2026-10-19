@@ -16,6 +16,7 @@ import { generateExamPassword } from '../../utils/crypto';
 import { Surface } from '../ui/Surface';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
+import { Select } from '../ui/Select';
 
 interface ExamHeaderEditorProps {
   exam: Exam;
@@ -229,22 +230,21 @@ export const ExamHeaderEditor: React.FC<ExamHeaderEditorProps> = ({ exam, onChan
           <div className="flex items-center gap-2">
             <Shuffle className="w-4 h-4 text-slate-500" />
             <label className="text-sm font-medium text-slate-700">Qtd. Versões:</label>
-            <select
-              className="px-2.5 py-1 border border-slate-300 rounded-lg text-sm bg-white text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              value={exam.versionCount}
-              onChange={(e) => onChange({ ...exam, versionCount: Number(e.target.value) })}
-            >
-              {[1, 2, 3, 4, 5, 6, 8, 10].map((n) => (
-                <option key={n} value={n}>
-                  {n}{' '}
-                  {n === 1
+            <Select
+              size="sm"
+              value={String(exam.versionCount)}
+              onChange={(val) => onChange({ ...exam, versionCount: Number(val) })}
+              options={[1, 2, 3, 4, 5, 6, 8, 10].map((n) => ({
+                value: String(n),
+                label: `${n} ${
+                  n === 1
                     ? 'versão (Única)'
                     : `versões (${Array.from({ length: n }, (_, i) =>
                         String.fromCharCode(65 + i)
-                      ).join(', ')})`}
-                </option>
-              ))}
-            </select>
+                      ).join(', ')})`
+                }`,
+              }))}
+            />
           </div>
 
           <div className="flex items-center gap-2">

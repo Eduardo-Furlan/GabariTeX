@@ -7,6 +7,7 @@ import {
 } from './confirmStore';
 import { Modal } from './Modal';
 import { Button } from './Button';
+import { useRetained } from '../../hooks/useRetained';
 
 export const ConfirmHost: React.FC = () => {
   const confirmState = useSyncExternalStore(
@@ -15,6 +16,7 @@ export const ConfirmHost: React.FC = () => {
     getConfirmServerSnapshot
   );
 
+  const retainedConfirmState = useRetained(confirmState);
   const cancelButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -33,7 +35,8 @@ export const ConfirmHost: React.FC = () => {
     }
   }, [confirmState]);
 
-  if (!confirmState) return null;
+  const activeState = confirmState || retainedConfirmState;
+  if (!activeState) return null;
 
   const {
     title,
@@ -42,11 +45,11 @@ export const ConfirmHost: React.FC = () => {
     cancelLabel = 'Cancelar',
     tone = 'default',
     resolve,
-  } = confirmState;
+  } = activeState;
 
   return (
     <Modal
-      open={true}
+      open={Boolean(confirmState)}
       onOpenChange={(open) => {
         if (!open) resolve(false);
       }}

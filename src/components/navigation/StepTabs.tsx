@@ -26,14 +26,12 @@ interface StepItem {
 }
 
 export const StepTabs: React.FC<StepTabsProps> = ({ currentRoute, onNavigate }) => {
-  const { activeExamId, records } = useProfile();
+  const { activeExamId, recordCountByExam } = useProfile();
 
   const isExamRoute = currentRoute.type === 'exam_step';
   const activeStep = isExamRoute ? currentRoute.step : null;
 
-  const examRecordsCount = activeExamId
-    ? records.filter((r) => !r.examId || r.examId === activeExamId).length
-    : 0;
+  const examRecordsCount = activeExamId ? recordCountByExam[activeExamId] ?? 0 : 0;
 
   const steps: StepItem[] = [
     {

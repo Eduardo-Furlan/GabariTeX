@@ -57,6 +57,7 @@ export const ExamsScreen: React.FC<ExamsScreenProps> = ({
 
   useEffect(() => {
     hasMountedExamsScreen = true;
+    isFirstMountRef.current = false;
   }, []);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -88,15 +89,11 @@ export const ExamsScreen: React.FC<ExamsScreenProps> = ({
   };
 
   const handleCreateNew = async () => {
-    const newExam = await createExam();
-    onNavigate({ type: 'exam_step', examId: newExam.id, step: 'criar' });
+    await createExam();
   };
 
   const handleLoadSample = async () => {
     await loadSampleMathExam();
-    if (activeExamId) {
-      onNavigate({ type: 'exam_step', examId: activeExamId, step: 'criar' });
-    }
   };
 
   const formatDate = (isoString: string) => {
@@ -288,9 +285,9 @@ export const ExamsScreen: React.FC<ExamsScreenProps> = ({
         />
       ) : (
         /* Grade de Cartões de Prova */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <AnimatePresence mode="popLayout" initial={isFirstMountRef.current}>
-            {filteredExams.map((ex, index) => {
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 relative">
+          <AnimatePresence initial={isFirstMountRef.current}>
+            {filteredExams.map((ex) => {
               const isActive = ex.id === activeExamId;
               const isEditing = editingId === ex.id;
 
@@ -298,22 +295,20 @@ export const ExamsScreen: React.FC<ExamsScreenProps> = ({
                 <m.div
                   key={ex.id}
                   layout="position"
-                  initial={isFirstMountRef.current ? { opacity: 0, y: 8 } : false}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.96 }}
+                  initial={{ opacity: 0, y: 14, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.92, transition: { duration: 0.16 } }}
                   transition={{
                     duration: 0.22,
-                    delay: isFirstMountRef.current ? Math.min(0.04 * index, 0.32) : 0,
-                    ease: [0.22, 1, 0.36, 1],
+                    ease: [0.16, 1, 0.3, 1],
                   }}
                   className="h-full"
                 >
                   <Surface
-                    rail={isActive}
                     className={cn(
                       'group h-full p-5 flex flex-col justify-between transition-colors duration-150',
                       isActive
-                        ? 'border-indigo-300 dark:border-indigo-500/50 ring-1 ring-indigo-500/20 shadow-xs'
+                        ? 'border-indigo-500 dark:border-indigo-500 shadow-xs'
                         : 'hover:border-slate-300 hover:shadow-xs'
                     )}
                   >

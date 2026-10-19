@@ -1,6 +1,4 @@
 import * as Dialog from '@radix-ui/react-dialog';
-import { AnimatePresence } from 'motion/react';
-import * as m from 'motion/react-m';
 import React from 'react';
 import { X } from 'lucide-react';
 import { cn } from './cn';
@@ -50,80 +48,59 @@ export const Modal: React.FC<ModalProps> = ({
         if (dismissible || next) onOpenChange(next);
       }}
     >
-      <AnimatePresence>
-        {open && (
-          <Dialog.Portal forceMount>
-            <Dialog.Overlay asChild forceMount>
-              <m.div
-                className="no-print fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-[2px]"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.16 }}
-              />
-            </Dialog.Overlay>
-            <div className="no-print pointer-events-none fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
-              <Dialog.Content
-                asChild
-                forceMount
-                aria-describedby={description ? undefined : undefined}
-                onEscapeKeyDown={block}
-                onPointerDownOutside={block}
-                onInteractOutside={block}
-              >
-                <m.div
-                  className={cn(
-                    'pointer-events-auto flex max-h-[90vh] w-full flex-col overflow-hidden border border-slate-200 bg-white shadow-overlay',
-                    'rounded-t-sheet sm:rounded-sheet',
-                    SIZE[size],
-                    className
-                  )}
-                  initial={{ opacity: 0, y: 16, scale: 0.97 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 6, scale: 0.98 }}
-                  transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+      <Dialog.Portal>
+        <Dialog.Overlay className="no-print fixed inset-0 z-50 bg-scrim/60 modal-overlay" />
+        <div className="no-print pointer-events-none fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
+          <Dialog.Content
+            aria-describedby={description ? undefined : undefined}
+            onEscapeKeyDown={block}
+            onPointerDownOutside={block}
+            onInteractOutside={block}
+            className={cn(
+              'modal-content pointer-events-auto flex max-h-[90vh] w-full flex-col overflow-hidden border border-slate-200 bg-white shadow-overlay',
+              'rounded-t-sheet sm:rounded-sheet',
+              SIZE[size],
+              className
+            )}
+          >
+            <div className="flex items-start justify-between px-5 pb-3 pt-5 gap-3">
+              <div className="min-w-0 flex-1">
+                <Dialog.Title
+                  className={
+                    hideTitle
+                      ? 'sr-only'
+                      : 'font-display text-title font-semibold text-slate-900 leading-tight'
+                  }
                 >
-                  <div className="flex items-start justify-between px-5 pb-3 pt-5 gap-3">
-                    <div className="min-w-0 flex-1">
-                      <Dialog.Title
-                        className={
-                          hideTitle
-                            ? 'sr-only'
-                            : 'font-display text-title font-semibold text-slate-900 leading-tight'
-                        }
-                      >
-                        {title}
-                      </Dialog.Title>
-                      {description && (
-                        <Dialog.Description className="mt-1 text-body text-slate-600">
-                          {description}
-                        </Dialog.Description>
-                      )}
-                    </div>
-                    {dismissible && !hideCloseButton && (
-                      <Dialog.Close asChild>
-                        <button
-                          type="button"
-                          className="shrink-0 p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition focus-visible:outline-none"
-                          aria-label="Fechar"
-                        >
-                          <X className="w-5 h-5" />
-                        </button>
-                      </Dialog.Close>
-                    )}
-                  </div>
-                  <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5">{children}</div>
-                  {footer && (
-                    <div className="border-t border-slate-200 px-5 py-3 bg-slate-50/50 flex items-center justify-end gap-2.5">
-                      {footer}
-                    </div>
-                  )}
-                </m.div>
-              </Dialog.Content>
+                  {title}
+                </Dialog.Title>
+                {description && (
+                  <Dialog.Description className="mt-1 text-body text-slate-600">
+                    {description}
+                  </Dialog.Description>
+                )}
+              </div>
+              {dismissible && !hideCloseButton && (
+                <Dialog.Close asChild>
+                  <button
+                    type="button"
+                    className="shrink-0 p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition focus-visible:outline-none"
+                    aria-label="Fechar"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </Dialog.Close>
+              )}
             </div>
-          </Dialog.Portal>
-        )}
-      </AnimatePresence>
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5">{children}</div>
+            {footer && (
+              <div className="border-t border-slate-200 px-5 py-3 bg-slate-50/50 flex items-center justify-end gap-2.5">
+                {footer}
+              </div>
+            )}
+          </Dialog.Content>
+        </div>
+      </Dialog.Portal>
     </Dialog.Root>
   );
 };

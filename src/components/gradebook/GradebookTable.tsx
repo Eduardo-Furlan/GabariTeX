@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { GradingRecord, OptionLabel, Classroom, Exam } from '../../types/exam';
 import { ExamMeta } from '../../types/profile';
 import { exportGradebookToCsv, loadLastBackupDate } from '../../utils/storage';
@@ -25,17 +25,19 @@ import { IconButton } from '../ui/IconButton';
 import { Badge } from '../ui/Badge';
 import { Modal } from '../ui/Modal';
 import { Segmented } from '../ui/Segmented';
+import { Select } from '../ui/Select';
 import { ProgressBar } from '../ui/ProgressBar';
 import { ScoreRing } from '../ui/ScoreRing';
 import { CountUp } from '../ui/CountUp';
 import { toast } from '../ui/toastStore';
 import { cn } from '../ui/cn';
-import { m, AnimatePresence } from 'motion/react';
 import {
   Download,
   Trash2,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   Users,
   CheckCircle,
   XCircle,
@@ -66,7 +68,7 @@ interface GradebookTableProps {
   onUpdateRecord?: (record: GradingRecord) => void;
   onDeleteRecord: (id: string) => void;
   onClearAll: () => void;
-  onOpenBackupPanel?: () => void;
+  onOpenBackupPanel?: (mode?: 'export' | 'import') => void;
   exam?: Exam;
   exams?: ExamMeta[];
   activeExamId?: string;
@@ -131,37 +133,58 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
     setExpandedId(expandedId === id ? null : id);
   };
 
-  const knownIds = new Set(exams.map((e) => e.id));
-  if (exam?.id) knownIds.add(exam.id);
-  const orphanRecordsCount = records.filter((r) => r.examId && !knownIds.has(r.examId)).length;
+  // Paginação
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(50);
+
+  const knownIds = useMemo(() => {
+    const set = new Set(exams.map((e) => e.id));
+    if (exam?.id) set.add(exam.id);
+    return set;
+  }, [exams, exam?.id]);
+
+  const orphanRecordsCount = useMemo(
+    () => records.filter((r) => r.examId && !knownIds.has(r.examId)).length,
+    [records, knownIds]
+  );
 
   const effectiveExamId =
     selectedExamFilter === 'current' ? (activeExamId || exam?.id) : selectedExamFilter;
 
   // Filtro por prova (Plano 08 §2.2 e §4)
-  const examFilteredRecords = records.filter((r) => {
-    if (selectedExamFilter === 'all') return true;
-    if (selectedExamFilter === 'orphan') {
-      return r.examId && !knownIds.has(r.examId);
-    }
-    if (!effectiveExamId) return true;
-    return r.examId === effectiveExamId || (!r.examId && exam?.id === effectiveExamId);
-  });
+  const examFilteredRecords = useMemo(() => {
+    return records.filter((r) => {
+      if (selectedExamFilter === 'all') return true;
+      if (selectedExamFilter === 'orphan') {
+        return r.examId && !knownIds.has(r.examId);
+      }
+      if (!effectiveExamId) return true;
+      return r.examId === effectiveExamId || (!r.examId && exam?.id === effectiveExamId);
+    });
+  }, [records, selectedExamFilter, knownIds, effectiveExamId, exam?.id]);
 
   // Filtro por turma
-  const classFilteredRecords = examFilteredRecords.filter((r) => {
-    if (selectedFilterClassId === 'all') return true;
-    if (selectedFilterClassId === 'none') return !r.classId;
-    return r.classId === selectedFilterClassId;
-  });
+  const classFilteredRecords = useMemo(() => {
+    return examFilteredRecords.filter((r) => {
+      if (selectedFilterClassId === 'all') return true;
+      if (selectedFilterClassId === 'none') return !r.classId;
+      return r.classId === selectedFilterClassId;
+    });
+  }, [examFilteredRecords, selectedFilterClassId]);
 
   const { averageScore, averagePercentage, totalEvaluated, excludedPartialCount } =
     computeAverages(classFilteredRecords);
 
-  const partialRecordsCount = classFilteredRecords.filter(isPartial).length;
-  const displayedRecords = filterOnlyPending
-    ? classFilteredRecords.filter(isPartial)
-    : classFilteredRecords;
+  const partialRecordsCount = useMemo(
+    () => classFilteredRecords.filter(isPartial).length,
+    [classFilteredRecords]
+  );
+
+  const displayedRecords = useMemo(() => {
+    return filterOnlyPending
+      ? classFilteredRecords.filter(isPartial)
+      : classFilteredRecords;
+  }, [filterOnlyPending, classFilteredRecords]);
 
   const targetScore = exam?.header?.targetScore || 10;
 
@@ -257,25 +280,37 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
     }
   };
 
-  const sortedRecords = [...displayedRecords].sort((a, b) => {
-    let cmp = 0;
-    if (sortField === 'timestamp') {
-      cmp = a.timestamp - b.timestamp;
-    } else if (sortField === 'studentName') {
-      cmp = (a.studentName || '').localeCompare(b.studentName || '', 'pt-BR');
-    } else if (sortField === 'class') {
-      const classA = classes.find((c) => c.id === a.classId)?.name || '';
-      const classB = classes.find((c) => c.id === b.classId)?.name || '';
-      cmp = classA.localeCompare(classB, 'pt-BR');
-    } else if (sortField === 'version') {
-      cmp = (a.versionLetter || '').localeCompare(b.versionLetter || '');
-    } else if (sortField === 'score') {
-      cmp = a.totalScore - b.totalScore;
-    } else if (sortField === 'percentage') {
-      cmp = a.percentage - b.percentage;
-    }
-    return sortDirection === 'asc' ? cmp : -cmp;
-  });
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedExamFilter, selectedFilterClassId, filterOnlyPending, sortField, sortDirection]);
+
+  const sortedRecords = useMemo(() => {
+    return [...displayedRecords].sort((a, b) => {
+      let cmp = 0;
+      if (sortField === 'timestamp') {
+        cmp = a.timestamp - b.timestamp;
+      } else if (sortField === 'studentName') {
+        cmp = (a.studentName || '').localeCompare(b.studentName || '', 'pt-BR');
+      } else if (sortField === 'class') {
+        const classA = classes.find((c) => c.id === a.classId)?.name || '';
+        const classB = classes.find((c) => c.id === b.classId)?.name || '';
+        cmp = classA.localeCompare(classB, 'pt-BR');
+      } else if (sortField === 'version') {
+        cmp = (a.versionLetter || '').localeCompare(b.versionLetter || '');
+      } else if (sortField === 'score') {
+        cmp = a.totalScore - b.totalScore;
+      } else if (sortField === 'percentage') {
+        cmp = a.percentage - b.percentage;
+      }
+      return sortDirection === 'asc' ? cmp : -cmp;
+    });
+  }, [displayedRecords, sortField, sortDirection, classes]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedRecords.length / pageSize));
+  const paginatedRecords = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return sortedRecords.slice(start, start + pageSize);
+  }, [sortedRecords, currentPage, pageSize]);
 
   const renderSortHeader = (
     label: string,
@@ -348,55 +383,51 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
           {(exams.length > 1 || orphanRecordsCount > 0) && (
             <div className="flex items-center gap-1.5">
               <BookOpen className="w-3.5 h-3.5 text-slate-400" />
-              <select
+              <Select
                 value={selectedExamFilter}
-                onChange={(e) => {
-                  const val = e.target.value;
+                onChange={(val) => {
                   setSelectedExamFilter(val);
                   if (val !== 'current' && val !== 'all' && val !== 'orphan' && onSelectActiveExam) {
                     onSelectActiveExam(val);
                   }
                 }}
-                className="text-meta px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-800 font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              >
-                <option value="current">
-                  Prova Atual ({exam?.header.examTitle || 'Ativa'})
-                </option>
-                {exams.map((ex) => (
-                  <option key={ex.id} value={ex.id}>
-                    {ex.name} ({ex.recordCount})
-                  </option>
-                ))}
-                <option value="all">Todas as provas ({records.length})</option>
-                {orphanRecordsCount > 0 && (
-                  <option value="orphan">
-                    Provas não encontradas neste aparelho ({orphanRecordsCount})
-                  </option>
-                )}
-              </select>
+                size="sm"
+                options={[
+                  { value: 'current', label: `Prova Atual (${exam?.header.examTitle || 'Ativa'})` },
+                  ...exams.map((ex) => ({
+                    value: ex.id,
+                    label: `${ex.name} (${ex.recordCount})`,
+                  })),
+                  { value: 'all', label: `Todas as provas (${records.length})` },
+                  ...(orphanRecordsCount > 0
+                    ? [{ value: 'orphan', label: `Provas não encontradas neste aparelho (${orphanRecordsCount})` }]
+                    : []),
+                ]}
+              />
             </div>
           )}
 
           {/* Seletor de Filtro de Turma */}
           <div className="flex items-center gap-1.5">
-            <select
+            <Select
               value={selectedFilterClassId}
-              onChange={(e) => setSelectedFilterClassId(e.target.value)}
-              className="text-meta px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-800 font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            >
-              <option value="all">Todas as turmas ({records.length})</option>
-              {classes.map((cls) => {
-                const count = records.filter((r) => r.classId === cls.id).length;
-                return (
-                  <option key={cls.id} value={cls.id}>
-                    {cls.name} ({count})
-                  </option>
-                );
-              })}
-              <option value="none">
-                Sem turma ({records.filter((r) => !r.classId).length})
-              </option>
-            </select>
+              onChange={(val) => setSelectedFilterClassId(val)}
+              size="sm"
+              options={[
+                { value: 'all', label: `Todas as turmas (${records.length})` },
+                ...classes.map((cls) => {
+                  const count = records.filter((r) => r.classId === cls.id).length;
+                  return {
+                    value: cls.id,
+                    label: `${cls.name} (${count})`,
+                  };
+                }),
+                {
+                  value: 'none',
+                  label: `Sem turma (${records.filter((r) => !r.classId).length})`,
+                },
+              ]}
+            />
 
             {onOpenClassManager && (
               <Button
@@ -596,7 +627,7 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
           <Button
             variant="primary"
             size="sm"
-            onClick={onOpenBackupPanel}
+            onClick={() => onOpenBackupPanel('export')}
             icon={<Database className="w-3 h-3" />}
             className="bg-amber-600 hover:bg-amber-700 text-on-accent"
           >
@@ -891,38 +922,33 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
                 : 'Nenhuma prova corrigida ainda.'}
             </div>
           ) : (
-            <div className="overflow-x-auto border border-slate-200 rounded-card">
+            <>
+              <div className="overflow-auto max-h-[calc(100dvh-var(--chrome-h,96px)-120px)] border border-slate-200 rounded-card shadow-xs">
               <table className="w-full text-left border-collapse text-body">
-                <thead>
-                  <tr className="sticky top-[var(--chrome-h,96px)] z-10 bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold text-meta shadow-xs">
-                    {renderSortHeader('Data / Hora', 'timestamp', 'sticky left-0 bg-slate-50 md:static z-20')}
+                <thead className="sticky top-0 z-20 bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold text-meta shadow-xs">
+                  <tr>
+                    {renderSortHeader('Data / Hora', 'timestamp', 'sticky left-0 bg-slate-50 z-30')}
                     {renderSortHeader('Aluno', 'studentName')}
                     {renderSortHeader('Turma', 'class')}
                     {renderSortHeader('Versão', 'version', undefined, 'center')}
                     {renderSortHeader(`Nota (${targetScore})`, 'score', undefined, 'right')}
                     {renderSortHeader('Aproveitamento', 'percentage', undefined, 'center')}
-                    <th scope="col" className="py-2.5 px-3 text-right">Ações</th>
+                    <th scope="col" className="py-2.5 px-3 text-right bg-slate-50">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  <AnimatePresence initial={false}>
-                    {sortedRecords.map((r) => (
-                      <React.Fragment key={r.id}>
-                        <m.tr
-                          layout="position"
-                          initial={{ opacity: 0, y: -4 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -4 }}
-                          transition={{ duration: 0.16 }}
-                          className={cn(
-                            'group hover:bg-indigo-50 transition-colors cursor-pointer text-body',
-                            expandedId === r.id && 'bg-slate-50/70'
-                          )}
-                          onClick={() => toggleExpand(r.id)}
-                        >
-                          <td className="py-3 px-3 text-slate-500 text-meta sticky left-0 z-10 bg-white group-hover:bg-indigo-50 md:static transition-colors tabular-nums">
-                            {new Date(r.timestamp).toLocaleString('pt-BR')}
-                          </td>
+                  {paginatedRecords.map((r) => (
+                    <React.Fragment key={r.id}>
+                      <tr
+                        className={cn(
+                          'group hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors cursor-pointer text-body',
+                          expandedId === r.id && 'bg-slate-50/70'
+                        )}
+                        onClick={() => toggleExpand(r.id)}
+                      >
+                        <td className="py-3 px-3 text-slate-500 text-meta sticky left-0 z-10 bg-white group-hover:bg-indigo-50 dark:group-hover:bg-indigo-500/10 md:static transition-colors tabular-nums">
+                          {new Date(r.timestamp).toLocaleString('pt-BR')}
+                        </td>
                           <td className="py-3 px-3 font-semibold text-slate-800">
                             <div>
                               <span>{r.studentName || 'Não identificado'}</span>
@@ -1003,16 +1029,10 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
                               </IconButton>
                             </div>
                           </td>
-                        </m.tr>
+                        </tr>
 
                         {expandedId === r.id && (
-                          <m.tr
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.14 }}
-                            className="bg-slate-50/80"
-                          >
+                          <tr className="bg-slate-50/80">
                             <td colSpan={7} className="p-4">
                               <div className="text-body">
                                 <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
@@ -1176,14 +1196,67 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
                                 )}
                               </div>
                             </td>
-                          </m.tr>
+                          </tr>
                         )}
                       </React.Fragment>
                     ))}
-                  </AnimatePresence>
                 </tbody>
               </table>
             </div>
+
+            {/* Barra de Paginação */}
+            {sortedRecords.length > 0 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 px-1 text-meta text-slate-600">
+                <div className="flex items-center gap-2">
+                  <span>Itens por página:</span>
+                  <div className="w-24">
+                    <Select
+                      value={String(pageSize)}
+                      onChange={(val) => {
+                        setPageSize(Number(val));
+                        setCurrentPage(1);
+                      }}
+                      options={[
+                        { value: '25', label: '25' },
+                        { value: '50', label: '50' },
+                        { value: '100', label: '100' },
+                        { value: '250', label: '250' },
+                      ]}
+                      size="sm"
+                      aria-label="Quantidade de itens por página"
+                    />
+                  </div>
+                  <span className="text-slate-400">
+                    Mostrando {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, sortedRecords.length)} de {sortedRecords.length}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    disabled={currentPage <= 1}
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    icon={<ChevronLeft className="w-4 h-4" />}
+                  >
+                    Anterior
+                  </Button>
+                  <span className="px-2 font-medium tabular-nums text-slate-700">
+                    {currentPage} / {totalPages}
+                  </span>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    disabled={currentPage >= totalPages}
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    iconRight={<ChevronRight className="w-4 h-4" />}
+                  >
+                    Próxima
+                  </Button>
+                </div>
+              </div>
+            )}
+            </>
           )}
         </div>
       )}
@@ -1347,7 +1420,7 @@ export const GradebookTable: React.FC<GradebookTableProps> = ({
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={onOpenBackupPanel}
+                onClick={() => onOpenBackupPanel('export')}
                 icon={<Database className="w-3.5 h-3.5 text-slate-500" />}
               >
                 Backup
