@@ -95,29 +95,5 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
 );
 Textarea.displayName = 'Textarea';
 
-export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
-  error?: boolean;
-}
+export { Select, type SelectProps, type SelectOption } from './Select';
 
-export const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ error, className, children, ...props }, ref) => {
-    return (
-      <select
-        ref={ref}
-        className={cn(
-          'w-full h-10 px-3 rounded-lg border bg-white text-body text-slate-900',
-          'transition focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400',
-          error
-            ? 'border-rose-400 focus:ring-rose-400'
-            : 'border-slate-300 hover:border-slate-400',
-          'disabled:opacity-50 disabled:bg-slate-50 disabled:pointer-events-none',
-          className
-        )}
-        {...props}
-      >
-        {children}
-      </select>
-    );
-  }
-);
-Select.displayName = 'Select';

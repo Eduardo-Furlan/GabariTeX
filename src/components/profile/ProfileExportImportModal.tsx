@@ -51,11 +51,12 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
   initialMode = 'export',
   onProfileImported,
 }) => {
-  const [activeTab, setActiveTab] = useState<'export' | 'import'>(initialMode);
+  const safeInitialMode = initialMode === 'import' ? 'import' : 'export';
+  const [activeTab, setActiveTab] = useState<'export' | 'import'>(safeInitialMode);
 
   useEffect(() => {
     if (isOpen) {
-      setActiveTab(initialMode);
+      setActiveTab(initialMode === 'import' ? 'import' : 'export');
     }
   }, [isOpen, initialMode]);
 
@@ -82,8 +83,6 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
   } | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  if (!isOpen) return null;
 
   const handleShareActiveExam = () => {
     if (!activeExamId) return;
@@ -199,6 +198,7 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
         {/* Abas */}
         <Segmented
           value={activeTab}
+          layoutId="profile-export-import-tabs"
           onChange={(val) => setActiveTab(val as 'export' | 'import')}
           options={[
             { value: 'export', label: 'Exportar Perfil', icon: <Download className="w-4 h-4" /> },

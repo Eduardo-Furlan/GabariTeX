@@ -12,6 +12,7 @@ import {
   Check,
 } from 'lucide-react';
 import { Segmented } from '../ui/Segmented';
+import { Select } from '../ui/Select';
 
 interface StudentPickerProps {
   classes: Classroom[];
@@ -117,24 +118,24 @@ export const StudentPicker: React.FC<StudentPickerProps> = ({
           <label className="text-meta font-bold text-slate-700 flex items-center gap-1.5">
             <Users className="w-3.5 h-3.5 text-indigo-600" /> Turma:
           </label>
-          <select
+          <Select
             value={selectedClassId || ''}
-            onChange={(e) => {
-              const val = e.target.value || null;
-              onSelectClassId(val);
-              if (!val) {
+            onChange={(val) => {
+              const classId = val || null;
+              onSelectClassId(classId);
+              if (!classId) {
                 setMode('manual');
               }
             }}
-            className="text-meta px-2.5 py-1 rounded-lg border border-slate-300 bg-white text-slate-800 font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500"
-          >
-            <option value="">Sem turma vinculada</option>
-            {classes.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name} ({c.students?.length ?? 0} alunos)
-              </option>
-            ))}
-          </select>
+            options={[
+              { value: '', label: 'Sem turma vinculada' },
+              ...classes.map((c) => ({
+                value: c.id,
+                label: `${c.name} (${c.students?.length ?? 0} alunos)`,
+              })),
+            ]}
+            size="sm"
+          />
           {classes.length === 0 && (
             <button
               type="button"
@@ -164,16 +165,16 @@ export const StudentPicker: React.FC<StudentPickerProps> = ({
         <div className="space-y-2">
           {studentRef ? (
             /* Aluno Selecionado */
-            <div className="flex items-center justify-between p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl">
+            <div className="flex items-center justify-between p-2.5 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-xl">
               <div className="flex items-center gap-2 min-w-0">
-                <div className="w-7 h-7 rounded-full bg-emerald-200 text-emerald-800 flex items-center justify-center font-bold text-xs shrink-0">
+                <div className="w-7 h-7 rounded-full bg-emerald-200 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 flex items-center justify-center font-bold text-xs shrink-0">
                   <Check className="w-4 h-4" />
                 </div>
                 <div className="min-w-0">
-                  <span className="text-body font-bold text-emerald-950 block truncate">
+                  <span className="text-body font-bold text-emerald-950 dark:text-emerald-200 block truncate">
                     {studentName}
                   </span>
-                  <span className="text-meta font-mono text-emerald-700">
+                  <span className="text-meta font-mono text-emerald-700 dark:text-emerald-400">
                     {studentId ? `Matrícula: ${studentId}` : 'Sem matrícula'} · {currentClass.name}
                   </span>
                 </div>
@@ -181,7 +182,7 @@ export const StudentPicker: React.FC<StudentPickerProps> = ({
               <button
                 type="button"
                 onClick={handleClearSelectedStudent}
-                className="text-meta text-slate-500 hover:text-rose-600 flex items-center gap-1 px-2 py-1 rounded hover:bg-slate-200/50 transition"
+                className="text-meta text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 flex items-center gap-1 px-2 py-1 rounded hover:bg-slate-200/50 transition"
               >
                 <X className="w-3.5 h-3.5" /> Trocar
               </button>
@@ -218,7 +219,7 @@ export const StudentPicker: React.FC<StudentPickerProps> = ({
                         className="w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center justify-between transition group"
                       >
                         <div className="min-w-0 pr-2">
-                          <span className="text-meta font-semibold text-slate-800 block truncate group-hover:text-indigo-600">
+                          <span className="text-meta font-semibold text-slate-800 block truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
                             {st.name}
                           </span>
                           <span className="text-meta font-mono text-slate-400 block">
@@ -226,8 +227,8 @@ export const StudentPicker: React.FC<StudentPickerProps> = ({
                           </span>
                         </div>
                         {alreadyGraded && (
-                          <span className="text-meta px-1.5 py-0.5 rounded font-bold bg-amber-100 text-amber-800 shrink-0 flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3 text-amber-600" /> Já corrigido
+                          <span className="text-meta px-1.5 py-0.5 rounded font-bold bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 shrink-0 flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3 text-amber-600 dark:text-amber-400" /> Já corrigido
                           </span>
                         )}
                       </button>

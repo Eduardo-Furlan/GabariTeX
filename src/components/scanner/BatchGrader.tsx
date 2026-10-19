@@ -43,6 +43,7 @@ import { IconButton } from '../ui/IconButton';
 import { Modal } from '../ui/Modal';
 import { ProgressBar } from '../ui/ProgressBar';
 import { CountUp } from '../ui/CountUp';
+import { Select } from '../ui/Select';
 import { Bubble } from '../ui/Bubble';
 import { BubbleLoader } from '../ui/BubbleLoader';
 
@@ -414,7 +415,7 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
       {/* Header do Lote */}
       <div className="flex items-center justify-between pb-4 border-b border-slate-200 flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-indigo-50 rounded-xl text-indigo-600">
+          <div className="p-2.5 bg-indigo-50 dark:bg-indigo-500/10 rounded-xl text-indigo-600 dark:text-indigo-400">
             <Files className="w-5 h-5" />
           </div>
           <div>
@@ -490,11 +491,11 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
           onClick={() => fileInputRef.current?.click()}
           className={`border-2 border-dashed rounded-card p-8 text-center cursor-pointer transition transform ${
             isDragging
-              ? 'border-indigo-600 bg-indigo-50/60 scale-[1.01]'
+              ? 'border-indigo-600 bg-indigo-50/60 dark:bg-indigo-500/15 scale-[1.01]'
               : 'border-slate-300 hover:border-indigo-400 bg-slate-50/60 hover:bg-slate-50'
           }`}
         >
-          <Upload className="w-10 h-10 mx-auto text-indigo-600 mb-2 opacity-80" />
+          <Upload className="w-10 h-10 mx-auto text-indigo-600 dark:text-indigo-400 mb-2 opacity-80" />
           <p className="text-body font-bold text-slate-800">
             Clique aqui ou arraste várias fotos das folhas de respostas
           </p>
@@ -504,7 +505,7 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
         </div>
 
         {state.lastDuplicateCount !== undefined && state.lastDuplicateCount > 0 && (
-          <div className="mt-3 p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-meta text-amber-900 flex items-center gap-2">
+          <div className="mt-3 p-2.5 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-lg text-meta text-amber-900 dark:text-amber-200 flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
             <span>
               {state.lastDuplicateCount}{' '}
@@ -571,23 +572,23 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
               Total: <CountUp value={summary.total} />
             </span>
             {summary.ok > 0 && (
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50 border border-emerald-200 font-semibold text-emerald-800 tabular-nums">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> <CountUp value={summary.ok} /> OK
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 font-semibold text-emerald-800 dark:text-emerald-200 tabular-nums">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> <CountUp value={summary.ok} /> OK
               </span>
             )}
             {summary.review > 0 && (
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-50 border border-amber-200 font-semibold text-amber-900 tabular-nums">
-                <AlertTriangle className="w-3.5 h-3.5 text-amber-600" /> <CountUp value={summary.review} /> Para Revisar
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 font-semibold text-amber-900 dark:text-amber-200 tabular-nums">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /> <CountUp value={summary.review} /> Para Revisar
               </span>
             )}
             {summary.error > 0 && (
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-rose-50 border border-rose-200 font-semibold text-rose-800 tabular-nums">
-                <XCircle className="w-3.5 h-3.5 text-rose-600" /> <CountUp value={summary.error} /> Com Erro
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 font-semibold text-rose-800 dark:text-rose-200 tabular-nums">
+                <XCircle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" /> <CountUp value={summary.error} /> Com Erro
               </span>
             )}
             {summary.saved > 0 && (
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-indigo-50 border border-indigo-200 font-semibold text-indigo-800 tabular-nums">
-                <Check className="w-3.5 h-3.5 text-indigo-600" /> <CountUp value={summary.saved} /> Salvas
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 font-semibold text-indigo-800 dark:text-indigo-200 tabular-nums">
+                <Check className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" /> <CountUp value={summary.saved} /> Salvas
               </span>
             )}
           </div>
@@ -608,11 +609,11 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
                   layout="position"
                   className={`p-3.5 text-body transition flex flex-col md:flex-row md:items-center justify-between gap-3 ${
                     item.status === 'processing'
-                      ? 'bg-indigo-50/40'
+                      ? 'bg-indigo-50/40 dark:bg-indigo-500/10'
                       : item.status === 'review'
-                      ? 'bg-amber-50/40'
+                      ? 'bg-amber-50/40 dark:bg-amber-500/10'
                       : item.status === 'error'
-                      ? 'bg-rose-50/30'
+                      ? 'bg-rose-50/30 dark:bg-rose-500/10'
                       : item.status === 'saved'
                       ? 'opacity-70 bg-slate-50/50'
                       : 'hover:bg-slate-50'
@@ -674,7 +675,7 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
 
                       {rec && (
                         <div className="flex items-center gap-1.5 pt-0.5 flex-wrap">
-                          <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-800 font-bold text-[10px] rounded">
+                          <span className="px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-800 dark:text-indigo-200 font-bold text-[10px] rounded">
                             Versão {rec.versionLetter}
                           </span>
                           {rec.examId && (
@@ -697,12 +698,11 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
                   {item.status !== 'error' && item.status !== 'queued' && (
                     <div className="flex flex-col gap-1.5 flex-1 max-w-sm">
                       {currentClass && currentClass.students && currentClass.students.length > 0 && (
-                        <select
+                        <Select
                           aria-label="Selecionar aluno da turma"
                           disabled={item.status === 'saved' || item.status === 'discarded'}
                           value={item.studentRef ?? item.result?.record?.studentRef ?? ''}
-                          onChange={(e) => {
-                            const selectedId = e.target.value;
+                          onChange={(selectedId) => {
                             if (!selectedId) {
                               dispatch({
                                 type: 'UPDATE_STUDENT_INFO',
@@ -723,39 +723,38 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
                               });
                             }
                           }}
-                          className="px-2 py-1 text-meta border border-slate-300 rounded-lg bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50"
-                        >
-                          <option value="">
-                            -- Selecionar de {currentClass.name} (ou digite abaixo) --
-                          </option>
-                          {(currentClass.students || []).map((st) => {
-                            const alreadyGradedInBook = records.some(
-                              (r) =>
-                                r.studentRef === st.id ||
-                                (st.registration &&
-                                  r.studentId &&
-                                  r.studentId.trim().toLowerCase() ===
-                                    st.registration.trim().toLowerCase())
-                            );
-                            const assignedInBatch = state.items.some(
-                              (other) =>
-                                other.id !== item.id &&
-                                other.status !== 'discarded' &&
-                                (other.studentRef ?? other.result?.record?.studentRef) === st.id
-                            );
-                            return (
-                              <option key={st.id} value={st.id}>
-                                {st.name}
-                                {st.registration ? ` (${st.registration})` : ''}
-                                {alreadyGradedInBook
-                                  ? ' [Já corrigido]'
-                                  : assignedInBatch
-                                  ? ' [No lote]'
-                                  : ''}
-                              </option>
-                            );
-                          })}
-                        </select>
+                          size="sm"
+                          options={[
+                            { value: '', label: `-- Selecionar de ${currentClass.name} (ou digite abaixo) --` },
+                            ...(currentClass.students || []).map((st) => {
+                              const alreadyGradedInBook = records.some(
+                                (r) =>
+                                  r.studentRef === st.id ||
+                                  (st.registration &&
+                                    r.studentId &&
+                                    r.studentId.trim().toLowerCase() ===
+                                      st.registration.trim().toLowerCase())
+                              );
+                              const assignedInBatch = state.items.some(
+                                (other) =>
+                                  other.id !== item.id &&
+                                  other.status !== 'discarded' &&
+                                  (other.studentRef ?? other.result?.record?.studentRef) === st.id
+                              );
+                              const tag = alreadyGradedInBook
+                                ? ' [Já corrigido]'
+                                : assignedInBatch
+                                ? ' [No lote]'
+                                : '';
+                              return {
+                                value: st.id,
+                                label: `${st.name}${st.registration ? ` (${st.registration})` : ''}${tag}`,
+                              };
+                            }),
+                          ]}
+                          className="w-full"
+                          buttonClassName="w-full"
+                        />
                       )}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <input
@@ -800,23 +799,23 @@ export const BatchGrader: React.FC<BatchGraderProps> = ({
                       </span>
                     )}
                     {item.status === 'processing' && (
-                      <span className="flex items-center gap-1.5 px-2 py-0.5 rounded text-meta font-semibold bg-indigo-50 text-indigo-700 animate-pulse">
+                      <span className="flex items-center gap-1.5 px-2 py-0.5 rounded text-meta font-semibold bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 animate-pulse">
                         <BubbleLoader size="sm" /> Analisando...
                       </span>
                     )}
                     {item.status === 'ok' && (
-                      <span className="flex items-center gap-1 px-2 py-0.5 rounded text-meta font-semibold bg-emerald-100 text-emerald-800">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> OK
+                      <span className="flex items-center gap-1 px-2 py-0.5 rounded text-meta font-semibold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-200">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> OK
                       </span>
                     )}
                     {item.status === 'review' && (
-                      <span className="flex items-center gap-1 px-2 py-0.5 rounded text-meta font-semibold bg-amber-100 text-amber-800">
-                        <AlertTriangle className="w-3.5 h-3.5 text-amber-600" /> Revisar
+                      <span className="flex items-center gap-1 px-2 py-0.5 rounded text-meta font-semibold bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-200">
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /> Revisar
                       </span>
                     )}
                     {item.status === 'error' && (
-                      <span className="flex items-center gap-1 px-2 py-0.5 rounded text-meta font-semibold bg-rose-100 text-rose-800">
-                        <XCircle className="w-3.5 h-3.5 text-rose-600" /> Erro
+                      <span className="flex items-center gap-1 px-2 py-0.5 rounded text-meta font-semibold bg-rose-100 dark:bg-rose-500/20 text-rose-800 dark:text-rose-200">
+                        <XCircle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" /> Erro
                       </span>
                     )}
                     {item.status === 'saved' && (

@@ -9,29 +9,13 @@ import { MobileTabBar } from './components/navigation/MobileTabBar';
 
 import { ExamsScreen } from './screens/ExamsScreen';
 import { EditorScreen } from './screens/EditorScreen';
-import { lazyWithRetry } from './components/ui/lazyWithRetry';
+import { ClassesScreen } from './screens/ClassesScreen';
+import { VersionsScreen } from './screens/VersionsScreen';
+import { PrintScreen } from './screens/PrintScreen';
+import { ScannerScreen } from './screens/ScannerScreen';
+import { GradebookScreen } from './screens/GradebookScreen';
 import { ScreenSkeleton } from './components/ui/ScreenSkeleton';
-
-const ClassesScreen = lazyWithRetry(() =>
-  import('./screens/ClassesScreen').then((m) => ({ default: m.ClassesScreen }))
-);
-const VersionsScreen = lazyWithRetry(() =>
-  import('./screens/VersionsScreen').then((m) => ({ default: m.VersionsScreen }))
-);
-const PrintScreen = lazyWithRetry(() =>
-  import('./screens/PrintScreen').then((m) => ({ default: m.PrintScreen }))
-);
-const ScannerScreen = lazyWithRetry(() =>
-  import('./screens/ScannerScreen').then((m) => ({ default: m.ScannerScreen }))
-);
-const GradebookScreen = lazyWithRetry(() =>
-  import('./screens/GradebookScreen').then((m) => ({ default: m.GradebookScreen }))
-);
-const ProfileExportImportModal = lazyWithRetry(() =>
-  import('./components/profile/ProfileExportImportModal').then((m) => ({
-    default: m.ProfileExportImportModal,
-  }))
-);
+import { ProfileExportImportModal } from './components/profile/ProfileExportImportModal';
 import { GradingModal } from './components/scanner/GradingModal';
 import { UpdatePrompt } from './components/pwa/UpdatePrompt';
 import { ToastHost } from './components/ui/Toast';
@@ -72,6 +56,7 @@ const AppContent: React.FC = () => {
     isBatchProcessing,
     profileSettings,
     reloadProfile,
+    cancelAllAutosaves,
     store,
   } = useProfile();
 
@@ -106,10 +91,12 @@ const AppContent: React.FC = () => {
   // Mede altura do chrome sticky para publicação de --chrome-h
   useEffect(() => {
     if (typeof window === 'undefined' || !chromeRef.current) return;
+    let lastH = -1;
     const ro = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const h = Math.round(entry.borderBoxSize?.[0]?.blockSize ?? entry.contentRect.height);
-        if (h > 0) {
+        if (h > 0 && h !== lastH) {
+          lastH = h;
           document.documentElement.style.setProperty('--chrome-h', `${h}px`);
         }
       }
@@ -132,6 +119,8 @@ const AppContent: React.FC = () => {
 
     if (action.type === 'redirect_to_exams') {
       navigate({ type: 'exams' });
+    } else if (action.type === 'redirect_to_exam_step') {
+      navigate({ type: 'exam_step', examId: action.examId, step: action.step });
     } else if (action.type === 'select_exam') {
       void selectActiveExam(action.examId);
     } else if (action.type === 'select_none') {
@@ -139,9 +128,10 @@ const AppContent: React.FC = () => {
     }
   }, [isLoadingProfile, route, exams, exam.id, activeExamId, selectActiveExam, navigate]);
 
-  const handleOpenExportImport = async (mode: 'export' | 'import' = 'export') => {
+  const handleOpenExportImport = async (mode: 'export' | 'import' | unknown = 'export') => {
     try {
-      setExportImportMode(mode);
+      const safeMode = mode === 'import' ? 'import' : 'export';
+      setExportImportMode(safeMode);
       const fullExams = await Promise.all(exams.map((m) => store.getExam(m.id)));
       const validExams = fullExams.filter((e): e is Exam => Boolean(e));
       const examMap = new Map(validExams.map((e) => [e.id, e]));
@@ -173,29 +163,31 @@ const AppContent: React.FC = () => {
       }
     }
 
+    cancelAllAutosaves();
+
     if (mode === 'replace') {
-      const existingList = await store.listExams();
-      const importedIds = new Set(data.exams.map((ex) => ex.id));
-      for (const existing of existingList) {
-        if (!importedIds.has(existing.id)) {
-          await store.deleteExam(existing.id);
-        }
+      await store.replaceProfile(data, settings);
+    } else {
+      for (const ex of data.exams) {
+        await store.putExam(ex);
+      }
+      await store.putClasses(data.classes);
+      await store.putRecords(data.records);
+      if (settings) {
+        await store.putSettings(settings);
       }
     }
 
-    for (const ex of data.exams) {
-      await store.putExam(ex);
-    }
-    await store.putClasses(data.classes);
-    await store.putRecords(data.records);
-    if (settings) {
-      await store.putSettings(settings);
-    }
     await reloadProfile();
     setIsExportImportOpen(false);
   };
 
-  if (isLoadingProfile) {
+  const hasInitialLoadedRef = useRef(false);
+  if (!isLoadingProfile && !hasInitialLoadedRef.current) {
+    hasInitialLoadedRef.current = true;
+  }
+
+  if (isLoadingProfile && !hasInitialLoadedRef.current) {
     return (
       <div className="min-h-screen bg-page flex items-center justify-center p-4">
         <div className="flex flex-col items-center gap-4">
@@ -277,18 +269,16 @@ const AppContent: React.FC = () => {
       )}
 
       {/* Modal de Exportação / Importação de Perfil ZIP */}
-      {isExportImportOpen && exportProfileData && (
-        <Suspense fallback={null}>
-          <ProfileExportImportModal
-            isOpen={isExportImportOpen}
-            onClose={() => setIsExportImportOpen(false)}
-            currentData={exportProfileData}
-            currentSettings={profileSettings}
-            activeExamId={exam.id || activeExamId}
-            initialMode={exportImportMode}
-            onProfileImported={handleProfileImported}
-          />
-        </Suspense>
+      {exportProfileData && (
+        <ProfileExportImportModal
+          isOpen={isExportImportOpen}
+          onClose={() => setIsExportImportOpen(false)}
+          currentData={exportProfileData}
+          currentSettings={profileSettings}
+          activeExamId={exam.id || activeExamId}
+          initialMode={exportImportMode}
+          onProfileImported={handleProfileImported}
+        />
       )}
 
       {/* Diálogo de troca de prova ativa caso folha de outra prova seja escaneada */}

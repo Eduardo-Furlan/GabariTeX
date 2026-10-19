@@ -49,14 +49,15 @@ export const ContextBar: React.FC<ContextBarProps> = ({ currentRoute, onNavigate
     await selectActiveExam(id);
     if (currentRoute.type === 'exam_step') {
       onNavigate({ type: 'exam_step', examId: id, step: currentRoute.step });
-    } else {
-      onNavigate({ type: 'exam_step', examId: id, step: 'criar' });
     }
   };
 
   const handleCreateNewExam = async () => {
     setExamDropdownOpen(false);
     const newExam = await createExam();
+    if (currentRoute.type === 'exams') {
+      return;
+    }
     onNavigate({ type: 'exam_step', examId: newExam.id, step: 'criar' });
   };
 
@@ -129,8 +130,10 @@ export const ContextBar: React.FC<ContextBarProps> = ({ currentRoute, onNavigate
                   aria-selected={!activeExamId}
                   onClick={async () => {
                     setExamDropdownOpen(false);
-                    onNavigate({ type: 'scanner' });
                     await selectActiveExam(null);
+                    if (currentRoute.type === 'exam_step') {
+                      onNavigate({ type: 'scanner' });
+                    }
                   }}
                   className={cn(
                     'w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-slate-50 transition border-b border-slate-100',

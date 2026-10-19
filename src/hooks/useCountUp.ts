@@ -7,7 +7,7 @@ const isReducedMotion = () =>
   typeof window.matchMedia === 'function' &&
   window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-export function useCountUp(target: number, duration = 700): number {
+export function useCountUp(target: number, duration = 1200): number {
   const [value, setValue] = useState(target);
   const first = useRef(true);
   const current = useRef(target);
@@ -21,7 +21,7 @@ export function useCountUp(target: number, duration = 700): number {
     }
 
     const from = first.current ? 0 : current.current;
-    const dur = first.current ? duration : 160;
+    const dur = duration;
     first.current = false;
     const t0 = performance.now();
     let raf = 0;

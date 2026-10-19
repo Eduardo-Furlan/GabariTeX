@@ -73,7 +73,7 @@ describe('UI ExamsScreen (Library)', () => {
     expect(html).toContain('Simulado de Química');
 
     // Active rail and badge
-    expect(html).toContain('border-l-[3px]');
+    expect(html).toContain('bg-indigo-600');
     expect(html).toContain('Prova Ativa');
 
     // Notes with Bubble check

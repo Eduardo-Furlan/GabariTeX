@@ -87,6 +87,14 @@ export function formatHash(route: Route, currentSearch?: string): string {
   return `#${path}${cleanSearch}`;
 }
 
+export function areRoutesEqual(a: Route, b: Route): boolean {
+  if (a.type !== b.type) return false;
+  if (a.type === 'exam_step' && b.type === 'exam_step') {
+    return a.examId === b.examId && a.step === b.step;
+  }
+  return true;
+}
+
 export function useHashRouter() {
   const [route, setRoute] = useState<Route>(() => {
     if (typeof window === 'undefined') return { type: 'exams' };
@@ -95,7 +103,8 @@ export function useHashRouter() {
 
   useEffect(() => {
     const handleHashChange = () => {
-      setRoute(parseHash(window.location.hash));
+      const nextRoute = parseHash(window.location.hash);
+      setRoute((prev) => (areRoutesEqual(prev, nextRoute) ? prev : nextRoute));
     };
 
     window.addEventListener('hashchange', handleHashChange);
@@ -105,7 +114,7 @@ export function useHashRouter() {
   const navigate = useCallback((target: Route) => {
     if (typeof window === 'undefined') return;
     const newHash = formatHash(target);
-    setRoute(target);
+    setRoute((prev) => (areRoutesEqual(prev, target) ? prev : target));
     if (window.location.hash !== newHash) {
       window.location.hash = newHash;
     }

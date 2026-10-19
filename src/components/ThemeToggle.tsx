@@ -33,7 +33,7 @@ export const ThemeToggle: React.FC<{ className?: string }> = ({ className = '' }
       type="button"
       onClick={handleToggle}
       className={cn(
-        'relative inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 transition-all duration-[90ms] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 shadow-2xs coarse:min-h-[44px] coarse:min-w-[44px]',
+        'relative inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 transition-colors duration-150 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 shadow-2xs coarse:min-h-[44px] coarse:min-w-[44px]',
         className
       )}
       aria-label={getLabel()}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { cn } from './cn';
 
 export interface ScoreRingProps {
@@ -6,6 +6,7 @@ export interface ScoreRingProps {
   tone?: 'accent' | 'ok' | 'warn' | 'danger';
   size?: 'sm' | 'md' | 'lg';
   strokeWidth?: number;
+  duration?: number;
   className?: string;
   children?: React.ReactNode;
 }
@@ -15,6 +16,7 @@ export const ScoreRing: React.FC<ScoreRingProps> = ({
   tone = 'accent',
   size = 'md',
   strokeWidth,
+  duration = 1200,
   className,
   children,
 }) => {
@@ -28,7 +30,16 @@ export const ScoreRing: React.FC<ScoreRingProps> = ({
   const radius = (pixelSize - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
   const clampedPercent = Math.max(0, Math.min(100, percent));
-  const offset = circumference - (clampedPercent / 100) * circumference;
+  const targetOffset = circumference - (clampedPercent / 100) * circumference;
+
+  const [offset, setOffset] = useState(() => circumference);
+
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => {
+      setOffset(targetOffset);
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [targetOffset]);
 
   const strokeColors = {
     accent: 'text-indigo-600 dark:text-indigo-400',
@@ -67,7 +78,10 @@ export const ScoreRing: React.FC<ScoreRingProps> = ({
           strokeDashoffset={offset}
           strokeLinecap="round"
           fill="transparent"
-          className={cn('transition-[stroke-dashoffset] duration-[700ms] ease-out', strokeColors)}
+          style={{
+            transition: `stroke-dashoffset ${duration}ms cubic-bezier(0.16, 1, 0.3, 1)`,
+          }}
+          className={strokeColors}
         />
       </svg>
       {children && (

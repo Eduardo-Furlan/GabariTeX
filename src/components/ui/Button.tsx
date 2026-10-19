@@ -27,7 +27,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     const baseClasses =
-      'inline-flex items-center justify-center font-medium select-none focus-visible:outline-none transition-all duration-[90ms] active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none disabled:active:scale-100';
+      'inline-flex items-center justify-center font-medium select-none focus-visible:outline-none transition-colors duration-150 active:scale-[0.98] disabled:opacity-45 disabled:pointer-events-none disabled:active:scale-100';
 
     const sizeClasses = {
       sm: 'h-8 px-2.5 text-xs gap-1.5 rounded-lg coarse:min-h-[44px]',

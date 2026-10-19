@@ -36,11 +36,12 @@ export default {
         '2xs': '0 1px 0 rgb(var(--slate-900) / .04)',
         xs: '0 1px 2px rgb(var(--slate-900) / .06)',
         raised: '0 1px 2px rgb(var(--slate-900) / .06), 0 6px 16px -6px rgb(var(--accent-700) / .18)',
-        overlay: '0 24px 60px -20px rgb(var(--slate-950) / .45)',
+        overlay: '0 24px 60px -20px rgb(var(--scrim) / .45)',
       },
       colors: {
         white: ch('c-white'),                       // superfície (cartões, modais, campos)
         page: ch('c-page'),                         // fundo da página
+        scrim: ch('scrim'),                         // scrims/backdrops (não inverte)
         'on-accent': '#ffffff',                     // texto sobre botões coloridos (nunca muda)
         slate: Object.fromEntries(
           [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950].map((n) => [n, ch(`slate-${n}`)])

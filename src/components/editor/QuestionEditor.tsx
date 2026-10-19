@@ -12,6 +12,7 @@ import {
 import { Surface } from '../ui/Surface';
 import { Bubble } from '../ui/Bubble';
 import { IconButton } from '../ui/IconButton';
+import { Select } from '../ui/Select';
 import { cn } from '../ui/cn';
 
 interface QuestionEditorProps {
@@ -157,29 +158,30 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
             <label htmlFor={`annulled-${question.id}`} className="font-medium text-slate-600">
               Situação:
             </label>
-            <select
+            <Select
               id={`annulled-${question.id}`}
               value={question.annulled || ''}
-              onChange={(e) => {
-                const val = e.target.value as 'give_points' | 'discard' | '';
+              onChange={(val) => {
+                const annulled = (val as 'give_points' | 'discard' | '') || undefined;
                 onChange({
                   ...question,
-                  annulled: val ? val : undefined,
+                  annulled,
                 });
               }}
-              className={cn(
-                'border rounded-lg px-2 py-1 text-xs font-medium transition focus:outline-none focus:ring-2 focus:ring-indigo-500',
-                question.annulled === 'give_points'
-                  ? 'border-amber-200 bg-amber-50 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30'
-                  : question.annulled === 'discard'
-                  ? 'border-rose-200 bg-rose-50 text-rose-800 dark:bg-rose-500/15 dark:text-rose-300 dark:border-rose-500/30'
-                  : 'border-slate-300 bg-white text-slate-700'
+              size="sm"
+              options={[
+                { value: '', label: 'Válida' },
+                { value: 'give_points', label: 'Anulada (pontos para todos)' },
+                { value: 'discard', label: 'Anulada (desconsiderar)' },
+              ]}
+              buttonClassName={cn(
+                'text-xs font-medium',
+                question.annulled === 'give_points' &&
+                  'border-amber-200 bg-amber-50 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30',
+                question.annulled === 'discard' &&
+                  'border-rose-200 bg-rose-50 text-rose-800 dark:bg-rose-500/15 dark:text-rose-300 dark:border-rose-500/30'
               )}
-            >
-              <option value="">Válida</option>
-              <option value="give_points">Anulada (pontos para todos)</option>
-              <option value="discard">Anulada (desconsiderar)</option>
-            </select>
+            />
           </div>
 
           <div className="flex items-center gap-1">
@@ -387,7 +389,7 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
                     size="sm"
                     tone="ghost"
                     onClick={() => handleRemoveOption(optIndex)}
-                    className="mt-0.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                    className="mt-0.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </IconButton>

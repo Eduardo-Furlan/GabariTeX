@@ -55,8 +55,8 @@ export function Segmented<T extends string>({
   };
 
   const sizeClasses = {
-    sm: 'h-8 p-0.5 text-xs',
-    md: 'h-9 p-1 text-sm',
+    sm: 'min-h-8 p-0.5 text-xs',
+    md: 'min-h-9 p-1 text-sm',
   }[size];
 
   return (
@@ -65,7 +65,7 @@ export function Segmented<T extends string>({
       role="radiogroup"
       aria-label={ariaLabel}
       className={cn(
-        'inline-flex items-center rounded-lg bg-slate-100 border border-slate-200 select-none',
+        'inline-flex items-center rounded-lg bg-slate-100 border border-slate-200 select-none max-w-full overflow-x-auto scrollbar-none',
         sizeClasses,
         className
       )}
@@ -83,7 +83,7 @@ export function Segmented<T extends string>({
             onClick={() => onChange(opt.value)}
             onKeyDown={(e) => handleKeyDown(e, idx)}
             className={cn(
-              'relative flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1 font-medium rounded-md transition-colors duration-150',
+              'relative flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 py-1 font-medium rounded-md transition-colors duration-150 whitespace-nowrap shrink-0',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
               isSelected
                 ? 'text-slate-900 font-semibold'
@@ -99,9 +99,9 @@ export function Segmented<T extends string>({
                 aria-hidden="true"
               />
             )}
-            <span className="relative z-10 flex items-center gap-1.5">
+            <span className="relative z-10 flex items-center gap-1.5 whitespace-nowrap">
               {opt.icon && <span className="shrink-0">{opt.icon}</span>}
-              <span>{opt.label}</span>
+              <span className="whitespace-nowrap">{opt.label}</span>
             </span>
           </button>
         );

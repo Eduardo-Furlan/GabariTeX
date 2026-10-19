@@ -138,12 +138,12 @@ export const GradingModal: React.FC<GradingModalProps> = ({
 
   const getScoreColor = (percentage: number) => {
     if (percentage >= 70) {
-      return 'text-emerald-600 bg-emerald-50 border-emerald-200';
+      return 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30';
     }
     if (percentage >= 50) {
-      return 'text-amber-600 bg-amber-50 border-amber-200';
+      return 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30';
     }
-    return 'text-rose-600 bg-rose-50 border-rose-200';
+    return 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/30';
   };
 
   const scoreTone: 'ok' | 'warn' | 'danger' =
@@ -265,9 +265,9 @@ export const GradingModal: React.FC<GradingModalProps> = ({
 
           {/* Subtotal Dissertativas Pendentes */}
           {recordIsPartial && (
-            <div className="p-2.5 rounded-lg border border-amber-200 bg-amber-50/70 text-meta text-amber-900 flex items-center justify-between flex-wrap gap-2">
+            <div className="p-2.5 rounded-lg border border-amber-200 dark:border-amber-500/30 bg-amber-50/70 dark:bg-amber-500/10 text-meta text-amber-900 dark:text-amber-200 flex items-center justify-between flex-wrap gap-2">
               <span className="font-semibold flex items-center gap-1.5">
-                <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
                 {pendingSubjectiveCount}{' '}
                 {pendingSubjectiveCount === 1 ? 'dissertativa pendente' : 'dissertativas pendentes'}{' '}
                 : nota parcial
@@ -329,9 +329,9 @@ export const GradingModal: React.FC<GradingModalProps> = ({
 
           {/* Banner / Filtro de Revisão Humana */}
           {totalNeedsReview > 0 && (
-            <div className="p-3 bg-amber-50 border border-amber-300 rounded-card flex items-center justify-between flex-wrap gap-2 text-meta text-amber-900">
+            <div className="p-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/40 rounded-card flex items-center justify-between flex-wrap gap-2 text-meta text-amber-900 dark:text-amber-200">
               <div className="flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
                 <span>
                   <strong>{totalNeedsReview} {totalNeedsReview === 1 ? 'questão precisa' : 'questões precisam'} de revisão</strong>
                   {' '}(revisadas: {reviewedCount}/{totalNeedsReview})
@@ -403,9 +403,9 @@ export const GradingModal: React.FC<GradingModalProps> = ({
                     }}
                     className={`p-3 text-body transition ${
                       a.needsReview
-                        ? 'bg-amber-50/70 border-l-4 border-l-amber-500'
+                        ? 'bg-amber-50/70 dark:bg-amber-500/10 border-l-4 border-l-amber-500'
                         : a.manualOverride
-                        ? 'bg-indigo-50/40 border-l-4 border-l-indigo-500'
+                        ? 'bg-indigo-50/40 dark:bg-indigo-500/10 border-l-4 border-l-indigo-500'
                         : 'hover:bg-slate-50'
                     }`}
                   >
@@ -415,46 +415,46 @@ export const GradingModal: React.FC<GradingModalProps> = ({
 
                         {/* Status da resposta */}
                         {a.status === 'correct' && (
-                          <span className="flex items-center gap-1 text-emerald-700 font-semibold text-meta">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Marcado:{' '}
+                          <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-semibold text-meta">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> Marcado:{' '}
                             {a.markedOption} (Correto)
                           </span>
                         )}
                         {a.status === 'wrong' && (
-                          <span className="flex items-center gap-1 text-rose-700 font-semibold text-meta">
-                            <XCircle className="w-3.5 h-3.5 text-rose-600" /> Marcado: {a.markedOption} |
+                          <span className="flex items-center gap-1 text-rose-700 dark:text-rose-400 font-semibold text-meta">
+                            <XCircle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" /> Marcado: {a.markedOption} |
                             Gabarito: {a.correctOption}
                           </span>
                         )}
                         {a.status === 'blank' && (
-                          <span className="flex items-center gap-1 text-amber-700 font-semibold text-meta">
-                            <AlertCircle className="w-3.5 h-3.5 text-amber-600" /> Em Branco (Gabarito:{' '}
+                          <span className="flex items-center gap-1 text-amber-700 dark:text-amber-400 font-semibold text-meta">
+                            <AlertCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /> Em Branco (Gabarito:{' '}
                             {a.correctOption})
                           </span>
                         )}
                         {a.status === 'multiple' && (
-                          <span className="flex items-center gap-1 text-purple-700 font-semibold text-meta">
-                            <AlertCircle className="w-3.5 h-3.5 text-purple-600" /> Rasura / Dupla
+                          <span className="flex items-center gap-1 text-purple-700 dark:text-purple-400 font-semibold text-meta">
+                            <AlertCircle className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" /> Rasura / Dupla
                             marcação (Gabarito: {a.correctOption})
                           </span>
                         )}
 
                         {/* Indicador de dúvida ou intervenção manual */}
                         {a.needsReview && (
-                          <span className="px-1.5 py-0.5 rounded bg-amber-200 text-amber-900 font-bold text-[10px]">
+                          <span className="px-1.5 py-0.5 rounded bg-amber-200 dark:bg-amber-500/20 text-amber-900 dark:text-amber-300 font-bold text-[10px]">
                             Dúvida OMR
                           </span>
                         )}
 
                         {a.manualOverride && (
-                          <div className="flex items-center gap-1.5 text-meta text-indigo-700 font-medium">
-                            <span className="bg-indigo-100 px-1.5 py-0.5 rounded font-mono">
+                          <div className="flex items-center gap-1.5 text-meta text-indigo-700 dark:text-indigo-400 font-medium">
+                            <span className="bg-indigo-100 dark:bg-indigo-500/20 px-1.5 py-0.5 rounded font-mono">
                               Original: {a.detectedOption || '—'}
                             </span>
                             <button
                               type="button"
                               onClick={() => handleRevert(a.questionNumber)}
-                              className="flex items-center gap-0.5 text-slate-500 hover:text-indigo-600 underline font-semibold"
+                              className="flex items-center gap-0.5 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 underline font-semibold"
                               title="Restaurar leitura original da máquina"
                             >
                               <RotateCcw className="w-3 h-3" /> Desfazer

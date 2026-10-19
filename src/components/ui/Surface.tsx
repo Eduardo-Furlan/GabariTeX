@@ -32,7 +32,6 @@ export const Surface = forwardRef<HTMLDivElement, SurfaceProps>(
         className={cn(
           'relative rounded-card border transition',
           toneClasses,
-          rail && 'border-l-[3px] border-l-indigo-600 dark:border-l-indigo-400',
           className
         )}
         {...props}

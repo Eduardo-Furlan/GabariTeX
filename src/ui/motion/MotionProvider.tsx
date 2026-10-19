@@ -1,11 +1,11 @@
 import React from 'react';
 import { LazyMotion, MotionConfig } from 'motion/react';
 
-const loadFeatures = () => import('./features').then((mod) => mod.default);
+import domMax from './features';
 
 export const MotionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <MotionConfig reducedMotion="user">
-    <LazyMotion features={loadFeatures} strict>
+    <LazyMotion features={domMax} strict>
       {children}
     </LazyMotion>
   </MotionConfig>
