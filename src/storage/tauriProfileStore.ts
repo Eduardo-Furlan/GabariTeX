@@ -1,5 +1,5 @@
 import { Exam, Classroom, GradingRecord } from '../types/exam';
-import { ProfileSettings, ExamMeta } from '../types/profile';
+import { ProfileSettings, ExamMeta, ProfileData } from '../types/profile';
 import { SaveResult } from '../utils/storage';
 import { ProfileStore } from './profileStore';
 
@@ -119,8 +119,14 @@ export class TauriProfileStore implements ProfileStore {
         try {
           const resp = await invoke<ArrayBuffer>('store_get', { key: rk, source: 'main' });
           const text = new TextDecoder().decode(new Uint8Array(resp));
-          const recs: GradingRecord[] = JSON.parse(text);
-          allRecords.push(...recs);
+          const recs = JSON.parse(text);
+          if (Array.isArray(recs)) {
+            for (const item of recs) {
+              if (item && typeof item === 'object' && item.id) {
+                allRecords.push(item as GradingRecord);
+              }
+            }
+          }
         } catch {
           // ignore corrupted key
         }
@@ -137,9 +143,24 @@ export class TauriProfileStore implements ProfileStore {
       // Agrupa registros por examId para armazenamento isolado
       const grouped: Record<string, GradingRecord[]> = {};
       for (const r of records) {
+        if (!r || typeof r !== 'object' || !r.id) continue;
         const eId = r.examId || 'sem_prova';
         if (!grouped[eId]) grouped[eId] = [];
         grouped[eId].push(r);
+      }
+
+      const existingRecordKeys = await invoke<string[]>('store_list', { prefix: 'records/' });
+      const currentKeys = new Set(Object.keys(grouped).map((id) => `records/${id}`));
+
+      // Remove orphaned or cleared record keys
+      for (const rk of existingRecordKeys) {
+        if (!currentKeys.has(rk)) {
+          try {
+            await invoke('store_delete', { key: rk });
+          } catch {
+            // ignore
+          }
+        }
       }
 
       for (const [examId, recs] of Object.entries(grouped)) {
@@ -208,6 +229,67 @@ export class TauriProfileStore implements ProfileStore {
       });
     } catch {
       // Ignora erro ao salvar configurações
+    }
+  }
+
+  async replaceProfile(data: ProfileData, settings?: ProfileSettings): Promise<SaveResult> {
+    try {
+      const invoke = await this.getInvoke();
+
+      // 1. Remove todas as provas existentes
+      const examKeys = await invoke<string[]>('store_list', { prefix: 'exams/' });
+      for (const ek of examKeys) {
+        try {
+          await invoke('store_delete', { key: ek });
+        } catch {
+          // ignore
+        }
+      }
+
+      // 2. Remove todas as notas existentes
+      const recordKeys = await invoke<string[]>('store_list', { prefix: 'records/' });
+      for (const rk of recordKeys) {
+        try {
+          await invoke('store_delete', { key: rk });
+        } catch {
+          // ignore
+        }
+      }
+
+      // 3. Remove turmas e configurações
+      try {
+        await invoke('store_delete', { key: 'classes' });
+      } catch {
+        // ignore
+      }
+      try {
+        await invoke('store_delete', { key: 'settings' });
+      } catch {
+        // ignore
+      }
+
+      // 4. Salva novas provas
+      for (const ex of data.exams) {
+        const res = await this.putExam(ex);
+        if (!res.ok) return res;
+      }
+
+      // 5. Salva novas turmas
+      const classRes = await this.putClasses(data.classes);
+      if (!classRes.ok) return classRes;
+
+      // 6. Salva novos registros
+      const recRes = await this.putRecords(data.records);
+      if (!recRes.ok) return recRes;
+
+      // 7. Salva configurações se presentes
+      if (settings) {
+        await this.putSettings(settings);
+      }
+
+      return { ok: true };
+    } catch (err: unknown) {
+      return { ok: false, error: err, reason: 'unknown' };
     }
   }
 }

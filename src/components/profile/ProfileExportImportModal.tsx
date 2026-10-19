@@ -14,16 +14,19 @@ import {
 import { saveFile } from '../../platform/files';
 import { saveLastBackupDate } from '../../utils/storage';
 import {
-  FolderArchive,
   Download,
   Upload,
   Lock,
   AlertTriangle,
   CheckCircle2,
-  X,
   FileCheck2,
   Loader2,
 } from 'lucide-react';
+import { toast } from '../ui/toastStore';
+import { confirmDialog } from '../ui/confirmStore';
+import { Modal } from '../ui/Modal';
+import { Segmented } from '../ui/Segmented';
+import { Button } from '../ui/Button';
 
 interface ProfileExportImportModalProps {
   isOpen: boolean;
@@ -48,11 +51,12 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
   initialMode = 'export',
   onProfileImported,
 }) => {
-  const [activeTab, setActiveTab] = useState<'export' | 'import'>(initialMode);
+  const safeInitialMode = initialMode === 'import' ? 'import' : 'export';
+  const [activeTab, setActiveTab] = useState<'export' | 'import'>(safeInitialMode);
 
   useEffect(() => {
     if (isOpen) {
-      setActiveTab(initialMode);
+      setActiveTab(initialMode === 'import' ? 'import' : 'export');
     }
   }, [isOpen, initialMode]);
 
@@ -79,8 +83,6 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
   } | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  if (!isOpen) return null;
 
   const handleShareActiveExam = () => {
     if (!activeExamId) return;
@@ -122,7 +124,7 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
         setTimeout(() => setExportSuccess(null), 4000);
       }
     } catch (err: unknown) {
-      alert(`Falha ao exportar perfil: ${err instanceof Error ? err.message : String(err)}`);
+      toast.error(`Falha ao exportar perfil: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setIsExporting(false);
     }
@@ -156,13 +158,16 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
     }
   };
 
-  const handleExecuteImport = () => {
+  const handleExecuteImport = async () => {
     if (!importPreview) return;
 
     if (importMode === 'replace') {
-      const confirmReplace = window.confirm(
-        'ATENÇÃO: Você escolheu "Substituir tudo". Todos os dados existentes serão substituídos pelos do arquivo importado. Deseja continuar?'
-      );
+      const confirmReplace = await confirmDialog({
+        title: 'Substituir Tudo',
+        message: 'ATENÇÃO: Você escolheu "Substituir tudo". Todos os dados existentes serão substituídos pelos do arquivo importado. Deseja continuar?',
+        tone: 'danger',
+        confirmLabel: 'Substituir tudo',
+      });
       if (!confirmReplace) return;
 
       onProfileImported(importPreview.parsedData, importPreview.parsedSettings, 'replace');
@@ -180,63 +185,31 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-        {/* Cabeçalho */}
-        <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 flex items-center justify-center text-indigo-600 dark:text-indigo-300">
-              <FolderArchive className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-slate-800">Arquivo de Perfil (ZIP)</h2>
-              <p className="text-xs text-slate-500">
-                Backup completo, troca de computador e compartilhamento de avaliações.
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition"
-            title="Fechar"
-            aria-label="Fechar"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
+    <Modal
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      title="Arquivo de Perfil (ZIP)"
+      description="Backup completo, troca de computador e compartilhamento de avaliações."
+      size="lg"
+    >
+      <div className="space-y-5">
         {/* Abas */}
-        <div className="flex border-b border-slate-200 bg-white">
-          <button
-            type="button"
-            onClick={() => setActiveTab('export')}
-            className={`flex-1 py-3 text-xs font-bold text-center border-b-2 transition flex items-center justify-center gap-2 ${
-              activeTab === 'export'
-                ? 'border-indigo-600 text-indigo-600 dark:text-indigo-300'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <Download className="w-4 h-4" />
-            <span>Exportar Perfil</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('import')}
-            className={`flex-1 py-3 text-xs font-bold text-center border-b-2 transition flex items-center justify-center gap-2 ${
-              activeTab === 'import'
-                ? 'border-indigo-600 text-indigo-600 dark:text-indigo-300'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <Upload className="w-4 h-4" />
-            <span>Importar Perfil</span>
-          </button>
-        </div>
+        <Segmented
+          value={activeTab}
+          layoutId="profile-export-import-tabs"
+          onChange={(val) => setActiveTab(val as 'export' | 'import')}
+          options={[
+            { value: 'export', label: 'Exportar Perfil', icon: <Download className="w-4 h-4" /> },
+            { value: 'import', label: 'Importar Perfil', icon: <Upload className="w-4 h-4" /> },
+          ]}
+          className="w-full"
+        />
 
         {/* Conteúdo da Aba Exportar */}
         {activeTab === 'export' && (
-          <div className="p-6 overflow-y-auto space-y-5 flex-1">
+          <div className="space-y-5">
             {/* Aviso de Segurança */}
             <div className="p-3.5 rounded-xl border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/15 text-xs text-amber-800 dark:text-amber-300 flex items-start gap-2.5">
               <Lock className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-300 mt-0.5" />
@@ -247,7 +220,7 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
 
             {/* Escopo de exportação */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
+              <label className="block text-xs font-bold text-slate-700 mb-2">
                 Escopo da Exportação
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -261,7 +234,7 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
                   />
                   <div>
                     <span className="text-xs font-bold text-slate-800 block">Perfil Completo</span>
-                    <span className="text-[11px] text-slate-500">
+                    <span className="text-meta text-slate-500">
                       Todas as provas ({currentData.exams.length}), turmas e notas
                     </span>
                   </div>
@@ -277,7 +250,7 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
                   />
                   <div>
                     <span className="text-xs font-bold text-slate-800 block">Personalizado</span>
-                    <span className="text-[11px] text-slate-500">
+                    <span className="text-meta text-slate-500">
                       Escolha quais provas incluir
                     </span>
                   </div>
@@ -290,7 +263,7 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
               <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
                 <div className="text-xs">
                   <span className="font-bold text-slate-800 block">Compartilhar Prova com Colega</span>
-                  <span className="text-slate-500 text-[11px]">
+                  <span className="text-slate-500 text-meta">
                     Exporta apenas a prova atual, sem dados de alunos e sem senha.
                   </span>
                 </div>
@@ -371,22 +344,21 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
             )}
 
             <div className="pt-2 flex justify-end">
-              <button
-                type="button"
+              <Button
+                variant="primary"
                 onClick={handleExport}
                 disabled={isExporting}
-                className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-on-accent bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm transition disabled:opacity-50"
+                icon={isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
               >
-                {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                 <span>{isExporting ? 'Compactando...' : 'Exportar Arquivo ZIP'}</span>
-              </button>
+              </Button>
             </div>
           </div>
         )}
 
         {/* Conteúdo da Aba Importar */}
         {activeTab === 'import' && (
-          <div className="p-6 overflow-y-auto space-y-5 flex-1">
+          <div className="space-y-5">
             {!importPreview ? (
               <div className="space-y-4">
                 <input
@@ -402,7 +374,7 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
 
                 <div
                   onClick={() => fileInputRef.current?.click()}
-                  className="border-2 border-dashed border-slate-300 hover:border-indigo-400 dark:hover:border-indigo-500/50 rounded-2xl p-8 text-center cursor-pointer bg-slate-50 hover:bg-indigo-50/20 dark:hover:bg-indigo-500/5 transition flex flex-col items-center justify-center gap-3"
+                  className="border-2 border-dashed border-slate-300 hover:border-indigo-400 dark:hover:border-indigo-500/50 rounded-card p-8 text-center cursor-pointer bg-slate-50 hover:bg-indigo-50/20 dark:hover:bg-indigo-500/5 transition flex flex-col items-center justify-center gap-3"
                 >
                   <div className="w-12 h-12 rounded-full bg-white border border-slate-200 flex items-center justify-center text-indigo-600 dark:text-indigo-300 shadow-sm">
                     {isImporting ? <Loader2 className="w-6 h-6 animate-spin" /> : <Upload className="w-6 h-6" />}
@@ -431,7 +403,7 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
               <div className="space-y-5">
                 {/* Resumo da Importação */}
                 <div className="p-4 rounded-xl border border-indigo-200 dark:border-indigo-500/30 bg-indigo-50/30 dark:bg-indigo-500/5 space-y-3">
-                  <h3 className="text-xs font-bold text-indigo-900 dark:text-indigo-300 uppercase flex items-center gap-1.5">
+                  <h3 className="text-xs font-bold text-indigo-900 dark:text-indigo-300 flex items-center gap-1.5">
                     <FileCheck2 className="w-4 h-4 text-indigo-600 dark:text-indigo-300" />
                     <span>Conteúdo Identificado no Arquivo</span>
                   </h3>
@@ -440,19 +412,19 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
                       <span className="text-base font-extrabold text-slate-800 block">
                         {importPreview.summary.examsCount}
                       </span>
-                      <span className="text-[11px] text-slate-500 font-medium">Provas</span>
+                      <span className="text-meta text-slate-500 font-medium">Provas</span>
                     </div>
                     <div className="p-2.5 rounded-lg bg-white border border-slate-200">
                       <span className="text-base font-extrabold text-slate-800 block">
                         {importPreview.summary.classesCount}
                       </span>
-                      <span className="text-[11px] text-slate-500 font-medium">Turmas</span>
+                      <span className="text-meta text-slate-500 font-medium">Turmas</span>
                     </div>
                     <div className="p-2.5 rounded-lg bg-white border border-slate-200">
                       <span className="text-base font-extrabold text-slate-800 block">
                         {importPreview.summary.recordsCount}
                       </span>
-                      <span className="text-[11px] text-slate-500 font-medium">Notas</span>
+                      <span className="text-meta text-slate-500 font-medium">Notas</span>
                     </div>
                   </div>
 
@@ -468,7 +440,7 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
                   </div>
 
                   {importPreview.passwordsGenerated.length > 0 && (
-                    <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/30 text-[11px] text-amber-800 dark:text-amber-300">
+                    <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/30 text-meta text-amber-800 dark:text-amber-300">
                       <strong>Aviso de segurança:</strong> {importPreview.passwordsGenerated.length} prova(s) importada(s) estavam sem senha (modo compartilhamento). Novas senhas foram geradas automaticamente para que possam ser utilizadas no corretor.
                     </div>
                   )}
@@ -476,7 +448,7 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
 
                 {/* Escolha do Modo */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
+                  <label className="block text-xs font-bold text-slate-700 mb-2">
                     Como aplicar os dados?
                   </label>
                   <div className="space-y-2">
@@ -494,7 +466,7 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
                       />
                       <div>
                         <span className="text-xs font-bold text-slate-800 block">Mesclar com o perfil atual (Recomendado)</span>
-                        <span className="text-[11px] text-slate-500">
+                        <span className="text-meta text-slate-500">
                           Preserva as provas e notas existentes. Provas com o mesmo ID são atualizadas se a versão do arquivo for mais recente.
                         </span>
                       </div>
@@ -516,7 +488,7 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
                         <span className="text-xs font-bold text-slate-800 block text-rose-700 dark:text-rose-300">
                           Substituir tudo (Apaga o perfil atual)
                         </span>
-                        <span className="text-[11px] text-slate-500">
+                        <span className="text-meta text-slate-500">
                           Substitui integralmente todas as provas, turmas e notas deste computador pelo conteúdo deste arquivo.
                         </span>
                       </div>
@@ -526,30 +498,24 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
 
                 {/* Ações */}
                 <div className="flex items-center justify-between pt-3 border-t border-slate-200">
-                  <button
-                    type="button"
+                  <Button
+                    variant="secondary"
                     onClick={() => setImportPreview(null)}
-                    className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition"
                   >
                     Escolher outro arquivo
-                  </button>
-                  <button
-                    type="button"
+                  </Button>
+                  <Button
+                    variant={importMode === 'replace' ? 'danger' : 'primary'}
                     onClick={handleExecuteImport}
-                    className={`px-5 py-2.5 text-xs font-bold text-on-accent rounded-xl shadow-sm transition ${
-                      importMode === 'replace'
-                        ? 'bg-rose-600 hover:bg-rose-700'
-                        : 'bg-indigo-600 hover:bg-indigo-700'
-                    }`}
                   >
                     Confirmar e Importar
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
           </div>
         )}
       </div>
-    </div>
+    </Modal>
   );
 };

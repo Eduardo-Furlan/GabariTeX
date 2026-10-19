@@ -1,7 +1,9 @@
 import React, { useRef } from 'react';
+import * as m from 'motion/react-m';
 import { Sun, Moon, Monitor } from 'lucide-react';
 import { useTheme } from '../theme/useTheme';
 import { ThemePreference } from '../theme/theme';
+import { cn } from './ui/cn';
 
 interface ThemeOption {
   value: ThemePreference;
@@ -60,7 +62,10 @@ export const ThemeSelector: React.FC<{ className?: string }> = ({ className = ''
     <div
       role="radiogroup"
       aria-label="Tema visual"
-      className={`grid grid-cols-3 gap-1.5 ${className}`}
+      className={cn(
+        'grid grid-cols-3 gap-1 p-1 bg-slate-100 rounded-lg border border-slate-200 select-none',
+        className
+      )}
     >
       {OPTIONS.map((opt, index) => {
         const isSelected = preference === opt.value;
@@ -79,22 +84,33 @@ export const ThemeSelector: React.FC<{ className?: string }> = ({ className = ''
             title={opt.title}
             onClick={() => setTheme(opt.value)}
             onKeyDown={(e) => handleKeyDown(e, index)}
-            className={`min-h-[36px] px-2 py-1.5 rounded-lg border text-xs flex items-center justify-center gap-1.5 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+            className={cn(
+              'relative min-h-[34px] px-2 py-1 rounded-md text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
               isSelected
-                ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 border-indigo-200 dark:border-indigo-500/30 font-bold shadow-sm'
-                : 'border-slate-300 text-slate-600 hover:bg-slate-100'
-            }`}
+                ? 'text-slate-900 font-bold'
+                : 'text-slate-600 hover:text-slate-900'
+            )}
           >
-            <Icon
-              className={`w-3.5 h-3.5 shrink-0 ${
-                isSelected ? 'text-current' : opt.inactiveColor
-              }`}
-            />
-            <span>{opt.label}</span>
+            {isSelected && (
+              <m.span
+                layoutId="theme-selector-pill"
+                className="absolute inset-0 rounded-md bg-white shadow-2xs border border-slate-200/60"
+                transition={{ type: 'spring', stiffness: 420, damping: 34, mass: 0.9 }}
+                aria-hidden="true"
+              />
+            )}
+            <span className="relative z-10 flex items-center gap-1.5">
+              <Icon
+                className={cn(
+                  'w-3.5 h-3.5 shrink-0',
+                  isSelected ? 'text-indigo-600 dark:text-indigo-400' : opt.inactiveColor
+                )}
+              />
+              <span>{opt.label}</span>
+            </span>
           </button>
         );
       })}
     </div>
   );
 };
-

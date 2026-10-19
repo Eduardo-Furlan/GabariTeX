@@ -49,6 +49,15 @@ export class AutosaveManager<T> {
     this.hasPendingSave = false;
   }
 
+  public cancelPending() {
+    if (this.timer) {
+      clearTimeout(this.timer);
+      this.timer = null;
+    }
+    this.hasPendingSave = false;
+    this.onStateChange?.({ status: 'saved' });
+  }
+
   public updateValue(newValue: T) {
     this.value = newValue;
     this.hasPendingSave = true;
@@ -186,7 +195,11 @@ export function useAutosave<T>(
   saveFn: (val: T) => SaveResult | Promise<SaveResult>,
   delay = 400,
   identity?: unknown
-): AutosaveState & { flush: () => void; flushAsync: () => Promise<SaveResult> } {
+): AutosaveState & {
+  flush: () => void;
+  flushAsync: () => Promise<SaveResult>;
+  cancelPending: () => void;
+} {
   const [state, setState] = useState<AutosaveState>({
     status: 'saved',
     savedAt: new Date(),
@@ -210,6 +223,10 @@ export function useAutosave<T>(
   const flushAsync = useCallback(async (): Promise<SaveResult> => {
     if (!managerRef.current) return { ok: true };
     return managerRef.current.flushAsync();
+  }, []);
+
+  const cancelPending = useCallback(() => {
+    managerRef.current?.cancelPending();
   }, []);
 
   useEffect(() => {
@@ -255,6 +272,6 @@ export function useAutosave<T>(
     };
   }, []);
 
-  return { ...state, flush, flushAsync };
+  return { ...state, flush, flushAsync, cancelPending };
 }
 

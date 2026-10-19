@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
 import {
   Printer,
-  AlertTriangle,
 } from 'lucide-react';
 import { useProfile } from '../context/ProfileContext';
 import { printPage } from '../platform/print';
 import { MAX_QUESTIONS } from '../utils/examLimits';
 import { AnswerSheetView } from '../components/preview/AnswerSheetView';
 import { ExamPrintView } from '../components/preview/ExamPrintView';
+import { Surface } from '../components/ui/Surface';
+import { Segmented } from '../components/ui/Segmented';
+import { Button } from '../components/ui/Button';
+import { Alert } from '../components/ui/Alert';
+import { Select } from '../components/ui/Select';
 
 type PrintMode = 'complete' | 'exam_only' | 'answersheet_only' | 'all_versions';
 
@@ -26,11 +30,18 @@ export const PrintScreen: React.FC = () => {
   const currentVersion =
     versions.find((v) => v.versionLetter === selectedVersionLetter) || versions[0];
 
+  const printModeOptions: { value: PrintMode; label: string }[] = [
+    { value: 'complete', label: 'Prova Completa' },
+    { value: 'exam_only', label: 'Apenas Caderno' },
+    { value: 'answersheet_only', label: 'Apenas Cartão' },
+    { value: 'all_versions', label: `Todas (${versions.length})` },
+  ];
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4 no-print">
+    <div className="screen-enter max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <Surface tone="default" className="p-4 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4 no-print">
         <div>
-          <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
+          <h2 className="font-display text-base font-bold text-slate-800 flex items-center gap-2">
             <Printer className="w-5 h-5 text-indigo-600 dark:text-indigo-300" />
             Central de Impressão A4 / Exportação PDF
           </h2>
@@ -40,70 +51,39 @@ export const PrintScreen: React.FC = () => {
         </div>
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-wrap">
-          <div className="flex flex-wrap sm:flex-nowrap bg-slate-100 rounded-lg p-1 text-xs font-semibold gap-1 overflow-x-auto">
-            <button
-              type="button"
-              onClick={() => setPrintMode('complete')}
-              className={`flex-1 sm:flex-none px-3 py-1.5 rounded-md transition text-center whitespace-nowrap ${
-                printMode === 'complete' ? 'bg-white text-indigo-700 dark:text-indigo-300 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Prova Completa
-            </button>
-            <button
-              type="button"
-              onClick={() => setPrintMode('exam_only')}
-              className={`flex-1 sm:flex-none px-3 py-1.5 rounded-md transition text-center whitespace-nowrap ${
-                printMode === 'exam_only' ? 'bg-white text-indigo-700 dark:text-indigo-300 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Apenas Caderno
-            </button>
-            <button
-              type="button"
-              onClick={() => setPrintMode('answersheet_only')}
-              className={`flex-1 sm:flex-none px-3 py-1.5 rounded-md transition text-center whitespace-nowrap ${
-                printMode === 'answersheet_only' ? 'bg-white text-indigo-700 dark:text-indigo-300 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Apenas Cartão
-            </button>
-            <button
-              type="button"
-              onClick={() => setPrintMode('all_versions')}
-              className={`flex-1 sm:flex-none px-3 py-1.5 rounded-md transition text-center whitespace-nowrap ${
-                printMode === 'all_versions' ? 'bg-white text-indigo-700 dark:text-indigo-300 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Todas ({versions.length})
-            </button>
-          </div>
+          <Segmented
+            options={printModeOptions}
+            value={printMode}
+            onChange={setPrintMode}
+            layoutId="print-mode-pill"
+            size="sm"
+          />
 
           <div className="flex items-center gap-2 justify-between sm:justify-start">
             {printMode !== 'all_versions' && (
               <div className="flex items-center gap-1.5">
                 <span className="text-xs text-slate-600 font-medium">Versão:</span>
-                <select
-                  className="px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs font-bold bg-white text-slate-800"
+                <Select
+                  size="sm"
                   value={selectedVersionLetter}
-                  onChange={(e) => setSelectedVersionLetter(e.target.value)}
-                >
-                  {versions.map((v) => (
-                    <option key={v.versionLetter} value={v.versionLetter}>
-                      Versão {v.versionLetter}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => setSelectedVersionLetter(val)}
+                  options={versions.map((v) => ({
+                    value: v.versionLetter,
+                    label: `Versão ${v.versionLetter}`,
+                  }))}
+                />
               </div>
             )}
 
-            <button
-              type="button"
+            <Button
+              variant="primary"
+              size="sm"
               disabled={isSheetOverflowing || isExamCorrupted}
               onClick={() => {
                 if (isSheetOverflowing || isExamCorrupted) return;
                 printPage();
               }}
+              icon={<Printer className="w-4 h-4" />}
               title={
                 isSheetOverflowing
                   ? 'A folha de respostas não cabe em uma página. Reduza o texto do cabeçalho ou o número de questões.'
@@ -111,24 +91,20 @@ export const PrintScreen: React.FC = () => {
                   ? `A prova excede o limite de ${MAX_QUESTIONS} questões.`
                   : undefined
               }
-              className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-xl text-xs font-bold shadow-md transition ${
-                isSheetOverflowing || isExamCorrupted
-                  ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
-                  : 'bg-indigo-600 hover:bg-indigo-700 text-on-accent'
-              }`}
             >
-              <Printer className="w-4 h-4" /> Imprimir / Salvar PDF
-            </button>
+              Imprimir / Salvar PDF
+            </Button>
           </div>
         </div>
-      </div>
+      </Surface>
 
-      {isSheetOverflowing && (
-        <div className="mb-4 p-4 bg-rose-50 dark:bg-rose-500/10 border-2 border-rose-300 dark:border-rose-500/40 rounded-2xl flex items-center gap-3 text-rose-900 dark:text-rose-200 no-print">
-          <AlertTriangle className="w-5 h-5 text-rose-600 dark:text-rose-300 shrink-0" />
-          <div className="text-xs sm:text-sm font-semibold">
-            A folha de respostas não cabe em uma página. Reduza o texto do cabeçalho ou o número de questões.
-          </div>
+      {(isSheetOverflowing || isExamCorrupted) && (
+        <div className="no-print">
+          <Alert tone="danger">
+            {isSheetOverflowing
+              ? 'A folha de respostas não cabe em uma página. Reduza o texto do cabeçalho ou o número de questões.'
+              : `A prova excede o limite de ${MAX_QUESTIONS} questões.`}
+          </Alert>
         </div>
       )}
 
@@ -138,7 +114,7 @@ export const PrintScreen: React.FC = () => {
       </div>
 
       {/* Visualização de Páginas A4 com Quebras Visíveis */}
-      <div className="print-area-wrapper w-full overflow-x-auto py-4 print:p-0 print:m-0 print:bg-white print:overflow-visible">
+      <div className="print-area-wrapper desk-surface w-full overflow-x-auto py-4 print:p-0 print:m-0 print:bg-white print:overflow-visible">
         <div className="min-w-fit mx-auto flex flex-col items-center">
           {printMode === 'complete' && currentVersion && (
             <div className="w-full flex flex-col items-center">
@@ -209,4 +185,3 @@ export const PrintScreen: React.FC = () => {
     </div>
   );
 };
-

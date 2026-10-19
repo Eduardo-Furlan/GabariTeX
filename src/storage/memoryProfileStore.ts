@@ -1,5 +1,5 @@
 import { Exam, Classroom, GradingRecord } from '../types/exam';
-import { ProfileSettings, ExamMeta } from '../types/profile';
+import { ProfileSettings, ExamMeta, ProfileData } from '../types/profile';
 import { SaveResult } from '../utils/storage';
 import { ProfileStore } from './profileStore';
 
@@ -125,6 +125,27 @@ export class MemoryProfileStore implements ProfileStore {
 
   async putSettings(s: ProfileSettings): Promise<void> {
     this.settings = { ...s };
+  }
+
+  async replaceProfile(data: ProfileData, settings?: ProfileSettings): Promise<SaveResult> {
+    try {
+      this.exams.clear();
+      for (const e of data.exams) {
+        this.exams.set(e.id, JSON.parse(JSON.stringify(e)));
+      }
+      this.records.clear();
+      for (const r of data.records) {
+        this.records.set(r.id, JSON.parse(JSON.stringify(r)));
+      }
+      this.classes.clear();
+      for (const c of data.classes) {
+        this.classes.set(c.id, JSON.parse(JSON.stringify(c)));
+      }
+      this.settings = settings ? JSON.parse(JSON.stringify(settings)) : {};
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: err, reason: 'unknown' };
+    }
   }
 }
 
