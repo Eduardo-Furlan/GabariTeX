@@ -2,11 +2,15 @@ import React, { useState } from 'react';
 import {
   Shuffle,
   ShieldCheck,
-  CheckCircle2,
   Eye,
 } from 'lucide-react';
 import { useProfile } from '../context/ProfileContext';
 import { AnswerSheetView } from '../components/preview/AnswerSheetView';
+import { Surface } from '../components/ui/Surface';
+import { Segmented } from '../components/ui/Segmented';
+import { Bubble } from '../components/ui/Bubble';
+import { Badge } from '../components/ui/Badge';
+import { Button } from '../components/ui/Button';
 
 export const VersionsScreen: React.FC = () => {
   const {
@@ -21,14 +25,25 @@ export const VersionsScreen: React.FC = () => {
   const currentVersion =
     versions.find((v) => v.versionLetter === selectedVersionLetter) || versions[0];
 
+  const versionOptions = versions.map((v) => ({
+    value: v.versionLetter,
+    label: (
+      <span className="font-bold flex items-center justify-center min-w-[20px]">
+        {v.versionLetter}
+      </span>
+    ),
+  }));
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <div className="screen-enter max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       {/* Seletor de Versões */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex items-center justify-between flex-wrap gap-4">
+      <Surface tone="default" className="p-6 flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
+          <h2 className="font-display text-base font-bold text-slate-800 flex items-center gap-2">
             <Shuffle className="w-5 h-5 text-indigo-600 dark:text-indigo-300" />
-            Versões Randomizadas ({versions.length} {versions.length === 1 ? 'versão' : 'versões'})
+            {`Versões Randomizadas (${versions.length} ${
+              versions.length === 1 ? 'versão' : 'versões'
+            })`}
           </h2>
           <p className="text-xs text-slate-500 mt-1">
             Cada versão reordena questões e alternativas. O QR Code armazena o gabarito oficial encriptado com a senha da prova.
@@ -37,53 +52,45 @@ export const VersionsScreen: React.FC = () => {
 
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold text-slate-600">Visualizar Versão:</span>
-          <div className="flex gap-1.5">
-            {versions.map((v) => (
-              <button
-                key={v.versionLetter}
-                type="button"
-                onClick={() => setSelectedVersionLetter(v.versionLetter)}
-                className={`w-9 h-9 rounded-lg font-bold text-xs transition ${
-                  selectedVersionLetter === v.versionLetter
-                    ? 'bg-indigo-600 text-on-accent shadow-sm'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                }`}
-              >
-                {v.versionLetter}
-              </button>
-            ))}
-          </div>
+          <Segmented
+            options={versionOptions}
+            value={selectedVersionLetter}
+            onChange={setSelectedVersionLetter}
+            layoutId="versions-pill"
+            size="sm"
+          />
         </div>
-      </div>
+      </Surface>
 
       {currentVersion && (
         <div className="space-y-6">
           {/* Painel do Gabarito Oficial */}
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-            <div className="flex items-center justify-between mb-4 border-b pb-3 flex-wrap gap-2">
+          <Surface tone="default" className="p-6">
+            <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3 flex-wrap gap-2">
               <div>
-                <h3 className="font-bold text-base text-slate-800 flex items-center gap-2">
+                <h3 className="font-display font-bold text-base text-slate-800 flex items-center gap-2">
                   <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-300" />
-                  Gabarito Oficial (Versão {currentVersion.versionLetter})
+                  {`Gabarito Oficial (Versão ${currentVersion.versionLetter})`}
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Chave de respostas codificada e protegida no QR Code da Versão {currentVersion.versionLetter}.
+                  {`Chave de respostas codificada e protegida no QR Code da Versão ${currentVersion.versionLetter}.`}
                 </p>
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-xs font-bold rounded-lg flex items-center gap-1">
-                  <CheckCircle2 className="w-3.5 h-3.5" /> Protegido por Senha
-                </span>
+                <Badge tone="ok">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  Protegido por Senha
+                </Badge>
 
-                <button
-                  type="button"
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={<Eye className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-300" />}
                   onClick={() => setShowAnswerSheetPreview(!showAnswerSheetPreview)}
-                  className="flex items-center gap-1.5 px-3 py-1 border border-slate-300 text-slate-700 hover:bg-slate-50 rounded-lg text-xs font-semibold transition"
                 >
-                  <Eye className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-300" />
-                  <span>{showAnswerSheetPreview ? 'Ocultar Cartão A4' : 'Visualizar Cartão A4'}</span>
-                </button>
+                  {showAnswerSheetPreview ? 'Ocultar Cartão A4' : 'Visualizar Cartão A4'}
+                </Button>
               </div>
             </div>
 
@@ -99,32 +106,34 @@ export const VersionsScreen: React.FC = () => {
                   return (
                     <div
                       key={q.id}
-                      className="p-3 rounded-xl border border-slate-200 bg-slate-50/70 flex items-center justify-between font-mono"
+                      className="p-3 rounded-card border border-slate-200 bg-slate-50/70 flex items-center justify-between font-mono"
                     >
-                      <span className="text-xs font-bold text-slate-700">Q{qNum}</span>
+                      <span className="text-xs font-bold text-slate-700 tabular-nums">
+                        {`Q${qNum}`}
+                      </span>
                       {q.type === 'objective' ? (
-                        <span className="w-7 h-7 rounded-full bg-indigo-600 text-on-accent font-bold text-xs flex items-center justify-center shadow-sm">
+                        <Bubble state="filled" size="sm" label={`Gabarito: ${opt || '-'}`}>
                           {opt || '-'}
-                        </span>
+                        </Bubble>
                       ) : (
-                        <span className="text-[10px] text-slate-500 italic font-sans font-medium">
+                        <Badge tone="neutral">
                           Dissertativa
-                        </span>
+                        </Badge>
                       )}
                     </div>
                   );
                 })}
               </div>
             )}
-          </div>
+          </Surface>
 
           {/* Pré-visualização da Folha de Respostas A4 */}
           {showAnswerSheetPreview && (
-            <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200">
-              <div className="flex items-center justify-between mb-4 border-b pb-3 flex-wrap gap-2">
-                <span className="text-xs font-bold uppercase text-slate-700 flex items-center gap-1.5">
+            <Surface tone="default" className="p-4 sm:p-6">
+              <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3 flex-wrap gap-2">
+                <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                   <Eye className="w-4 h-4 text-indigo-600 dark:text-indigo-300" />
-                  Pré-visualização da Folha de Respostas A4 (Versão {currentVersion.versionLetter})
+                  {`Pré-visualização da Folha de Respostas A4 (Versão ${currentVersion.versionLetter})`}
                 </span>
               </div>
 
@@ -138,11 +147,10 @@ export const VersionsScreen: React.FC = () => {
                   <AnswerSheetView version={currentVersion} header={exam.header} />
                 </div>
               </div>
-            </div>
+            </Surface>
           )}
         </div>
       )}
     </div>
   );
 };
-

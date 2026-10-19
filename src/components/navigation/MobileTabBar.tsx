@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from 'motion/react-m';
 import {
   FileEdit,
   Shuffle,
@@ -8,6 +9,7 @@ import {
 } from 'lucide-react';
 import { Route, StepId } from '../../router/hashRouter';
 import { useProfile } from '../../context/ProfileContext';
+import { cn } from '../ui/cn';
 
 interface MobileTabBarProps {
   currentRoute: Route;
@@ -15,14 +17,12 @@ interface MobileTabBarProps {
 }
 
 export const MobileTabBar: React.FC<MobileTabBarProps> = ({ currentRoute, onNavigate }) => {
-  const { activeExamId, records } = useProfile();
+  const { activeExamId, recordCountByExam } = useProfile();
 
   const isExamRoute = currentRoute.type === 'exam_step';
   const activeStep = isExamRoute ? currentRoute.step : null;
 
-  const examRecordsCount = activeExamId
-    ? records.filter((r) => !r.examId || r.examId === activeExamId).length
-    : 0;
+  const examRecordsCount = activeExamId ? recordCountByExam[activeExamId] ?? 0 : 0;
 
   const steps: Array<{
     id: StepId;
@@ -34,7 +34,12 @@ export const MobileTabBar: React.FC<MobileTabBarProps> = ({ currentRoute, onNavi
     { id: 'versoes', label: 'Versões', icon: Shuffle },
     { id: 'imprimir', label: 'Imprimir', icon: Printer },
     { id: 'corrigir', label: 'Corrigir', icon: Camera },
-    { id: 'notas', label: 'Notas', icon: GraduationCap, badge: examRecordsCount > 0 ? examRecordsCount : undefined },
+    {
+      id: 'notas',
+      label: 'Notas',
+      icon: GraduationCap,
+      badge: examRecordsCount > 0 ? examRecordsCount : undefined,
+    },
   ];
 
   const handleStepClick = (stepId: StepId) => {
@@ -63,10 +68,10 @@ export const MobileTabBar: React.FC<MobileTabBarProps> = ({ currentRoute, onNavi
 
   return (
     <nav
-      className="no-print md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 shadow-lg pb-[env(safe-area-inset-bottom)]"
+      className="no-print md:hidden fixed bottom-0 left-0 right-0 z-40 chrome-surface border-t border-slate-200 pb-[env(safe-area-inset-bottom)]"
       aria-label="Navegação móvel"
     >
-      <div className="grid grid-cols-5 h-13 items-center">
+      <div className="grid grid-cols-5 h-[52px] items-center relative">
         {steps.map((s) => {
           const isActive =
             (isExamRoute && activeStep === s.id) ||
@@ -79,16 +84,30 @@ export const MobileTabBar: React.FC<MobileTabBarProps> = ({ currentRoute, onNavi
               type="button"
               onClick={() => handleStepClick(s.id)}
               aria-current={isActive ? 'page' : undefined}
-              className={`relative flex flex-col items-center justify-center h-full w-full py-1 min-h-[44px] transition ${
+              className={cn(
+                'relative flex flex-col items-center justify-center h-full w-full py-1 min-h-[44px] transition focus-visible:outline-none select-none',
                 isActive
-                  ? 'text-indigo-600 dark:text-indigo-300 font-bold'
+                  ? 'text-indigo-600 dark:text-indigo-400 font-bold'
                   : 'text-slate-500 hover:text-slate-800 font-medium'
-              }`}
+              )}
             >
+              {isActive && (
+                <m.span
+                  layoutId="tab-pill"
+                  className="absolute top-0 left-2 right-2 h-0.5 bg-indigo-600 dark:bg-indigo-400 rounded-full"
+                  transition={{ type: 'spring', stiffness: 420, damping: 34, mass: 0.9 }}
+                  aria-hidden="true"
+                />
+              )}
               <div className="relative">
-                <Icon className={`w-5 h-5 ${isActive ? 'scale-110' : ''} transition-transform`} />
+                <Icon
+                  className={cn(
+                    'w-5 h-5 transition-transform duration-150',
+                    isActive && 'scale-110'
+                  )}
+                />
                 {s.badge !== undefined && (
-                  <span className="absolute -top-1 -right-2 px-1 min-w-[14px] h-3.5 flex items-center justify-center bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-[9px] font-bold rounded-full">
+                  <span className="absolute -top-1 -right-2 px-1 min-w-[14px] h-3.5 flex items-center justify-center bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-[9px] font-bold rounded-full animate-pop">
                     {s.badge > 99 ? '99+' : s.badge}
                   </span>
                 )}
@@ -103,4 +122,3 @@ export const MobileTabBar: React.FC<MobileTabBarProps> = ({ currentRoute, onNavi
     </nav>
   );
 };
-

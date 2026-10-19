@@ -1,5 +1,5 @@
 import { Exam, Classroom, GradingRecord } from '../types/exam';
-import { ProfileSettings, ExamMeta } from '../types/profile';
+import { ProfileSettings, ExamMeta, ProfileData } from '../types/profile';
 import { SaveResult } from '../utils/storage';
 import { ProfileStore } from './profileStore';
 import { MemoryProfileStore } from './memoryProfileStore';
@@ -332,6 +332,57 @@ export class IndexedDbProfileStore implements ProfileStore {
       });
     } catch {
       return this.getFallback().putSettings(s);
+    }
+  }
+
+  async replaceProfile(data: ProfileData, settings?: ProfileSettings): Promise<SaveResult> {
+    if (!this.isSupported()) {
+      return this.getFallback().replaceProfile(data, settings);
+    }
+    try {
+      const db = await this.openDb();
+      await new Promise<void>((resolve, reject) => {
+        const tx = db.transaction(
+          [STORE_EXAMS, STORE_RECORDS, STORE_CLASSES, STORE_SETTINGS],
+          'readwrite'
+        );
+        const storeExams = tx.objectStore(STORE_EXAMS);
+        const storeRecords = tx.objectStore(STORE_RECORDS);
+        const storeClasses = tx.objectStore(STORE_CLASSES);
+        const storeSettings = tx.objectStore(STORE_SETTINGS);
+
+        storeExams.clear();
+        for (const e of data.exams) {
+          storeExams.put(e);
+        }
+
+        storeRecords.clear();
+        for (const r of data.records) {
+          storeRecords.put(r);
+        }
+
+        storeClasses.clear();
+        for (const c of data.classes) {
+          storeClasses.put(c);
+        }
+
+        storeSettings.clear();
+        if (settings) {
+          storeSettings.put({ key: SETTINGS_KEY, settings });
+        }
+
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+      return { ok: true };
+    } catch (err: unknown) {
+      const errorObj = err as { name?: string };
+      const isQuota = errorObj && errorObj.name === 'QuotaExceededError';
+      return {
+        ok: false,
+        error: err,
+        reason: isQuota ? 'quota' : 'unknown',
+      };
     }
   }
 }

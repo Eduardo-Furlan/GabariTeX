@@ -20,6 +20,7 @@
     --slate-800: 30 41 59;
     --slate-900: 15 23 42;
     --slate-950: 2 6 23;
+    --scrim: 2 6 23;
   }
 
   html.dark {
@@ -36,6 +37,7 @@
     --slate-800: 226 232 240;
     --slate-900: 241 245 249;
     --slate-950: 248 250 252;
+    --scrim: 2 6 23;
     color-scheme: dark;
   }
 
@@ -55,6 +57,7 @@
     --slate-800: 30 41 59;
     --slate-900: 15 23 42;
     --slate-950: 2 6 23;
+    --scrim: 2 6 23;
     color-scheme: light;
     color: #000000;
   }
@@ -73,6 +76,10 @@
 
   html.dark .katex-error {
     color: #f87171;
+  }
+
+  html {
+    scrollbar-gutter: stable;
   }
 
   body {

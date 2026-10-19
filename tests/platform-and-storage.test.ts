@@ -167,5 +167,13 @@ describe('platform snapshots (Plan 12 §6 & §8)', () => {
     const dailySaved = await checkAndRunDailySnapshot(sampleProfile);
     expect(dailySaved).toBe('gabaritex-test.zip');
   });
+
+  it('guarantees test runs default to memoryProfileStore and do not write to user profile', async () => {
+    const { getProfileStore, setProfileStore } = await import('../src/storage');
+    const { MemoryProfileStore } = await import('../src/storage/memoryProfileStore');
+    const mem = new MemoryProfileStore();
+    setProfileStore(mem);
+    expect(getProfileStore()).toBe(mem);
+  });
 });
 

@@ -24,6 +24,7 @@ import {
   triggerDesktopSnapshot,
   checkAndRunDailySnapshot,
 } from '../platform/snapshots';
+import { toast } from '../components/ui/toastStore';
 
 export interface ExamSwitchPromptState {
   targetExamId: string;
@@ -106,6 +107,8 @@ export interface ProfileContextType {
   ) => void;
   reloadProfile: () => Promise<void>;
   flushAll: () => Promise<void>;
+  cancelAllAutosaves: () => void;
+  recordCountByExam: Record<string, number>;
 }
 
 const ProfileContext = createContext<ProfileContextType | null>(null);
@@ -192,14 +195,17 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
     gradebookAutosave.status === 'error' ||
     classroomsAutosave.status === 'error';
 
-  const overallAutosaveStatus: AutosaveState =
-    hasStorageError
-      ? { status: 'error' }
-      : examAutosave.status === 'saving' ||
-        gradebookAutosave.status === 'saving' ||
-        classroomsAutosave.status === 'saving'
-      ? { status: 'saving' }
-      : { status: 'saved' };
+  const overallAutosaveStatus: AutosaveState = useMemo(() => {
+    if (hasStorageError) return { status: 'error' };
+    if (
+      examAutosave.status === 'saving' ||
+      gradebookAutosave.status === 'saving' ||
+      classroomsAutosave.status === 'saving'
+    ) {
+      return { status: 'saving' };
+    }
+    return { status: 'saved' };
+  }, [hasStorageError, examAutosave.status, gradebookAutosave.status, classroomsAutosave.status]);
 
   const flushAll = useCallback(async (): Promise<void> => {
     await Promise.all([
@@ -208,6 +214,22 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
       classroomsAutosave.flushAsync(),
     ]);
   }, [examAutosave, gradebookAutosave, classroomsAutosave]);
+
+  const cancelAllAutosaves = useCallback(() => {
+    examAutosave.cancelPending();
+    gradebookAutosave.cancelPending();
+    classroomsAutosave.cancelPending();
+  }, [examAutosave, gradebookAutosave, classroomsAutosave]);
+
+  const recordCountByExam = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const r of records) {
+      if (r && r.examId) {
+        map[r.examId] = (map[r.examId] || 0) + 1;
+      }
+    }
+    return map;
+  }, [records]);
 
   const examRef = useRef(exam);
   examRef.current = exam;
@@ -682,25 +704,44 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
         }
       }
 
-      await store.deleteExam(id);
       const remainingExams = exams.filter((e) => e.id !== id);
+
+      let nextActiveExam: Exam | null = null;
+      let nextPass = '';
+      if (exam.id === id && remainingExams.length > 0) {
+        const nextId = remainingExams[0].id;
+        nextActiveExam = (await store.getExam(nextId)) ?? null;
+        if (nextActiveExam) {
+          nextPass = nextActiveExam.password || generateExamPassword(8);
+          if (!nextActiveExam.password) {
+            nextActiveExam.password = nextPass;
+            await store.putExam(nextActiveExam);
+          }
+        }
+      }
+
+      await store.deleteExam(id);
+
       setExams(remainingExams);
-      setRecords((prev) => prev.filter((r) => r.examId !== id));
+      setRecords((prev) => (prev.some((r) => r.examId === id) ? prev.filter((r) => r.examId !== id) : prev));
       setAllExamPasswords((prev) => {
         const copy = { ...prev };
         delete copy[id];
+        if (nextActiveExam && nextPass) {
+          copy[nextActiveExam.id] = nextPass;
+        }
         return copy;
       });
 
-      if (exam.id === id) {
-        if (remainingExams.length > 0) {
-          await selectActiveExam(remainingExams[0].id);
-        } else {
-          await createExam();
-        }
+      if (nextActiveExam) {
+        setExam(nextActiveExam);
+        setTeacherPassword(nextPass);
+        persistSettings({ ...profileSettingsRef.current, activeExamId: nextActiveExam.id });
+      } else if (exam.id === id && remainingExams.length === 0) {
+        await createExam();
       }
     },
-    [store, exams, exam.id, selectActiveExam, createExam]
+    [store, exams, exam.id, createExam, persistSettings]
   );
 
   const shareExam = useCallback(
@@ -762,7 +803,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const updateExam = useCallback(
     (updated: Exam) => {
       if (!isWithinLimit(updated.questions?.length ?? 0)) {
-        alert(
+        toast.error(
           `A prova não pode exceder ${MAX_QUESTIONS} questões (máximo suportado na folha de respostas A4). A alteração foi rejeitada.`
         );
         return;
@@ -808,7 +849,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const idx = exam.questions.findIndex((q) => q.id === questionId);
       if (idx === -1) return undefined;
       if (!isWithinLimit(exam.questions.length + 1)) {
-        alert(
+        toast.error(
           `A prova não pode exceder ${MAX_QUESTIONS} questões (máximo suportado na folha de respostas A4).`
         );
         return undefined;
@@ -837,7 +878,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (questionsToImport.length === 0) return 0;
       const availableSlots = MAX_QUESTIONS - exam.questions.length;
       if (availableSlots <= 0) {
-        alert(
+        toast.error(
           `A prova já atingiu o limite máximo de ${MAX_QUESTIONS} questões.`
         );
         return 0;
@@ -1061,70 +1102,125 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
     ];
   }, [teacherPassword, allExamPasswords]);
 
-  const value: ProfileContextType = {
-    store,
-    isLoadingProfile,
-    exams,
-    exam,
-    activeExamId: exam.id && exams.some((e) => e.id === exam.id) ? exam.id : '',
-    versions,
-    selectedVersionLetter,
-    setSelectedVersionLetter,
-    teacherPassword,
-    allExamPasswords,
-    candidatePasswords,
-    records,
-    classes,
-    activeClassId,
-    setActiveClassId,
-    profileSettings,
-    autosaveState: overallAutosaveStatus,
-    hasStorageError,
-    isExamCorrupted,
+  const value: ProfileContextType = useMemo(
+    () => ({
+      store,
+      isLoadingProfile,
+      exams,
+      exam,
+      activeExamId: exam.id && exams.some((e) => e.id === exam.id) ? exam.id : '',
+      versions,
+      selectedVersionLetter,
+      setSelectedVersionLetter,
+      teacherPassword,
+      allExamPasswords,
+      candidatePasswords,
+      records,
+      classes,
+      activeClassId,
+      setActiveClassId,
+      profileSettings,
+      autosaveState: overallAutosaveStatus,
+      hasStorageError,
+      isExamCorrupted,
 
-    isExportImportOpen,
-    setIsExportImportOpen,
-    exportProfileData,
-    setExportProfileData,
+      isExportImportOpen,
+      setIsExportImportOpen,
+      exportProfileData,
+      setExportProfileData,
 
-    scannerMode,
-    setScannerMode,
-    isBatchProcessing,
-    setIsBatchProcessing,
-    activePayload,
-    setActivePayload,
-    handleLockPayload,
-    handlePhotoGraded,
-    handleBatchSaveRecords,
-    handleSelectExamVersion,
-    gradingSession,
-    setGradingSession,
-    examSwitchPrompt,
-    setExamSwitchPrompt,
+      scannerMode,
+      setScannerMode,
+      isBatchProcessing,
+      setIsBatchProcessing,
+      activePayload,
+      setActivePayload,
+      handleLockPayload,
+      handlePhotoGraded,
+      handleBatchSaveRecords,
+      handleSelectExamVersion,
+      gradingSession,
+      setGradingSession,
+      examSwitchPrompt,
+      setExamSwitchPrompt,
 
-    selectActiveExam,
-    ensureExamExists,
-    createExam,
-    duplicateExam,
-    renameExam,
-    deleteExam,
-    shareExam,
-    loadSampleMathExam,
-    updateExam,
-    moveQuestion,
-    duplicateQuestion,
-    importQuestions,
-    clearCurrentExam,
-    updateTeacherPassword,
+      selectActiveExam,
+      ensureExamExists,
+      createExam,
+      duplicateExam,
+      renameExam,
+      deleteExam,
+      shareExam,
+      loadSampleMathExam,
+      updateExam,
+      moveQuestion,
+      duplicateQuestion,
+      importQuestions,
+      clearCurrentExam,
+      updateTeacherPassword,
 
-    updateClasses,
-    updateRecords: setRecords,
-    handleAddStudentToClass,
-    handleDisassociateRecordsFromClass,
-    handleGradeSaved,
-    reloadProfile: initProfile,
-    flushAll,
-  };
+      updateClasses,
+      updateRecords: setRecords,
+      handleAddStudentToClass,
+      handleDisassociateRecordsFromClass,
+      handleGradeSaved,
+      reloadProfile: initProfile,
+      flushAll,
+      cancelAllAutosaves,
+      recordCountByExam,
+    }),
+    [
+      store,
+      isLoadingProfile,
+      exams,
+      exam,
+      versions,
+      selectedVersionLetter,
+      teacherPassword,
+      allExamPasswords,
+      candidatePasswords,
+      records,
+      classes,
+      activeClassId,
+      profileSettings,
+      overallAutosaveStatus,
+      hasStorageError,
+      isExamCorrupted,
+      isExportImportOpen,
+      exportProfileData,
+      scannerMode,
+      isBatchProcessing,
+      activePayload,
+      handleLockPayload,
+      handlePhotoGraded,
+      handleBatchSaveRecords,
+      handleSelectExamVersion,
+      gradingSession,
+      examSwitchPrompt,
+      selectActiveExam,
+      ensureExamExists,
+      createExam,
+      duplicateExam,
+      renameExam,
+      deleteExam,
+      shareExam,
+      loadSampleMathExam,
+      updateExam,
+      moveQuestion,
+      duplicateQuestion,
+      importQuestions,
+      clearCurrentExam,
+      updateTeacherPassword,
+      updateClasses,
+      handleAddStudentToClass,
+      handleDisassociateRecordsFromClass,
+      handleGradeSaved,
+      initProfile,
+      flushAll,
+      cancelAllAutosaves,
+      recordCountByExam,
+    ]
+  );
 
   return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>;
 };

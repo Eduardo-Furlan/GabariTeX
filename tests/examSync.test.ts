@@ -77,7 +77,7 @@ describe('decideRouteSync', () => {
     expect(res.nextLastSyncedExamId).toBeNull();
   });
 
-  it('rota scanner com prova ativa dispara select_none e limpa lastSynced', () => {
+  it('rota scanner com prova ativa mantém modo scanner (noop) sem forçar redirecionamento', () => {
     const route: Route = { type: 'scanner' };
     const res = decideRouteSync({
       route,
@@ -87,15 +87,29 @@ describe('decideRouteSync', () => {
       activeExamId: 'exam-1',
     });
 
-    expect(res.action).toEqual({ type: 'select_none' });
+    expect(res.action).toEqual({ type: 'noop' });
     expect(res.nextLastSyncedExamId).toBeNull();
   });
 
-  it('rota scanner sem prova ativa retorna noop e limpa lastSynced', () => {
+  it('rota scanner sem prova ativa mantém modo autônomo (noop) sem sequestrar para primeiro exame', () => {
     const route: Route = { type: 'scanner' };
     const res = decideRouteSync({
       route,
       exams: dummyExams,
+      lastSyncedExamId: null,
+      currentExamId: '',
+      activeExamId: null,
+    });
+
+    expect(res.action).toEqual({ type: 'noop' });
+    expect(res.nextLastSyncedExamId).toBeNull();
+  });
+
+  it('rota scanner sem exames disponíveis retorna noop e limpa lastSynced', () => {
+    const route: Route = { type: 'scanner' };
+    const res = decideRouteSync({
+      route,
+      exams: [],
       lastSyncedExamId: null,
       currentExamId: '',
       activeExamId: null,

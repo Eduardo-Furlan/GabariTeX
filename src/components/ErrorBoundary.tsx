@@ -1,5 +1,6 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, Copy, Check } from 'lucide-react';
+import { Button } from './ui/Button';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -59,16 +60,16 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       const { error, errorInfo, copied } = this.state;
 
       return (
-        <div className="max-w-3xl mx-auto my-8 p-6 bg-white rounded-2xl shadow-sm border border-slate-200 animate-in fade-in duration-200">
+        <div className="max-w-3xl mx-auto my-8 p-6 bg-white rounded-card shadow-sm border border-slate-200 screen-enter">
           <div className="flex items-start gap-3.5 mb-5">
             <div className="w-12 h-12 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 flex items-center justify-center text-rose-600 dark:text-rose-400 shrink-0">
               <AlertTriangle className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-slate-800 leading-tight">
+              <h2 className="text-lg font-display font-bold text-slate-800 leading-tight">
                 {fallbackTitle}
               </h2>
-              <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+              <p className="text-body text-slate-600 mt-1 leading-relaxed">
                 Um erro inesperado de execução ocorreu durante a renderização deste componente. Seus dados continuam salvos no perfil.
               </p>
             </div>
@@ -83,46 +84,35 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           )}
 
           {error?.stack && (
-            <details className="mb-5 bg-slate-950 rounded-xl border border-slate-800 overflow-hidden text-xs">
+            <details className="mb-5 bg-scrim rounded-xl border border-slate-800 overflow-hidden text-xs">
               <summary className="px-4 py-2.5 font-mono font-semibold text-slate-400 hover:text-slate-200 cursor-pointer select-none transition">
                 Exibir rastreamento técnico detalhado (stack trace)
               </summary>
-              <div className="p-4 pt-2 border-t border-slate-800 overflow-x-auto max-h-60 text-[11px] font-mono text-rose-300 whitespace-pre-wrap leading-relaxed">
+              <div className="p-4 pt-2 border-t border-slate-800 overflow-x-auto max-h-60 text-meta font-mono text-rose-300 whitespace-pre-wrap leading-relaxed">
                 {error.stack}
                 {errorInfo?.componentStack && `\n\nComponentes:\n${errorInfo.componentStack}`}
               </div>
             </details>
           )}
 
-          <div className="flex items-center justify-between flex-wrap gap-2.5 pt-2 border-t border-slate-100">
-            <button
-              type="button"
+          <div className="flex items-center justify-between flex-wrap gap-2.5 pt-3 border-t border-slate-100">
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={this.handleCopyError}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-xs font-semibold text-slate-700 transition"
+              icon={copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-slate-500" />}
             >
-              {copied ? (
-                <>
-                  <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                  <span className="text-emerald-700 dark:text-emerald-300">Copiado!</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="w-3.5 h-3.5 text-slate-500" />
-                  <span>Copiar Detalhes do Erro</span>
-                </>
-              )}
-            </button>
+              {copied ? 'Copiado!' : 'Copiar detalhes'}
+            </Button>
 
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={this.handleReset}
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-on-accent text-xs font-bold rounded-lg shadow-sm transition active:scale-95"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-                <span>Tentar Novamente</span>
-              </button>
-            </div>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={this.handleReset}
+              icon={<RefreshCw className="w-4 h-4" />}
+            >
+              Tentar novamente
+            </Button>
           </div>
         </div>
       );

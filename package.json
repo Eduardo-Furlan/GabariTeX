@@ -1,7 +1,7 @@
 {
   "name": "GabariTeX",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Gerador de provas com LaTeX e corretor óptico de folhas de respostas com QR Code criptografado",
   "license": "GPL-3.0-or-later",
   "author": "Eduardo Furlan, Eduardo C. Lunardi",
@@ -30,12 +30,16 @@
     "docs:screenshots": "node scripts/docs-screenshots.mjs"
   },
   "dependencies": {
+    "@fontsource-variable/bricolage-grotesque": "5.3.0",
+    "@fontsource-variable/instrument-sans": "5.3.0",
+    "@radix-ui/react-dialog": "1.1.23",
     "@tauri-apps/api": "^2.12.4",
     "@tauri-apps/plugin-opener": "^2.7.2",
     "fflate": "^0.8.3",
     "html5-qrcode": "^2.3.8",
     "katex": "^0.16.11",
     "lucide-react": "^0.474.0",
+    "motion": "13.5.1",
     "qrcode": "^1.5.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
@@ -49,6 +53,7 @@
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
+    "playwright": "^1.64.1",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.6.3",

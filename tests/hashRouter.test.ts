@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseHash, formatHash, Route } from '../src/router/hashRouter';
+import { parseHash, formatHash, Route, areRoutesEqual } from '../src/router/hashRouter';
 
 describe('hashRouter (Plano 10 §2.7 & §5)', () => {
   it('converte #/provas para rota de biblioteca de provas', () => {
@@ -106,6 +106,23 @@ describe('hashRouter (Plano 10 §2.7 & §5)', () => {
       const parsed = parseHash(hash);
       expect(parsed).toEqual(r);
     }
+  });
+
+  it('compara igualdade de rotas para evitar re-renderizacoes espurias', () => {
+    expect(areRoutesEqual({ type: 'exams' }, { type: 'exams' })).toBe(true);
+    expect(areRoutesEqual({ type: 'exams' }, { type: 'classes' })).toBe(false);
+    expect(
+      areRoutesEqual(
+        { type: 'exam_step', examId: 'ex-1', step: 'criar' },
+        { type: 'exam_step', examId: 'ex-1', step: 'criar' }
+      )
+    ).toBe(true);
+    expect(
+      areRoutesEqual(
+        { type: 'exam_step', examId: 'ex-1', step: 'criar' },
+        { type: 'exam_step', examId: 'ex-2', step: 'criar' }
+      )
+    ).toBe(false);
   });
 });
 
