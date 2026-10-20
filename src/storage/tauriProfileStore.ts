@@ -4,6 +4,25 @@ import { BankMeta, BankQuestion, BankData } from '../types/bank';
 import { SaveResult } from '../utils/storage';
 import { ProfileStore } from './profileStore';
 
+async function mapConcurrent<T, R>(
+  items: readonly T[],
+  limit: number,
+  fn: (item: T) => Promise<R>
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let index = 0;
+  const workerCount = Math.min(limit, items.length);
+  if (workerCount <= 0) return [];
+  const workers = Array.from({ length: workerCount }, async () => {
+    while (index < items.length) {
+      const i = index++;
+      results[i] = await fn(items[i]);
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
+
 export class TauriProfileStore implements ProfileStore {
   private async getInvoke() {
     const { invoke } = await import('@tauri-apps/api/core');
@@ -288,6 +307,12 @@ export class TauriProfileStore implements ProfileStore {
         await this.putSettings(settings);
       }
 
+      // 8. Se data.bank foi fornecido, substitui o banco atômico
+      if (data.bank !== undefined) {
+        const bankRes = await this.replaceBank(data.bank);
+        if (!bankRes.ok) return bankRes;
+      }
+
       return { ok: true };
     } catch (err: unknown) {
       return { ok: false, error: err, reason: 'unknown' };
@@ -295,27 +320,131 @@ export class TauriProfileStore implements ProfileStore {
   }
 
   async getBankMeta(): Promise<BankMeta> {
-    throw new Error('Not implemented yet');
+    try {
+      const invoke = await this.getInvoke();
+      let resp: ArrayBuffer;
+      try {
+        resp = await invoke<ArrayBuffer>('store_get', { key: 'bank-meta', source: 'main' });
+      } catch {
+        resp = await invoke<ArrayBuffer>('store_get', { key: 'bank-meta', source: 'bak' });
+      }
+      const text = new TextDecoder().decode(new Uint8Array(resp));
+      return JSON.parse(text) as BankMeta;
+    } catch {
+      return { schema: 1, groups: [], tags: [], blueprints: [] };
+    }
   }
 
-  async putBankMeta(_meta: BankMeta): Promise<SaveResult> {
-    throw new Error('Not implemented yet');
+  async putBankMeta(meta: BankMeta): Promise<SaveResult> {
+    try {
+      const invoke = await this.getInvoke();
+      const bytes = new TextEncoder().encode(JSON.stringify(meta));
+      await invoke('store_put', bytes, {
+        headers: {
+          'x-store-key': 'bank-meta',
+        },
+      });
+      return { ok: true };
+    } catch (err: unknown) {
+      const msg = String(err);
+      const isQuota = msg.includes('disk_full') || msg.includes('space');
+      return { ok: false, error: err, reason: isQuota ? 'disk_full' : 'unknown' };
+    }
   }
 
   async listBankQuestions(): Promise<BankQuestion[]> {
-    throw new Error('Not implemented yet');
+    try {
+      const invoke = await this.getInvoke();
+      const keys = await invoke<string[]>('store_list', { prefix: 'bank/' });
+
+      const questions = await mapConcurrent(keys, 16, async (key) => {
+        try {
+          let resp: ArrayBuffer;
+          try {
+            resp = await invoke<ArrayBuffer>('store_get', { key, source: 'main' });
+          } catch {
+            resp = await invoke<ArrayBuffer>('store_get', { key, source: 'bak' });
+          }
+          const text = new TextDecoder().decode(new Uint8Array(resp));
+          return JSON.parse(text) as BankQuestion;
+        } catch {
+          return null;
+        }
+      });
+
+      return questions.filter((q): q is BankQuestion => q !== null);
+    } catch {
+      return [];
+    }
   }
 
-  async putBankQuestions(_qs: BankQuestion[]): Promise<SaveResult> {
-    throw new Error('Not implemented yet');
+  async putBankQuestions(qs: BankQuestion[]): Promise<SaveResult> {
+    try {
+      const invoke = await this.getInvoke();
+      for (const q of qs) {
+        const bytes = new TextEncoder().encode(JSON.stringify(q));
+        await invoke('store_put', bytes, {
+          headers: {
+            'x-store-key': `bank/${q.id}`,
+          },
+        });
+      }
+      return { ok: true };
+    } catch (err: unknown) {
+      const msg = String(err);
+      const isQuota = msg.includes('disk_full') || msg.includes('space');
+      return { ok: false, error: err, reason: isQuota ? 'disk_full' : 'unknown' };
+    }
   }
 
-  async deleteBankQuestions(_ids: string[]): Promise<void> {
-    throw new Error('Not implemented yet');
+  async deleteBankQuestions(ids: string[]): Promise<void> {
+    try {
+      const invoke = await this.getInvoke();
+      for (const id of ids) {
+        try {
+          await invoke('store_delete', { key: `bank/${id}` });
+        } catch {
+          // ignore
+        }
+      }
+    } catch {
+      // ignore
+    }
   }
 
-  async replaceBank(_bank: BankData): Promise<SaveResult> {
-    throw new Error('Not implemented yet');
+  async replaceBank(bank: BankData): Promise<SaveResult> {
+    try {
+      const invoke = await this.getInvoke();
+
+      // Delete existing bank questions
+      const existingKeys = await invoke<string[]>('store_list', { prefix: 'bank/' });
+      for (const k of existingKeys) {
+        try {
+          await invoke('store_delete', { key: k });
+        } catch {
+          // ignore
+        }
+      }
+
+      // Save bank meta
+      const metaToSave: BankMeta = {
+        schema: 1,
+        groups: bank.groups || [],
+        tags: bank.tags || [],
+        blueprints: bank.blueprints || [],
+      };
+      const metaRes = await this.putBankMeta(metaToSave);
+      if (!metaRes.ok) return metaRes;
+
+      // Save questions
+      if (bank.questions && bank.questions.length > 0) {
+        const qRes = await this.putBankQuestions(bank.questions);
+        if (!qRes.ok) return qRes;
+      }
+
+      return { ok: true };
+    } catch (err: unknown) {
+      return { ok: false, error: err, reason: 'unknown' };
+    }
   }
 }
-
