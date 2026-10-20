@@ -1,5 +1,6 @@
 import { Exam, Classroom, GradingRecord } from '../types/exam';
 import { ProfileSettings, ExamMeta, ProfileData } from '../types/profile';
+import { BankMeta, BankQuestion, BankData } from '../types/bank';
 import { SaveResult } from '../utils/storage';
 import { ProfileStore } from './profileStore';
 import { MemoryProfileStore } from './memoryProfileStore';
@@ -384,6 +385,30 @@ export class IndexedDbProfileStore implements ProfileStore {
         reason: isQuota ? 'quota' : 'unknown',
       };
     }
+  }
+
+  async getBankMeta(): Promise<BankMeta> {
+    return this.getFallback().getBankMeta();
+  }
+
+  async putBankMeta(meta: BankMeta): Promise<SaveResult> {
+    return this.getFallback().putBankMeta(meta);
+  }
+
+  async listBankQuestions(): Promise<BankQuestion[]> {
+    return this.getFallback().listBankQuestions();
+  }
+
+  async putBankQuestions(qs: BankQuestion[]): Promise<SaveResult> {
+    return this.getFallback().putBankQuestions(qs);
+  }
+
+  async deleteBankQuestions(ids: string[]): Promise<void> {
+    return this.getFallback().deleteBankQuestions(ids);
+  }
+
+  async replaceBank(bank: BankData): Promise<SaveResult> {
+    return this.getFallback().replaceBank(bank);
   }
 }
 

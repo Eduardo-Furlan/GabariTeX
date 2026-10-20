@@ -1,5 +1,6 @@
 import { Exam, Classroom, GradingRecord } from '../types/exam';
 import { ProfileSettings, ExamMeta, ProfileData } from '../types/profile';
+import { BankMeta, BankQuestion, BankData } from '../types/bank';
 import { SaveResult } from '../utils/storage';
 import { ProfileStore } from './profileStore';
 
@@ -291,6 +292,30 @@ export class TauriProfileStore implements ProfileStore {
     } catch (err: unknown) {
       return { ok: false, error: err, reason: 'unknown' };
     }
+  }
+
+  async getBankMeta(): Promise<BankMeta> {
+    throw new Error('Not implemented yet');
+  }
+
+  async putBankMeta(_meta: BankMeta): Promise<SaveResult> {
+    throw new Error('Not implemented yet');
+  }
+
+  async listBankQuestions(): Promise<BankQuestion[]> {
+    throw new Error('Not implemented yet');
+  }
+
+  async putBankQuestions(_qs: BankQuestion[]): Promise<SaveResult> {
+    throw new Error('Not implemented yet');
+  }
+
+  async deleteBankQuestions(_ids: string[]): Promise<void> {
+    throw new Error('Not implemented yet');
+  }
+
+  async replaceBank(_bank: BankData): Promise<SaveResult> {
+    throw new Error('Not implemented yet');
   }
 }
 

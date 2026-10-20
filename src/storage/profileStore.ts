@@ -1,5 +1,6 @@
 import { Exam, Classroom, GradingRecord } from '../types/exam';
 import { ProfileSettings, ExamMeta, ProfileData } from '../types/profile';
+import { BankMeta, BankQuestion, BankData } from '../types/bank';
 import { SaveResult } from '../utils/storage';
 
 export interface ProfileStore {
@@ -14,5 +15,12 @@ export interface ProfileStore {
   getSettings(): Promise<ProfileSettings>;
   putSettings(s: ProfileSettings): Promise<void>;
   replaceProfile(data: ProfileData, settings?: ProfileSettings): Promise<SaveResult>;
+
+  getBankMeta(): Promise<BankMeta>;
+  putBankMeta(meta: BankMeta): Promise<SaveResult>;
+  listBankQuestions(): Promise<BankQuestion[]>;
+  putBankQuestions(qs: BankQuestion[]): Promise<SaveResult>;
+  deleteBankQuestions(ids: string[]): Promise<void>;
+  replaceBank(bank: BankData): Promise<SaveResult>;
 }
 
