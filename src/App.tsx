@@ -34,6 +34,7 @@ import './styles/print.css';
 const VALID_STEPS: StepId[] = ['criar', 'versoes', 'imprimir', 'corrigir', 'notas'];
 
 const BankScreen = lazyWithRetry(() => import('./screens/BankScreen'));
+const GeneratorScreen = lazyWithRetry(() => import('./screens/GeneratorScreen'));
 
 const AppContent: React.FC = () => {
   const {
@@ -235,6 +236,10 @@ const AppContent: React.FC = () => {
           {route.type === 'classes' && <ClassesScreen />}
 
           {route.type === 'bank' && <BankScreen onNavigate={navigate} />}
+
+          {route.type === 'bank_generate' && (
+            <GeneratorScreen blueprintId={route.blueprintId} onNavigate={navigate} />
+          )}
 
           {route.type === 'scanner' && <ScannerScreen onNavigate={navigate} />}
 

@@ -4,11 +4,8 @@ import {
   Unlock,
   RefreshCw,
   Sparkles,
-  AlertTriangle,
-  Layers,
   Dices,
   Plus,
-  BookOpen,
 } from 'lucide-react';
 import {
   Blueprint,
@@ -36,7 +33,6 @@ export interface GeneratorPreviewProps {
   onPicksChange: (picks: Pick[]) => void;
   onSeedChange: (seed: number) => void;
   excludeQuestionIds?: ReadonlySet<string>;
-  onClearExclusions?: () => void;
   onCreateExam?: (picks: Pick[], title: string) => void;
   onAppendToExam?: (picks: Pick[]) => void;
   hasActiveExam?: boolean;
@@ -52,7 +48,6 @@ export const GeneratorPreview: React.FC<GeneratorPreviewProps> = ({
   onPicksChange,
   onSeedChange,
   excludeQuestionIds = new Set(),
-  onClearExclusions,
   onCreateExam,
   onAppendToExam,
   hasActiveExam = false,

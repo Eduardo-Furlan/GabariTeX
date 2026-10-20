@@ -5,15 +5,11 @@ import {
   AlertTriangle,
   XCircle,
   CheckCircle2,
-  Sparkles,
-  Folder,
-  Tag as TagIcon,
-  Plus,
 } from 'lucide-react';
 import { Blueprint, BankGroup, BankTag } from '../../types/bank';
 import { parse } from '../../utils/bank/query/parser';
 import { print } from '../../utils/bank/query/printer';
-import { getSuggestions, AutocompleteItem } from '../../utils/bank/query/suggest';
+import { getSuggestions, SuggestionItem } from '../../utils/bank/query/suggest';
 import { Diagnostic } from '../../utils/bank/query/diagnostics';
 import { pathOf } from '../../utils/bank/tree';
 import { Button } from '../ui/Button';
@@ -37,7 +33,7 @@ export const TextRuleEditor: React.FC<TextRuleEditorProps> = ({
   const [text, setText] = useState(() => print(blueprint.blocks, groups, tags, { lang: 'pt' }));
   const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([]);
   const [hasCopied, setHasCopied] = useState(false);
-  const [suggestions, setSuggestions] = useState<AutocompleteItem[]>([]);
+  const [suggestions, setSuggestions] = useState<SuggestionItem[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -46,8 +42,8 @@ export const TextRuleEditor: React.FC<TextRuleEditorProps> = ({
 
   // Parse function
   const runParse = useCallback(
-    (currentText: string, currentLang: 'pt' | 'en') => {
-      const result = parse(currentText, { groups, tags, lang: currentLang });
+    (currentText: string) => {
+      const result = parse(currentText, groups, tags);
       setDiagnostics(result.diagnostics);
 
       // Only update parent if there are valid blocks and no syntax errors
@@ -72,7 +68,7 @@ export const TextRuleEditor: React.FC<TextRuleEditorProps> = ({
     }
     const printed = print(blueprint.blocks, groups, tags, { lang });
     setText(printed);
-    runParse(printed, lang);
+    runParse(printed);
   }, [blueprint, groups, tags, lang, runParse]);
 
   // Handle text change with debounce
@@ -82,14 +78,14 @@ export const TextRuleEditor: React.FC<TextRuleEditorProps> = ({
 
     // Update suggestions at cursor
     const cursorOffset = e.target.selectionStart ?? val.length;
-    const items = getSuggestions(val, cursorOffset, { groups, tags, lang });
+    const items = getSuggestions(val, cursorOffset, groups, tags, lang);
     setSuggestions(items.slice(0, 8));
 
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
     debounceTimerRef.current = setTimeout(() => {
-      runParse(val, lang);
+      runParse(val);
     }, 250);
   };
 
@@ -98,7 +94,7 @@ export const TextRuleEditor: React.FC<TextRuleEditorProps> = ({
     setLang(newLang);
     const reprinted = print(blueprint.blocks, groups, tags, { lang: newLang });
     setText(reprinted);
-    runParse(reprinted, newLang);
+    runParse(reprinted);
   };
 
   // Copy to clipboard
@@ -116,15 +112,8 @@ export const TextRuleEditor: React.FC<TextRuleEditorProps> = ({
   // Move caret to diagnostic location
   const handleGoToDiagnostic = (d: Diagnostic) => {
     if (!textareaRef.current) return;
-    const lines = text.split('\n');
-    let offset = 0;
-    for (let i = 0; i < d.line - 1 && i < lines.length; i++) {
-      offset += lines[i].length + 1; // +1 for newline
-    }
-    offset += Math.max(0, d.col - 1);
-
     textareaRef.current.focus();
-    textareaRef.current.setSelectionRange(offset, offset + Math.max(1, d.length));
+    textareaRef.current.setSelectionRange(d.start, d.end);
   };
 
   // Insert snippet at caret
@@ -145,7 +134,7 @@ export const TextRuleEditor: React.FC<TextRuleEditorProps> = ({
       }
     }, 10);
 
-    runParse(nextText, lang);
+    runParse(nextText);
   };
 
   // Group and Tag insertion options
@@ -340,7 +329,7 @@ export const TextRuleEditor: React.FC<TextRuleEditorProps> = ({
                         isError ? 'text-rose-900 dark:text-rose-300' : 'text-amber-900 dark:text-amber-300'
                       }`}
                     >
-                      Linha {d.line}, Coluna {d.col}: {d.message}
+                      Linha {d.line}, Coluna {d.column}: {d.message}
                     </p>
                     {d.suggestion && (
                       <p className="text-2xs text-slate-600 mt-0.5">
