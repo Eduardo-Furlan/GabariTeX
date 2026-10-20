@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, Library } from 'lucide-react';
 import { useProfile } from '../context/ProfileContext';
 import { ExamHeaderEditor } from '../components/editor/ExamHeaderEditor';
 import { QuestionList } from '../components/editor/QuestionList';
 import { ImportQuestionsModal } from '../components/editor/ImportQuestionsModal';
+import { AddFromBankModal } from '../components/editor/AddFromBankModal';
 import { Exam } from '../types/exam';
 import { EmptyState, BubbleGridIllustration } from '../components/ui/EmptyState';
 import { Button } from '../components/ui/Button';
@@ -11,6 +12,7 @@ import { Button } from '../components/ui/Button';
 export const EditorScreen: React.FC = () => {
   const { exam, exams, store, updateExam, importQuestions, loadSampleMathExam } = useProfile();
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isAddFromBankModalOpen, setIsAddFromBankModalOpen] = useState(false);
 
   const handleExamChange = (updated: Exam) => {
     updateExam(updated);
@@ -35,6 +37,13 @@ export const EditorScreen: React.FC = () => {
               >
                 Carregar Exemplo Completo de Matemática
               </Button>
+              <Button
+                variant="secondary"
+                icon={<Library className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />}
+                onClick={() => setIsAddFromBankModalOpen(true)}
+              >
+                Adicionar do Banco
+              </Button>
               {exams.length > 1 && (
                 <Button
                   variant="secondary"
@@ -53,6 +62,7 @@ export const EditorScreen: React.FC = () => {
         questions={exam.questions}
         onChange={(updatedQuestions) => handleExamChange({ ...exam, questions: updatedQuestions })}
         onOpenImportModal={() => setIsImportModalOpen(true)}
+        onOpenAddFromBankModal={() => setIsAddFromBankModalOpen(true)}
       />
 
       <ImportQuestionsModal
@@ -62,6 +72,13 @@ export const EditorScreen: React.FC = () => {
         currentExamId={exam.id}
         currentQuestionCount={exam.questions.length}
         store={store}
+        onImport={importQuestions}
+      />
+
+      <AddFromBankModal
+        isOpen={isAddFromBankModalOpen}
+        onClose={() => setIsAddFromBankModalOpen(false)}
+        currentQuestions={exam.questions}
         onImport={importQuestions}
       />
     </div>

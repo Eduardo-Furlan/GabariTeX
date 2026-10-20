@@ -3,7 +3,7 @@ import { AnimatePresence } from 'motion/react';
 import * as m from 'motion/react-m';
 import { Question } from '../../types/exam';
 import { QuestionEditor } from './QuestionEditor';
-import { Plus, Layers, Calculator, BookOpen } from 'lucide-react';
+import { Plus, Layers, Calculator, BookOpen, Library } from 'lucide-react';
 import { MAX_QUESTIONS, remainingQuestions } from '../../utils/examLimits';
 import { springs } from '../../ui/motion/tokens';
 import { Button } from '../ui/Button';
@@ -17,12 +17,14 @@ interface QuestionListProps {
   questions: Question[];
   onChange: (updatedQuestions: Question[]) => void;
   onOpenImportModal?: () => void;
+  onOpenAddFromBankModal?: () => void;
 }
 
 export const QuestionList: React.FC<QuestionListProps> = ({
   questions,
   onChange,
   onOpenImportModal,
+  onOpenAddFromBankModal,
 }) => {
   const [movedId, setMovedId] = useState<string | null>(null);
 
@@ -165,6 +167,22 @@ export const QuestionList: React.FC<QuestionListProps> = ({
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
+            {onOpenAddFromBankModal && (
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={isLimitReached}
+                onClick={onOpenAddFromBankModal}
+                icon={<Library className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />}
+                title={
+                  isLimitReached
+                    ? 'Limite de 40 questões atingido.'
+                    : 'Adicionar questões do Banco de Questões'
+                }
+              >
+                Adicionar do Banco
+              </Button>
+            )}
             {onOpenImportModal && (
               <Button
                 variant="secondary"
