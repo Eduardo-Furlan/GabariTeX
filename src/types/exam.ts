@@ -17,6 +17,7 @@ export interface Question {
   options?: QuestionOption[];
   linesForAnswer?: number;
   annulled?: 'give_points' | 'discard';
+  sourceQuestionId?: string;
 }
 
 export interface ExamHeader {

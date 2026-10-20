@@ -1,9 +1,11 @@
 import { Exam, Classroom, GradingRecord } from './exam';
+import { BankData, BankShareManifest } from './bank';
 
 export interface ProfileData {
   exams: Exam[];
   classes: Classroom[];
   records: GradingRecord[];
+  bank?: BankData;
 }
 
 export interface ProfileSettings {
@@ -30,19 +32,27 @@ export interface ProfileManifest {
     classes: number;
     records: number;
     assets: number;
+    bankQuestions?: number;
+    bankGroups?: number;
+    bankTags?: number;
+    bankBlueprints?: number;
   };
   includes: {
     records: boolean;
     classes: boolean;
     passwords: boolean;
+    bank?: boolean;
   };
   files: Record<string, string>;
 }
+
+export type AnyGabaritexManifest = ProfileManifest | BankShareManifest;
 
 export interface ProfileExportOptions {
   includeRecords?: boolean;
   includeClasses?: boolean;
   includePasswords?: boolean;
+  includeBank?: boolean;
   examIds?: string[];
   classIds?: string[];
 }
@@ -56,5 +66,10 @@ export interface ProfileImportSummary {
   newerExams: number;
   newClasses: number;
   newRecords: number;
+  newBankQuestions?: number;
+  existingBankQuestions?: number;
+  bankGroups?: number;
+  bankTags?: number;
+  bankBlueprints?: number;
 }
 
