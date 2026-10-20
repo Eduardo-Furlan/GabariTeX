@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import * as m from 'motion/react-m';
 import {
   BookOpen,
+  Library,
   Users,
   Camera,
   BarChart3,
@@ -33,6 +34,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isExamsActive = currentRoute.type === 'exams';
+  const isBankActive = currentRoute.type === 'bank' || currentRoute.type === 'bank_generate';
   const isClassesActive = currentRoute.type === 'classes';
   const isScannerActive =
     currentRoute.type === 'scanner' ||
@@ -118,6 +120,28 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               )}
               <BookOpen className="w-3.5 h-3.5 relative z-10" />
               <span className="relative z-10">Provas</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onNavigate({ type: 'bank' })}
+              className={cn(
+                'relative flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition focus-visible:outline-none',
+                isBankActive
+                  ? 'text-indigo-700 dark:text-indigo-300 font-bold'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              )}
+            >
+              {isBankActive && (
+                <m.span
+                  layoutId="header-nav-pill"
+                  className="absolute inset-0 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 shadow-2xs -z-0"
+                  transition={{ type: 'spring', stiffness: 420, damping: 34, mass: 0.9 }}
+                  aria-hidden="true"
+                />
+              )}
+              <Library className="w-3.5 h-3.5 relative z-10" />
+              <span className="relative z-10">Banco</span>
             </button>
 
             <button
@@ -292,6 +316,23 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             >
               <BookOpen className="w-4 h-4" />
               <span>Provas</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                onNavigate({ type: 'bank' });
+              }}
+              className={cn(
+                'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-bold text-left transition',
+                isBankActive
+                  ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300'
+                  : 'text-slate-700 hover:bg-slate-100'
+              )}
+            >
+              <Library className="w-4 h-4" />
+              <span>Banco</span>
             </button>
 
             <button

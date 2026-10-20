@@ -119,7 +119,29 @@ describe('decideRouteSync', () => {
     expect(res.nextLastSyncedExamId).toBeNull();
   });
 
-  it('demais rotas (ex: exams, classes) retornam noop e limpam lastSynced', () => {
+  it('demais rotas (ex: exams, classes, bank, bank_generate) retornam noop e limpam lastSynced', () => {
+    const bankRoute: Route = { type: 'bank' };
+    const resBank = decideRouteSync({
+      route: bankRoute,
+      exams: dummyExams,
+      lastSyncedExamId: 'exam-1',
+      currentExamId: 'exam-1',
+      activeExamId: 'exam-1',
+    });
+    expect(resBank.action).toEqual({ type: 'noop' });
+    expect(resBank.nextLastSyncedExamId).toBeNull();
+
+    const genRoute: Route = { type: 'bank_generate', blueprintId: 'bp-1' };
+    const resGen = decideRouteSync({
+      route: genRoute,
+      exams: dummyExams,
+      lastSyncedExamId: 'exam-1',
+      currentExamId: 'exam-1',
+      activeExamId: 'exam-1',
+    });
+    expect(resGen.action).toEqual({ type: 'noop' });
+    expect(resGen.nextLastSyncedExamId).toBeNull();
+
     const route: Route = { type: 'exams' };
     const res = decideRouteSync({
       route,

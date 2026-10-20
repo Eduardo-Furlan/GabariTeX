@@ -13,6 +13,17 @@ describe('hashRouter (Plano 10 §2.7 & §5)', () => {
     expect(parseHash('#turmas')).toEqual({ type: 'classes' });
   });
 
+  it('converte #/banco para rota do banco de questões', () => {
+    expect(parseHash('#/banco')).toEqual({ type: 'bank' });
+    expect(parseHash('#banco')).toEqual({ type: 'bank' });
+  });
+
+  it('converte #/banco/gerar para rotas do gerador de provas com ou sem blueprint', () => {
+    expect(parseHash('#/banco/gerar')).toEqual({ type: 'bank_generate', blueprintId: undefined });
+    expect(parseHash('#banco/gerar')).toEqual({ type: 'bank_generate', blueprintId: undefined });
+    expect(parseHash('#/banco/gerar/bp-42')).toEqual({ type: 'bank_generate', blueprintId: 'bp-42' });
+  });
+
   it('converte #/corretor e #/scanner para rota autônoma do corretor', () => {
     expect(parseHash('#/corretor')).toEqual({ type: 'scanner' });
     expect(parseHash('#corretor')).toEqual({ type: 'scanner' });
@@ -72,6 +83,9 @@ describe('hashRouter (Plano 10 §2.7 & §5)', () => {
   it('formata rotas corretamente', () => {
     expect(formatHash({ type: 'exams' }, '')).toBe('#/provas');
     expect(formatHash({ type: 'classes' }, '')).toBe('#/turmas');
+    expect(formatHash({ type: 'bank' }, '')).toBe('#/banco');
+    expect(formatHash({ type: 'bank_generate' }, '')).toBe('#/banco/gerar');
+    expect(formatHash({ type: 'bank_generate', blueprintId: 'bp-42' }, '')).toBe('#/banco/gerar/bp-42');
     expect(
       formatHash({ type: 'exam_step', examId: 'prova-123', step: 'corrigir' }, '')
     ).toBe('#/prova/prova-123/corrigir');
@@ -93,6 +107,9 @@ describe('hashRouter (Plano 10 §2.7 & §5)', () => {
     const routes: Route[] = [
       { type: 'exams' },
       { type: 'classes' },
+      { type: 'bank' },
+      { type: 'bank_generate' },
+      { type: 'bank_generate', blueprintId: 'bp-1' },
       { type: 'scanner' },
       { type: 'exam_step', examId: 'fisica-1', step: 'criar' },
       { type: 'exam_step', examId: 'fisica-1', step: 'versoes' },
@@ -111,6 +128,20 @@ describe('hashRouter (Plano 10 §2.7 & §5)', () => {
   it('compara igualdade de rotas para evitar re-renderizacoes espurias', () => {
     expect(areRoutesEqual({ type: 'exams' }, { type: 'exams' })).toBe(true);
     expect(areRoutesEqual({ type: 'exams' }, { type: 'classes' })).toBe(false);
+    expect(areRoutesEqual({ type: 'bank' }, { type: 'bank' })).toBe(true);
+    expect(areRoutesEqual({ type: 'bank' }, { type: 'exams' })).toBe(false);
+    expect(
+      areRoutesEqual(
+        { type: 'bank_generate', blueprintId: 'bp-1' },
+        { type: 'bank_generate', blueprintId: 'bp-1' }
+      )
+    ).toBe(true);
+    expect(
+      areRoutesEqual(
+        { type: 'bank_generate', blueprintId: 'bp-1' },
+        { type: 'bank_generate', blueprintId: 'bp-2' }
+      )
+    ).toBe(false);
     expect(
       areRoutesEqual(
         { type: 'exam_step', examId: 'ex-1', step: 'criar' },

@@ -23,6 +23,7 @@ import { ConfirmHost } from './components/ui/ConfirmHost';
 import { Modal } from './components/ui/Modal';
 import { Button } from './components/ui/Button';
 import { BubbleLoader } from './components/ui/BubbleLoader';
+import { lazyWithRetry } from './components/ui/lazyWithRetry';
 import { useScrolled } from './hooks/useScrolled';
 import { useRetained } from './hooks/useRetained';
 import { triggerDesktopSnapshot } from './platform/snapshots';
@@ -31,6 +32,8 @@ import { ProfileData, ProfileSettings } from './types/profile';
 import './styles/print.css';
 
 const VALID_STEPS: StepId[] = ['criar', 'versoes', 'imprimir', 'corrigir', 'notas'];
+
+const BankScreen = lazyWithRetry(() => import('./screens/BankScreen'));
 
 const AppContent: React.FC = () => {
   const {
@@ -230,6 +233,8 @@ const AppContent: React.FC = () => {
           )}
 
           {route.type === 'classes' && <ClassesScreen />}
+
+          {route.type === 'bank' && <BankScreen onNavigate={navigate} />}
 
           {route.type === 'scanner' && <ScannerScreen onNavigate={navigate} />}
 
