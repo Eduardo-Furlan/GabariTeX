@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Exam, ExamVersion, GradingRecord, Classroom, Question } from '../types/exam';
 import { ProfileData, ProfileSettings, ExamMeta } from '../types/profile';
+import { BankData } from '../types/bank';
 import { initialSampleExam, emptyExam } from '../utils/sampleExam';
 import { generateExamVersions } from '../utils/randomizer';
 import { generateExamPassword } from '../utils/crypto';
@@ -305,10 +306,28 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
         const examMap = new Map(validExams.map((e) => [e.id, e]));
         if (exam.id) examMap.set(exam.id, exam);
 
+        const [bankMeta, bankQuestions] = await Promise.all([
+          store.getBankMeta(),
+          store.listBankQuestions(),
+        ]);
+        const bank: BankData | undefined =
+          bankMeta.groups.length > 0 ||
+          bankMeta.tags.length > 0 ||
+          bankMeta.blueprints.length > 0 ||
+          bankQuestions.length > 0
+            ? {
+                groups: bankMeta.groups,
+                tags: bankMeta.tags,
+                blueprints: bankMeta.blueprints,
+                questions: bankQuestions,
+              }
+            : undefined;
+
         const currentProfileData: ProfileData = {
           exams: Array.from(examMap.values()),
           classes,
           records,
+          ...(bank ? { bank } : {}),
         };
 
         await checkAndRunDailySnapshot(currentProfileData);
@@ -698,8 +717,24 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
           try {
             const fullExams = await Promise.all(exams.map((m) => store.getExam(m.id)));
             const validExams = fullExams.filter((e): e is Exam => Boolean(e));
+            const [bankMeta, bankQuestions] = await Promise.all([
+              store.getBankMeta(),
+              store.listBankQuestions(),
+            ]);
+            const bank: BankData | undefined =
+              bankMeta.groups.length > 0 ||
+              bankMeta.tags.length > 0 ||
+              bankMeta.blueprints.length > 0 ||
+              bankQuestions.length > 0
+                ? {
+                    groups: bankMeta.groups,
+                    tags: bankMeta.tags,
+                    blueprints: bankMeta.blueprints,
+                    questions: bankQuestions,
+                  }
+                : undefined;
             await triggerDesktopSnapshot(
-              { exams: validExams, classes, records },
+              { exams: validExams, classes, records, ...(bank ? { bank } : {}) },
               'pre-delete'
             );
           } catch (err) {

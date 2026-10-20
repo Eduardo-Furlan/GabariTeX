@@ -168,6 +168,59 @@ describe('platform snapshots (Plan 12 §6 & §8)', () => {
     expect(dailySaved).toBe('gabaritex-test.zip');
   });
 
+  it('inclui banco de questões no snapshot do desktop quando presente no perfil', async () => {
+    vi.stubGlobal('__DESKTOP__', true);
+    let capturedZip: Uint8Array | null = null;
+    const mockInvoke = vi.fn().mockImplementation(async (cmd: string, args: any) => {
+      if (cmd === 'snapshot_write') {
+        capturedZip = args;
+        return 'gabaritex-snapshot-with-bank.zip';
+      }
+      return null;
+    });
+    vi.doMock('@tauri-apps/api/core', () => ({
+      invoke: mockInvoke,
+    }));
+
+    const { triggerDesktopSnapshot } = await import('../src/platform/snapshots');
+    const { parseProfileZip } = await import('../src/utils/profileZip');
+
+    const profileWithBank = {
+      exams: [],
+      classes: [],
+      records: [],
+      bank: {
+        groups: [{ id: 'g1', parentId: null, name: 'História', order: 0, createdAt: '2026-01-01', updatedAt: '2026-01-01' }],
+        tags: [{ id: 't1', name: 'Brasil', color: 'green' as const, createdAt: '2026-01-01', updatedAt: '2026-01-01' }],
+        blueprints: [],
+        questions: [{
+          id: 'bq1',
+          groupId: 'g1',
+          type: 'objective' as const,
+          prompt: 'Quem proclamou a República?',
+          points: 1,
+          tagIds: ['t1'],
+          createdAt: '2026-01-01',
+          updatedAt: '2026-01-01',
+        }],
+      },
+    };
+
+    const saved = await triggerDesktopSnapshot(profileWithBank, 'com-banco');
+    expect(saved).toBe('gabaritex-snapshot-with-bank.zip');
+    expect(capturedZip).not.toBeNull();
+
+    const parsed = await parseProfileZip(capturedZip!);
+    expect(parsed.manifest.counts.bankQuestions).toBe(1);
+    expect(parsed.manifest.counts.bankGroups).toBe(1);
+    expect(parsed.manifest.includes.bank).toBe(true);
+    expect(parsed.profile.bank).toBeDefined();
+    expect(parsed.profile.bank?.groups).toHaveLength(1);
+    expect(parsed.profile.bank?.groups[0].name).toBe('História');
+    expect(parsed.profile.bank?.questions).toHaveLength(1);
+    expect(parsed.profile.bank?.questions[0].prompt).toBe('Quem proclamou a República?');
+  });
+
   it('guarantees test runs default to memoryProfileStore and do not write to user profile', async () => {
     const { getProfileStore, setProfileStore } = await import('../src/storage');
     const { MemoryProfileStore } = await import('../src/storage/memoryProfileStore');

@@ -7,6 +7,7 @@ import {
   ProfileExportOptions,
   ProfileImportSummary,
 } from '../types/profile';
+import { BankData } from '../types/bank';
 import { sha256Hex, generateExamPassword } from './crypto';
 
 function base64ToBytes(base64: string): Uint8Array {
@@ -74,6 +75,7 @@ export async function buildProfileZip(
   const includeRecords = options.includeRecords !== false;
   const includeClasses = options.includeClasses !== false;
   const includePasswords = options.includePasswords !== false;
+  const includeBank = options.includeBank !== false;
 
   // Filtrar exames se selecionados
   let selectedExams = data.exams;
@@ -125,11 +127,32 @@ export async function buildProfileZip(
     }
   }
 
+  let clonedBank: BankData | undefined;
+  if (includeBank && data.bank) {
+    clonedBank = JSON.parse(JSON.stringify(data.bank));
+    if (clonedBank && clonedBank.questions) {
+      for (const q of clonedBank.questions) {
+        if (q.imageUrl && q.imageUrl.startsWith('data:')) {
+          const parsed = parseDataUrl(q.imageUrl);
+          if (parsed) {
+            const hash = (await sha256Hex(parsed.bytes)).slice(0, 16);
+            const assetRelPath = `assets/${hash}.${parsed.ext}`;
+            if (!assetsMap.has(assetRelPath)) {
+              assetsMap.set(assetRelPath, parsed.bytes);
+            }
+            q.imageUrl = `asset:${hash}.${parsed.ext}`;
+          }
+        }
+      }
+    }
+  }
+
   const profilePayload = {
     exams: clonedExams,
     classes: selectedClasses,
     records: selectedRecords,
     settings,
+    ...(clonedBank ? { bank: clonedBank } : {}),
   };
 
   const profileJsonStr = JSON.stringify(profilePayload, null, 2);
@@ -159,11 +182,20 @@ export async function buildProfileZip(
       classes: selectedClasses.length,
       records: selectedRecords.length,
       assets: assetsMap.size,
+      ...(clonedBank
+        ? {
+            bankQuestions: clonedBank.questions?.length ?? 0,
+            bankGroups: clonedBank.groups?.length ?? 0,
+            bankTags: clonedBank.tags?.length ?? 0,
+            bankBlueprints: clonedBank.blueprints?.length ?? 0,
+          }
+        : {}),
     },
     includes: {
       records: includeRecords,
       classes: includeClasses,
       passwords: includePasswords,
+      ...(clonedBank ? { bank: true } : {}),
     },
     files: fileHashes,
   };
@@ -277,6 +309,7 @@ export async function parseProfileZip(
     classes?: Classroom[];
     records?: GradingRecord[];
     settings?: ProfileSettings;
+    bank?: BankData;
   };
   try {
     const profileStr = strFromU8(profileBytes);
@@ -317,12 +350,27 @@ export async function parseProfileZip(
     }
   }
 
+  if (profileData.bank && profileData.bank.questions) {
+    for (const bq of profileData.bank.questions) {
+      if (bq.imageUrl && bq.imageUrl.startsWith('asset:')) {
+        const assetName = bq.imageUrl.slice('asset:'.length);
+        const assetRelPath = `assets/${assetName}`;
+        const assetBytes = unzipped[assetRelPath];
+        if (assetBytes) {
+          const ext = assetName.split('.').pop() || 'png';
+          bq.imageUrl = assetToDataUrl(assetBytes, ext);
+        }
+      }
+    }
+  }
+
   return {
     manifest,
     profile: {
       exams,
       classes,
       records,
+      ...(profileData.bank ? { bank: profileData.bank } : {}),
     },
     settings,
     passwordsGenerated,
