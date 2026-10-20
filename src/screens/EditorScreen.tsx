@@ -5,7 +5,8 @@ import { ExamHeaderEditor } from '../components/editor/ExamHeaderEditor';
 import { QuestionList } from '../components/editor/QuestionList';
 import { ImportQuestionsModal } from '../components/editor/ImportQuestionsModal';
 import { AddFromBankModal } from '../components/editor/AddFromBankModal';
-import { Exam } from '../types/exam';
+import { SendToBankModal } from '../components/editor/SendToBankModal';
+import { Exam, Question } from '../types/exam';
 import { EmptyState, BubbleGridIllustration } from '../components/ui/EmptyState';
 import { Button } from '../components/ui/Button';
 
@@ -13,9 +14,25 @@ export const EditorScreen: React.FC = () => {
   const { exam, exams, store, updateExam, importQuestions, loadSampleMathExam } = useProfile();
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isAddFromBankModalOpen, setIsAddFromBankModalOpen] = useState(false);
+  const [isSendToBankModalOpen, setIsSendToBankModalOpen] = useState(false);
+  const [sendToBankPreselectedId, setSendToBankPreselectedId] = useState<string | null>(null);
 
   const handleExamChange = (updated: Exam) => {
     updateExam(updated);
+  };
+
+  const handleOpenSendAllToBank = () => {
+    setSendToBankPreselectedId(null);
+    setIsSendToBankModalOpen(true);
+  };
+
+  const handleOpenSendSingleToBank = (q: Question) => {
+    setSendToBankPreselectedId(q.id);
+    setIsSendToBankModalOpen(true);
+  };
+
+  const handleQuestionsUpdated = (updatedQuestions: Question[]) => {
+    updateExam({ ...exam, questions: updatedQuestions });
   };
 
   return (
@@ -63,6 +80,8 @@ export const EditorScreen: React.FC = () => {
         onChange={(updatedQuestions) => handleExamChange({ ...exam, questions: updatedQuestions })}
         onOpenImportModal={() => setIsImportModalOpen(true)}
         onOpenAddFromBankModal={() => setIsAddFromBankModalOpen(true)}
+        onOpenSendToBankModal={handleOpenSendAllToBank}
+        onSendQuestionToBank={handleOpenSendSingleToBank}
       />
 
       <ImportQuestionsModal
@@ -80,6 +99,14 @@ export const EditorScreen: React.FC = () => {
         onClose={() => setIsAddFromBankModalOpen(false)}
         currentQuestions={exam.questions}
         onImport={importQuestions}
+      />
+
+      <SendToBankModal
+        isOpen={isSendToBankModalOpen}
+        onClose={() => setIsSendToBankModalOpen(false)}
+        examQuestions={exam.questions}
+        preselectedQuestionId={sendToBankPreselectedId}
+        onQuestionsUpdated={handleQuestionsUpdated}
       />
     </div>
   );
