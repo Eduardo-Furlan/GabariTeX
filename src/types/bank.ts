@@ -1,6 +1,6 @@
-import { QuestionType, QuestionOption } from './exam';
+import { QuestionType, QuestionOption, Question } from './exam';
 
-export type { QuestionType, QuestionOption };
+export type { QuestionType, QuestionOption, Question };
 
 /**
  * A group in the question bank taxonomy.
@@ -35,23 +35,11 @@ export interface BankTag {
 }
 
 /**
- * A single reusable question in the bank.
+ * Bank-specific question metadata fields.
  */
-export interface BankQuestion {
-  id: string;
+export interface BankQuestionFields {
   /** Associated group ID, or null for "Sem Grupo" */
   groupId: string | null;
-  type: QuestionType;
-  /** Prompt text with LaTeX / KaTeX support */
-  prompt: string;
-  /** Default points when added to an exam */
-  points: number;
-  imageUrl?: string;
-  imageCaption?: string;
-  /** Objective questions: 2..5 options, exactly one correct */
-  options?: QuestionOption[];
-  /** Subjective questions: number of ruled lines */
-  linesForAnswer?: number;
   /** Tag IDs attached to this question (max 20) */
   tagIds: string[];
   /** Private notes/source remarks (never printed on exams) */
@@ -63,6 +51,11 @@ export interface BankQuestion {
   createdAt: string;
   updatedAt: string;
 }
+
+/**
+ * A single reusable question in the bank, derived from Question (omitting exam-instance fields).
+ */
+export type BankQuestion = Omit<Question, 'annulled' | 'sourceQuestionId'> & BankQuestionFields;
 
 /**
  * Source expression defining question pool for a generator rule block.

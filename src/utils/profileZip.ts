@@ -9,6 +9,7 @@ import {
 } from '../types/profile';
 import { BankData } from '../types/bank';
 import { sha256Hex, generateExamPassword } from './crypto';
+import { collectQuestionImageRefs } from './bank/figures';
 
 function base64ToBytes(base64: string): Uint8Array {
   if (typeof Buffer !== 'undefined') {
@@ -132,15 +133,17 @@ export async function buildProfileZip(
     clonedBank = JSON.parse(JSON.stringify(data.bank));
     if (clonedBank && clonedBank.questions) {
       for (const q of clonedBank.questions) {
-        if (q.imageUrl && q.imageUrl.startsWith('data:')) {
-          const parsed = parseDataUrl(q.imageUrl);
-          if (parsed) {
-            const hash = (await sha256Hex(parsed.bytes)).slice(0, 16);
-            const assetRelPath = `assets/${hash}.${parsed.ext}`;
-            if (!assetsMap.has(assetRelPath)) {
-              assetsMap.set(assetRelPath, parsed.bytes);
+        for (const ref of collectQuestionImageRefs(q)) {
+          if (ref.url.startsWith('data:')) {
+            const parsed = parseDataUrl(ref.url);
+            if (parsed) {
+              const hash = (await sha256Hex(parsed.bytes)).slice(0, 16);
+              const assetRelPath = `assets/${hash}.${parsed.ext}`;
+              if (!assetsMap.has(assetRelPath)) {
+                assetsMap.set(assetRelPath, parsed.bytes);
+              }
+              ref.setUrl(`asset:${hash}.${parsed.ext}`);
             }
-            q.imageUrl = `asset:${hash}.${parsed.ext}`;
           }
         }
       }
@@ -352,13 +355,15 @@ export async function parseProfileZip(
 
   if (profileData.bank && profileData.bank.questions) {
     for (const bq of profileData.bank.questions) {
-      if (bq.imageUrl && bq.imageUrl.startsWith('asset:')) {
-        const assetName = bq.imageUrl.slice('asset:'.length);
-        const assetRelPath = `assets/${assetName}`;
-        const assetBytes = unzipped[assetRelPath];
-        if (assetBytes) {
-          const ext = assetName.split('.').pop() || 'png';
-          bq.imageUrl = assetToDataUrl(assetBytes, ext);
+      for (const ref of collectQuestionImageRefs(bq)) {
+        if (ref.url.startsWith('asset:')) {
+          const assetName = ref.url.slice('asset:'.length);
+          const assetRelPath = `assets/${assetName}`;
+          const assetBytes = unzipped[assetRelPath];
+          if (assetBytes) {
+            const ext = assetName.split('.').pop() || 'png';
+            ref.setUrl(assetToDataUrl(assetBytes, ext));
+          }
         }
       }
     }

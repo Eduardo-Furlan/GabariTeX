@@ -2,6 +2,7 @@ import { BankQuestion, BankGroup, QuestionType } from '../../types/bank';
 import { Question } from '../../types/exam';
 import { generateBankId } from './ids';
 import { descendantIds } from './tree';
+import { getQuestionFigures, setQuestionFigures, figureKey } from './figures';
 
 export interface QuestionValidationResult {
   valid: boolean;
@@ -61,9 +62,13 @@ export function validateBankQuestion(q: Partial<BankQuestion>): QuestionValidati
 }
 
 /**
- * Normalized key for duplicate detection (prompt text + sorted option texts).
+ * Normalized key for duplicate detection (prompt text + sorted option texts + figureKey).
  */
-export function questionDuplicateKey(q: { prompt: string; options?: { text: string }[] }): string {
+export function questionDuplicateKey(q: {
+  prompt: string;
+  options?: { text: string }[];
+  [key: string]: any;
+}): string {
   const normPrompt = q.prompt
     .normalize('NFC')
     .trim()
@@ -81,7 +86,9 @@ export function questionDuplicateKey(q: { prompt: string; options?: { text: stri
     .sort()
     .join('|');
 
-  return `${normPrompt}:::${optKey}`;
+  const figKey = figureKey(q);
+
+  return `${normPrompt}:::${optKey}:::${figKey}`;
 }
 
 /**
@@ -90,17 +97,17 @@ export function questionDuplicateKey(q: { prompt: string; options?: { text: stri
  * are handled when importing into an exam.
  */
 export function toExamQuestion(bq: BankQuestion, pointsOverride?: number): Question {
-  return {
+  const q: Question = {
     id: bq.id,
     type: bq.type,
     prompt: bq.prompt,
     points: pointsOverride !== undefined ? pointsOverride : bq.points,
-    imageUrl: bq.imageUrl,
-    imageCaption: bq.imageCaption,
     options: bq.options ? bq.options.map((opt) => ({ ...opt })) : undefined,
     linesForAnswer: bq.linesForAnswer,
     sourceQuestionId: bq.id,
   };
+  setQuestionFigures(q, getQuestionFigures(bq));
+  return q;
 }
 
 /**
@@ -112,20 +119,20 @@ export function fromExamQuestion(
   tagIds: string[] = []
 ): BankQuestion {
   const now = new Date().toISOString();
-  return {
+  const bq: BankQuestion = {
     id: generateBankId(),
     groupId,
     type: q.type,
     prompt: q.prompt,
     points: q.points > 0 ? q.points : 1.0,
-    imageUrl: q.imageUrl,
-    imageCaption: q.imageCaption,
     options: q.options ? q.options.map((opt) => ({ ...opt })) : undefined,
     linesForAnswer: q.linesForAnswer,
     tagIds: tagIds.slice(0, 20),
     createdAt: now,
     updatedAt: now,
   };
+  setQuestionFigures(bq, getQuestionFigures(q));
+  return bq;
 }
 
 export type QuestionSortOrder = 'recent' | 'prompt' | 'most_used' | 'least_used';

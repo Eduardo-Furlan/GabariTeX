@@ -150,6 +150,35 @@ describe('Bank Questions (src/utils/bank/questions.ts)', () => {
       });
       expect(k1).toBe(k2);
     });
+
+    it('questions that differ only by figure must not be flagged as duplicates', () => {
+      const base = {
+        prompt: 'Calcule a área da figura abaixo:',
+        options: [{ text: '10' }, { text: '20' }],
+      };
+
+      const qNoFigure = questionDuplicateKey({ ...base });
+      const qFig1 = questionDuplicateKey({
+        ...base,
+        imageUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+      });
+      const qFig2 = questionDuplicateKey({
+        ...base,
+        imageUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVR42mNk+M9QzwAEjDAGACGGAf5phhQAAAAASUVORK5CYII=',
+      });
+
+      // Different figures produce distinct duplicate keys
+      expect(qFig1).not.toBe(qFig2);
+      expect(qFig1).not.toBe(qNoFigure);
+      expect(qFig2).not.toBe(qNoFigure);
+
+      // Same figure produces identical duplicate key
+      const qFig1Duplicate = questionDuplicateKey({
+        ...base,
+        imageUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+      });
+      expect(qFig1).toBe(qFig1Duplicate);
+    });
   });
 
   describe('toExamQuestion & fromExamQuestion', () => {
