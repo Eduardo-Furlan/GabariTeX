@@ -110,6 +110,8 @@ export interface Blueprint {
   updatedAt: string;
 }
 
+export type BankBlueprint = Blueprint;
+
 export interface BankMeta {
   schema: 1;
   groups: BankGroup[];

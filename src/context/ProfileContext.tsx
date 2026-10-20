@@ -25,6 +25,7 @@ import {
   checkAndRunDailySnapshot,
 } from '../platform/snapshots';
 import { toast } from '../components/ui/toastStore';
+import { BankProvider } from './BankContext';
 
 export interface ExamSwitchPromptState {
   targetExamId: string;
@@ -106,6 +107,7 @@ export interface ProfileContextType {
     options?: { newStudentToClass?: { classId: string; name: string; registration?: string } }
   ) => void;
   reloadProfile: () => Promise<void>;
+  profileReloadKey: number;
   flushAll: () => Promise<void>;
   cancelAllAutosaves: () => void;
   recordCountByExam: Record<string, number>;
@@ -117,6 +119,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const store = useMemo(() => getProfileStore(), []);
 
   const [isLoadingProfile, setIsLoadingProfile] = useState<boolean>(true);
+  const [profileReloadKey, setProfileReloadKey] = useState<number>(0);
   const [exams, setExams] = useState<ExamMeta[]>([]);
   const [exam, setExam] = useState<Exam>(emptyExam);
   const [versions, setVersions] = useState<ExamVersion[]>([]);
@@ -398,6 +401,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
       console.error('Erro ao carregar perfil:', err);
     } finally {
       setIsLoadingProfile(false);
+      setProfileReloadKey((k) => k + 1);
     }
   }, [store]);
 
@@ -1165,6 +1169,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
       handleDisassociateRecordsFromClass,
       handleGradeSaved,
       reloadProfile: initProfile,
+      profileReloadKey,
       flushAll,
       cancelAllAutosaves,
       recordCountByExam,
@@ -1172,6 +1177,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
     [
       store,
       isLoadingProfile,
+      profileReloadKey,
       exams,
       exam,
       versions,
@@ -1222,7 +1228,11 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
     ]
   );
 
-  return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>;
+  return (
+    <ProfileContext.Provider value={value}>
+      <BankProvider>{children}</BankProvider>
+    </ProfileContext.Provider>
+  );
 };
 
 export function useProfile(): ProfileContextType {
