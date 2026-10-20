@@ -6,13 +6,17 @@ import { ProfileStore } from './profileStore';
 import { MemoryProfileStore } from './memoryProfileStore';
 
 const DB_NAME = 'gabaritex_profile_db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 const STORE_EXAMS = 'exams';
 const STORE_RECORDS = 'records';
 const STORE_CLASSES = 'classes';
 const STORE_SETTINGS = 'settings';
+const STORE_BANK_META = 'bank_meta';
+const STORE_BANK_QUESTIONS = 'bank_questions';
+
 const SETTINGS_KEY = 'profile_settings';
+const BANK_META_KEY = 'meta';
 
 export class IndexedDbProfileStore implements ProfileStore {
   private dbPromise: Promise<IDBDatabase> | null = null;
@@ -54,10 +58,25 @@ export class IndexedDbProfileStore implements ProfileStore {
         if (!db.objectStoreNames.contains(STORE_SETTINGS)) {
           db.createObjectStore(STORE_SETTINGS, { keyPath: 'key' });
         }
+        if (!db.objectStoreNames.contains(STORE_BANK_META)) {
+          db.createObjectStore(STORE_BANK_META, { keyPath: 'key' });
+        }
+        if (!db.objectStoreNames.contains(STORE_BANK_QUESTIONS)) {
+          db.createObjectStore(STORE_BANK_QUESTIONS, { keyPath: 'id' });
+        }
+      };
+
+      request.onblocked = () => {
+        console.warn('[IndexedDB] Abertura do banco bloqueada por outra conexão aberta.');
       };
 
       request.onsuccess = () => {
-        resolve(request.result);
+        const db = request.result;
+        db.onversionchange = () => {
+          db.close();
+          this.dbPromise = null;
+        };
+        resolve(db);
       };
 
       request.onerror = () => {
@@ -149,7 +168,6 @@ export class IndexedDbProfileStore implements ProfileStore {
         req.onsuccess = () => resolve();
         req.onerror = () => reject(req.error);
       });
-
       return { ok: true };
     } catch (err: unknown) {
       const errorObj = err as { name?: string };
@@ -168,7 +186,6 @@ export class IndexedDbProfileStore implements ProfileStore {
     }
     try {
       const db = await this.openDb();
-      // Remove a prova e também suas notas (Plano 08 §2.2)
       await new Promise<void>((resolve, reject) => {
         const tx = db.transaction([STORE_EXAMS, STORE_RECORDS], 'readwrite');
         const examStore = tx.objectStore(STORE_EXAMS);
@@ -178,10 +195,10 @@ export class IndexedDbProfileStore implements ProfileStore {
 
         const recReq = recordStore.getAll();
         recReq.onsuccess = () => {
-          const records: GradingRecord[] = recReq.result || [];
-          for (const rec of records) {
-            if (rec.examId === id) {
-              recordStore.delete(rec.id);
+          const recs: GradingRecord[] = recReq.result || [];
+          for (const r of recs) {
+            if (r.examId === id) {
+              recordStore.delete(r.id);
             }
           }
         };
@@ -218,11 +235,12 @@ export class IndexedDbProfileStore implements ProfileStore {
     }
     try {
       const db = await this.openDb();
+      const cloned = JSON.parse(JSON.stringify(records));
       await new Promise<void>((resolve, reject) => {
         const tx = db.transaction(STORE_RECORDS, 'readwrite');
         const store = tx.objectStore(STORE_RECORDS);
         store.clear();
-        for (const r of records) {
+        for (const r of cloned) {
           store.put(r);
         }
         tx.oncomplete = () => resolve();
@@ -250,15 +268,7 @@ export class IndexedDbProfileStore implements ProfileStore {
         const tx = db.transaction(STORE_CLASSES, 'readonly');
         const store = tx.objectStore(STORE_CLASSES);
         const req = store.getAll();
-        req.onsuccess = () => {
-          const raw = (req.result || []) as Classroom[];
-          resolve(
-            raw.map((c) => ({
-              ...c,
-              students: Array.isArray(c.students) ? c.students : [],
-            }))
-          );
-        };
+        req.onsuccess = () => resolve(req.result || []);
         req.onerror = () => reject(req.error);
       });
     } catch {
@@ -272,11 +282,12 @@ export class IndexedDbProfileStore implements ProfileStore {
     }
     try {
       const db = await this.openDb();
+      const cloned = JSON.parse(JSON.stringify(classes));
       await new Promise<void>((resolve, reject) => {
         const tx = db.transaction(STORE_CLASSES, 'readwrite');
         const store = tx.objectStore(STORE_CLASSES);
         store.clear();
-        for (const c of classes) {
+        for (const c of cloned) {
           store.put(c);
         }
         tx.oncomplete = () => resolve();
@@ -305,11 +316,7 @@ export class IndexedDbProfileStore implements ProfileStore {
         const store = tx.objectStore(STORE_SETTINGS);
         const req = store.get(SETTINGS_KEY);
         req.onsuccess = () => {
-          if (req.result && req.result.settings) {
-            resolve(req.result.settings);
-          } else {
-            resolve({});
-          }
+          resolve(req.result ? req.result.settings : {});
         };
         req.onerror = () => reject(req.error);
       });
@@ -342,11 +349,13 @@ export class IndexedDbProfileStore implements ProfileStore {
     }
     try {
       const db = await this.openDb();
+      const stores = [STORE_EXAMS, STORE_RECORDS, STORE_CLASSES, STORE_SETTINGS];
+      if (data.bank !== undefined) {
+        stores.push(STORE_BANK_META, STORE_BANK_QUESTIONS);
+      }
+
       await new Promise<void>((resolve, reject) => {
-        const tx = db.transaction(
-          [STORE_EXAMS, STORE_RECORDS, STORE_CLASSES, STORE_SETTINGS],
-          'readwrite'
-        );
+        const tx = db.transaction(stores, 'readwrite');
         const storeExams = tx.objectStore(STORE_EXAMS);
         const storeRecords = tx.objectStore(STORE_RECORDS);
         const storeClasses = tx.objectStore(STORE_CLASSES);
@@ -372,6 +381,24 @@ export class IndexedDbProfileStore implements ProfileStore {
           storeSettings.put({ key: SETTINGS_KEY, settings });
         }
 
+        if (data.bank !== undefined) {
+          const storeMeta = tx.objectStore(STORE_BANK_META);
+          const storeQs = tx.objectStore(STORE_BANK_QUESTIONS);
+          storeMeta.put({
+            key: BANK_META_KEY,
+            meta: {
+              schema: 1,
+              groups: data.bank.groups || [],
+              tags: data.bank.tags || [],
+              blueprints: data.bank.blueprints || [],
+            },
+          });
+          storeQs.clear();
+          for (const q of data.bank.questions || []) {
+            storeQs.put(q);
+          }
+        }
+
         tx.oncomplete = () => resolve();
         tx.onerror = () => reject(tx.error);
       });
@@ -388,27 +415,146 @@ export class IndexedDbProfileStore implements ProfileStore {
   }
 
   async getBankMeta(): Promise<BankMeta> {
-    return this.getFallback().getBankMeta();
+    if (!this.isSupported()) {
+      return this.getFallback().getBankMeta();
+    }
+    try {
+      const db = await this.openDb();
+      return new Promise<BankMeta>((resolve, reject) => {
+        const tx = db.transaction(STORE_BANK_META, 'readonly');
+        const store = tx.objectStore(STORE_BANK_META);
+        const req = store.get(BANK_META_KEY);
+        req.onsuccess = () => {
+          if (req.result && req.result.meta) {
+            resolve(req.result.meta);
+          } else {
+            resolve({ schema: 1, groups: [], tags: [], blueprints: [] });
+          }
+        };
+        req.onerror = () => reject(req.error);
+      });
+    } catch {
+      return this.getFallback().getBankMeta();
+    }
   }
 
   async putBankMeta(meta: BankMeta): Promise<SaveResult> {
-    return this.getFallback().putBankMeta(meta);
+    if (!this.isSupported()) {
+      return this.getFallback().putBankMeta(meta);
+    }
+    try {
+      const db = await this.openDb();
+      const cloned = JSON.parse(JSON.stringify(meta));
+      await new Promise<void>((resolve, reject) => {
+        const tx = db.transaction(STORE_BANK_META, 'readwrite');
+        const store = tx.objectStore(STORE_BANK_META);
+        const req = store.put({ key: BANK_META_KEY, meta: cloned });
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+      });
+      return { ok: true };
+    } catch (err: unknown) {
+      const errorObj = err as { name?: string };
+      const isQuota = errorObj && errorObj.name === 'QuotaExceededError';
+      return { ok: false, error: err, reason: isQuota ? 'quota' : 'unknown' };
+    }
   }
 
   async listBankQuestions(): Promise<BankQuestion[]> {
-    return this.getFallback().listBankQuestions();
+    if (!this.isSupported()) {
+      return this.getFallback().listBankQuestions();
+    }
+    try {
+      const db = await this.openDb();
+      return new Promise<BankQuestion[]>((resolve, reject) => {
+        const tx = db.transaction(STORE_BANK_QUESTIONS, 'readonly');
+        const store = tx.objectStore(STORE_BANK_QUESTIONS);
+        const req = store.getAll();
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => reject(req.error);
+      });
+    } catch {
+      return this.getFallback().listBankQuestions();
+    }
   }
 
   async putBankQuestions(qs: BankQuestion[]): Promise<SaveResult> {
-    return this.getFallback().putBankQuestions(qs);
+    if (!this.isSupported()) {
+      return this.getFallback().putBankQuestions(qs);
+    }
+    try {
+      const db = await this.openDb();
+      const cloned = JSON.parse(JSON.stringify(qs));
+      await new Promise<void>((resolve, reject) => {
+        const tx = db.transaction(STORE_BANK_QUESTIONS, 'readwrite');
+        const store = tx.objectStore(STORE_BANK_QUESTIONS);
+        for (const q of cloned) {
+          store.put(q);
+        }
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+      return { ok: true };
+    } catch (err: unknown) {
+      const errorObj = err as { name?: string };
+      const isQuota = errorObj && errorObj.name === 'QuotaExceededError';
+      return { ok: false, error: err, reason: isQuota ? 'quota' : 'unknown' };
+    }
   }
 
   async deleteBankQuestions(ids: string[]): Promise<void> {
-    return this.getFallback().deleteBankQuestions(ids);
+    if (!this.isSupported()) {
+      return this.getFallback().deleteBankQuestions(ids);
+    }
+    try {
+      const db = await this.openDb();
+      await new Promise<void>((resolve, reject) => {
+        const tx = db.transaction(STORE_BANK_QUESTIONS, 'readwrite');
+        const store = tx.objectStore(STORE_BANK_QUESTIONS);
+        for (const id of ids) {
+          store.delete(id);
+        }
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+    } catch {
+      return this.getFallback().deleteBankQuestions(ids);
+    }
   }
 
   async replaceBank(bank: BankData): Promise<SaveResult> {
-    return this.getFallback().replaceBank(bank);
+    if (!this.isSupported()) {
+      return this.getFallback().replaceBank(bank);
+    }
+    try {
+      const db = await this.openDb();
+      const metaToSave: BankMeta = {
+        schema: 1,
+        groups: JSON.parse(JSON.stringify(bank.groups || [])),
+        tags: JSON.parse(JSON.stringify(bank.tags || [])),
+        blueprints: JSON.parse(JSON.stringify(bank.blueprints || [])),
+      };
+      const qsToSave = JSON.parse(JSON.stringify(bank.questions || []));
+
+      await new Promise<void>((resolve, reject) => {
+        const tx = db.transaction([STORE_BANK_META, STORE_BANK_QUESTIONS], 'readwrite');
+        const storeMeta = tx.objectStore(STORE_BANK_META);
+        const storeQs = tx.objectStore(STORE_BANK_QUESTIONS);
+
+        storeMeta.put({ key: BANK_META_KEY, meta: metaToSave });
+        storeQs.clear();
+        for (const q of qsToSave) {
+          storeQs.put(q);
+        }
+
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+      return { ok: true };
+    } catch (err: unknown) {
+      const errorObj = err as { name?: string };
+      const isQuota = errorObj && errorObj.name === 'QuotaExceededError';
+      return { ok: false, error: err, reason: isQuota ? 'quota' : 'unknown' };
+    }
   }
 }
-
