@@ -1,5 +1,7 @@
 import { QuestionType, QuestionOption } from './exam';
 
+export type { QuestionType, QuestionOption };
+
 /**
  * A group in the question bank taxonomy.
  * Forms an arbitrarily deep tree where parentId === null represents top-level.
@@ -135,3 +137,4 @@ export interface BankShareManifest {
   };
   files: Record<string, string>;
 }
+

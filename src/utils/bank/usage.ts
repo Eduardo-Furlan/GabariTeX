@@ -1,5 +1,3 @@
-import { Exam } from '../../types/exam';
-
 export interface ExamWithQuestions {
   id: string;
   questions?: { sourceQuestionId?: string }[];

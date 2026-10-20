@@ -3,7 +3,6 @@ import {
   RuleBlock,
   SourceExpr,
   QuotaLine,
-  QuotaFilter,
 } from '../../types/bank';
 import { MAX_QUESTIONS } from '../examLimits';
 
