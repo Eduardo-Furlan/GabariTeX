@@ -143,10 +143,28 @@ const AppContent: React.FC = () => {
         examMap.set(exam.id, exam);
       }
 
+      const [bankMeta, bankQuestions] = await Promise.all([
+        store.getBankMeta().catch(() => ({ schema: 1 as const, groups: [], tags: [], blueprints: [] })),
+        store.listBankQuestions().catch(() => []),
+      ]);
+      const hasBankData =
+        (bankMeta.groups && bankMeta.groups.length > 0) ||
+        (bankMeta.tags && bankMeta.tags.length > 0) ||
+        (bankMeta.blueprints && bankMeta.blueprints.length > 0) ||
+        bankQuestions.length > 0;
+
       setExportProfileData({
         exams: Array.from(examMap.values()),
         classes,
         records,
+        bank: hasBankData
+          ? {
+              groups: bankMeta.groups || [],
+              tags: bankMeta.tags || [],
+              blueprints: bankMeta.blueprints || [],
+              questions: bankQuestions || [],
+            }
+          : undefined,
       });
       setIsExportImportOpen(true);
     } catch (err) {
@@ -177,6 +195,9 @@ const AppContent: React.FC = () => {
       }
       await store.putClasses(data.classes);
       await store.putRecords(data.records);
+      if (data.bank) {
+        await store.replaceBank(data.bank);
+      }
       if (settings) {
         await store.putSettings(settings);
       }

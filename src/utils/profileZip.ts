@@ -7,9 +7,10 @@ import {
   ProfileExportOptions,
   ProfileImportSummary,
 } from '../types/profile';
-import { BankData } from '../types/bank';
+import { BankData, BankGroup, BankQuestion, Blueprint } from '../types/bank';
 import { sha256Hex, generateExamPassword } from './crypto';
 import { QuestionWithLegacyFigures } from './bank/figures';
+import { importMergeTags } from './bank/tags';
 import {
   ZipLimits,
   DEFAULT_ZIP_LIMITS,
@@ -21,6 +22,16 @@ import {
 
 export type { ZipLimits };
 export { DEFAULT_ZIP_LIMITS };
+
+function isBankNonEmpty(bank?: BankData): boolean {
+  if (!bank) return false;
+  return (
+    (bank.questions && bank.questions.length > 0) ||
+    (bank.groups && bank.groups.length > 0) ||
+    (bank.tags && bank.tags.length > 0) ||
+    (bank.blueprints && bank.blueprints.length > 0)
+  );
+}
 
 export interface ProfileZipPayload {
   manifest: ProfileManifest;
@@ -81,7 +92,7 @@ export async function buildProfileZip(
   }
 
   let clonedBank: BankData | undefined;
-  if (includeBank && data.bank) {
+  if (includeBank && isBankNonEmpty(data.bank)) {
     clonedBank = JSON.parse(JSON.stringify(data.bank));
     if (clonedBank && clonedBank.questions) {
       questionsToExternalize.push(...clonedBank.questions);
@@ -292,6 +303,30 @@ export function summarizeProfileImport(
     }
   }
 
+  let newBankQuestions: number | undefined;
+  let existingBankQuestions: number | undefined;
+  let bankGroups: number | undefined;
+  let bankTags: number | undefined;
+  let bankBlueprints: number | undefined;
+
+  if (importedData.bank) {
+    const curQMap = new Map((currentData.bank?.questions || []).map((q) => [q.id, q]));
+    let nQ = 0;
+    let eQ = 0;
+    for (const q of importedData.bank.questions || []) {
+      if (curQMap.has(q.id)) {
+        eQ++;
+      } else {
+        nQ++;
+      }
+    }
+    newBankQuestions = nQ;
+    existingBankQuestions = eQ;
+    bankGroups = importedData.bank.groups?.length ?? 0;
+    bankTags = importedData.bank.tags?.length ?? 0;
+    bankBlueprints = importedData.bank.blueprints?.length ?? 0;
+  }
+
   return {
     examsCount: importedData.exams.length,
     classesCount: importedData.classes.length,
@@ -301,6 +336,122 @@ export function summarizeProfileImport(
     newerExams,
     newClasses,
     newRecords,
+    ...(importedData.bank
+      ? {
+          newBankQuestions,
+          existingBankQuestions,
+          bankGroups,
+          bankTags,
+          bankBlueprints,
+        }
+      : {}),
+  };
+}
+
+/**
+ * Mescla dois conjuntos de dados do banco de questões:
+ * - grupos, questões e modelos por id, mantendo o mais recente (updatedAt).
+ * - etiquetas unificadas por nome case-insensitive, remapeando IDs em questões e modelos.
+ * - preserva dados locais se não houver conflito.
+ */
+export function mergeBankData(
+  currentBank?: BankData,
+  importedBank?: BankData
+): BankData | undefined {
+  if (!currentBank && !importedBank) {
+    return undefined;
+  }
+  if (!importedBank) {
+    return currentBank ? JSON.parse(JSON.stringify(currentBank)) : undefined;
+  }
+  if (!currentBank) {
+    return JSON.parse(JSON.stringify(importedBank));
+  }
+
+  // 1. Tags: merge by case-insensitive name, remapping IDs
+  const { tags: mergedTags, idMap: tagIdMap } = importMergeTags(
+    currentBank.tags || [],
+    importedBank.tags || []
+  );
+
+  // 2. Groups: merge by id, newer updatedAt wins
+  const groupMap = new Map<string, BankGroup>();
+  for (const g of currentBank.groups || []) {
+    groupMap.set(g.id, { ...g });
+  }
+  for (const impG of importedBank.groups || []) {
+    const existing = groupMap.get(impG.id);
+    if (!existing) {
+      groupMap.set(impG.id, { ...impG });
+    } else {
+      const curDate = existing.updatedAt ? Date.parse(existing.updatedAt) : 0;
+      const impDate = impG.updatedAt ? Date.parse(impG.updatedAt) : 0;
+      if (impDate > curDate) {
+        groupMap.set(impG.id, { ...impG });
+      }
+    }
+  }
+
+  // 3. Questions: remap tagIds, merge by id, newer updatedAt wins
+  const questionMap = new Map<string, BankQuestion>();
+  for (const q of currentBank.questions || []) {
+    questionMap.set(q.id, { ...q });
+  }
+  for (const impQ of importedBank.questions || []) {
+    const remappedTagIds = (impQ.tagIds || []).map((tid) => tagIdMap.get(tid) || tid);
+    const remappedQ: BankQuestion = {
+      ...impQ,
+      tagIds: Array.from(new Set(remappedTagIds)),
+    };
+    const existing = questionMap.get(remappedQ.id);
+    if (!existing) {
+      questionMap.set(remappedQ.id, remappedQ);
+    } else {
+      const curDate = existing.updatedAt ? Date.parse(existing.updatedAt) : 0;
+      const impDate = remappedQ.updatedAt ? Date.parse(remappedQ.updatedAt) : 0;
+      if (impDate > curDate) {
+        questionMap.set(remappedQ.id, remappedQ);
+      }
+    }
+  }
+
+  // 4. Blueprints: remap quota tagIds, merge by id, newer updatedAt wins
+  const blueprintMap = new Map<string, Blueprint>();
+  for (const bp of currentBank.blueprints || []) {
+    blueprintMap.set(bp.id, { ...bp });
+  }
+  for (const impBp of importedBank.blueprints || []) {
+    const remappedBp: Blueprint = {
+      ...impBp,
+      blocks: (impBp.blocks || []).map((block) => ({
+        ...block,
+        quotas: (block.quotas || []).map((q) => ({
+          ...q,
+          filter: {
+            ...q.filter,
+            tagIds: (q.filter.tagIds || []).map((t) => tagIdMap.get(t) || t),
+            notTagIds: (q.filter.notTagIds || []).map((t) => tagIdMap.get(t) || t),
+          },
+        })),
+      })),
+    };
+    const existing = blueprintMap.get(remappedBp.id);
+    if (!existing) {
+      blueprintMap.set(remappedBp.id, remappedBp);
+    } else {
+      const curDate = existing.updatedAt ? Date.parse(existing.updatedAt) : 0;
+      const impDate = remappedBp.updatedAt ? Date.parse(remappedBp.updatedAt) : 0;
+      if (impDate > curDate) {
+        blueprintMap.set(remappedBp.id, remappedBp);
+      }
+    }
+  }
+
+  return {
+    groups: Array.from(groupMap.values()),
+    tags: mergedTags,
+    questions: Array.from(questionMap.values()),
+    blueprints: Array.from(blueprintMap.values()),
   };
 }
 
@@ -308,6 +459,7 @@ export function summarizeProfileImport(
  * Mescla dois perfis (modo padrão "Mesclar"):
  * - Provas e turmas por ID, mantendo a de updatedAt mais recente.
  * - Notas por ID, sem duplicar registros existentes.
+ * - Banco de questões com regras de merge por id e etiquetas por nome.
  */
 export function mergeProfiles(
   currentData: ProfileData,
@@ -359,6 +511,8 @@ export function mergeProfiles(
     }
   }
 
+  const mergedBank = mergeBankData(currentData.bank, importedData.bank);
+
   const mergedSettings: ProfileSettings = {
     activeExamId: currentSettings.activeExamId || importedSettings.activeExamId,
     activeClassId: currentSettings.activeClassId || importedSettings.activeClassId,
@@ -369,6 +523,7 @@ export function mergeProfiles(
       exams: Array.from(examMap.values()),
       classes: Array.from(classMap.values()),
       records: Array.from(recordMap.values()),
+      ...(mergedBank ? { bank: mergedBank } : {}),
     },
     mergedSettings,
   };
