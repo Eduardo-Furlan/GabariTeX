@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { BookOpen, Library } from 'lucide-react';
 import { useProfile } from '../context/ProfileContext';
+import { useBank } from '../context/BankContext';
 import { ExamHeaderEditor } from '../components/editor/ExamHeaderEditor';
 import { QuestionList } from '../components/editor/QuestionList';
 import { ImportQuestionsModal } from '../components/editor/ImportQuestionsModal';
@@ -12,10 +13,20 @@ import { Button } from '../components/ui/Button';
 
 export const EditorScreen: React.FC = () => {
   const { exam, exams, store, updateExam, importQuestions, loadSampleMathExam } = useProfile();
+  const { questions: bankQuestions, ensureLoaded } = useBank();
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isAddFromBankModalOpen, setIsAddFromBankModalOpen] = useState(false);
   const [isSendToBankModalOpen, setIsSendToBankModalOpen] = useState(false);
   const [sendToBankPreselectedId, setSendToBankPreselectedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    void ensureLoaded();
+  }, [ensureLoaded]);
+
+  const bankQuestionIds = useMemo(
+    () => new Set(bankQuestions.map((bq) => bq.id)),
+    [bankQuestions]
+  );
 
   const handleExamChange = (updated: Exam) => {
     updateExam(updated);
@@ -77,6 +88,7 @@ export const EditorScreen: React.FC = () => {
 
       <QuestionList
         questions={exam.questions}
+        bankQuestionIds={bankQuestionIds}
         onChange={(updatedQuestions) => handleExamChange({ ...exam, questions: updatedQuestions })}
         onOpenImportModal={() => setIsImportModalOpen(true)}
         onOpenAddFromBankModal={() => setIsAddFromBankModalOpen(true)}

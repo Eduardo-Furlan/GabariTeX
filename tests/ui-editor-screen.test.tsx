@@ -96,6 +96,64 @@ describe('UI EditorScreen and Components (Phase 5)', () => {
     expect(html).toContain('Atalhos LaTeX:');
   });
 
+  it('renders "Do banco" badge conditionally based on isFromBank prop', () => {
+    const bankQuestion: Question = {
+      ...mockQuestion,
+      sourceQuestionId: 'bq-origin-1',
+    };
+
+    // When isFromBank is true, badge is visible
+    const htmlWithBadge = renderToString(
+      <QuestionEditor
+        question={bankQuestion}
+        index={0}
+        isFromBank={true}
+        onChange={() => {}}
+        onDelete={() => {}}
+      />
+    );
+    expect(htmlWithBadge).toContain('Do banco');
+
+    // When isFromBank is explicitly false (e.g. question deleted from bank), badge is NOT visible
+    const htmlWithoutBadge = renderToString(
+      <QuestionEditor
+        question={bankQuestion}
+        index={0}
+        isFromBank={false}
+        onChange={() => {}}
+        onDelete={() => {}}
+      />
+    );
+    expect(htmlWithoutBadge).not.toContain('Do banco');
+  });
+
+  it('renders QuestionList with bankQuestionIds filtering "Do banco" badge correctly', () => {
+    const qFromBank: Question = {
+      ...mockQuestion,
+      id: 'q-bank-active',
+      sourceQuestionId: 'bq-exists',
+    };
+    const qFromDeletedBank: Question = {
+      ...mockQuestion,
+      id: 'q-bank-deleted',
+      sourceQuestionId: 'bq-deleted',
+    };
+
+    const bankQuestionIds = new Set(['bq-exists']);
+
+    const html = renderToString(
+      <QuestionList
+        questions={[qFromBank, qFromDeletedBank]}
+        bankQuestionIds={bankQuestionIds}
+        onChange={() => {}}
+      />
+    );
+
+    // Expect exactly one "Do banco" badge
+    const matches = html.match(/Do banco/g);
+    expect(matches).toHaveLength(1);
+  });
+
   it('renders ExamHeaderEditor with Surface and header inputs', () => {
     const html = renderToString(
       <ExamHeaderEditor exam={mockExam} onChange={() => {}} />

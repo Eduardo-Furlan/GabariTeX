@@ -16,6 +16,7 @@ import { cn } from '../ui/cn';
 interface QuestionListProps {
   questions: Question[];
   onChange: (updatedQuestions: Question[]) => void;
+  bankQuestionIds?: ReadonlySet<string>;
   onOpenImportModal?: () => void;
   onOpenAddFromBankModal?: () => void;
   onOpenSendToBankModal?: () => void;
@@ -25,6 +26,7 @@ interface QuestionListProps {
 export const QuestionList: React.FC<QuestionListProps> = ({
   questions,
   onChange,
+  bankQuestionIds,
   onOpenImportModal,
   onOpenAddFromBankModal,
   onOpenSendToBankModal,
@@ -297,6 +299,9 @@ export const QuestionList: React.FC<QuestionListProps> = ({
                 canMoveUp={idx > 0}
                 canMoveDown={idx < questions.length - 1}
                 canDuplicate={!isLimitReached}
+                isFromBank={Boolean(
+                  q.sourceQuestionId && (!bankQuestionIds || bankQuestionIds.has(q.sourceQuestionId))
+                )}
                 onMoveUp={() => handleMoveQuestion(idx, 'up')}
                 onMoveDown={() => handleMoveQuestion(idx, 'down')}
                 onDuplicate={() => handleDuplicateQuestion(idx)}

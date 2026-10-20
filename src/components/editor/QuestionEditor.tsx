@@ -22,6 +22,7 @@ interface QuestionEditorProps {
   canMoveUp?: boolean;
   canMoveDown?: boolean;
   canDuplicate?: boolean;
+  isFromBank?: boolean;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
   onDuplicate?: () => void;
@@ -38,6 +39,7 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
   canMoveUp = false,
   canMoveDown = false,
   canDuplicate = true,
+  isFromBank,
   onMoveUp,
   onMoveDown,
   onDuplicate,
@@ -127,7 +129,7 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
           <span className="font-semibold text-slate-800 text-sm sm:text-base">
             {`Questão ${index + 1}`}
           </span>
-          {question.sourceQuestionId && (
+          {(isFromBank !== undefined ? isFromBank : Boolean(question.sourceQuestionId)) && (
             <span
               className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30"
               title="Questão originária do Banco de Questões"
