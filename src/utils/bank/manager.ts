@@ -58,10 +58,18 @@ export class BankManager {
   constructor(
     private store?: ProfileStore,
     initialExams?: readonly ExamWithQuestions[],
-    private onChange?: (state: BankState) => void
+    private onChange?: (state: BankState) => void,
+    initialData?: Partial<BankData>
   ) {
     if (initialExams) {
       this.usageExams = initialExams;
+    }
+    if (initialData) {
+      this.isLoaded = true;
+      this.groups = initialData.groups ? [...initialData.groups] : [];
+      this.tags = initialData.tags ? [...initialData.tags] : [];
+      this.questions = initialData.questions ? [...initialData.questions] : [];
+      this.blueprints = initialData.blueprints ? [...initialData.blueprints] : [];
     }
   }
 

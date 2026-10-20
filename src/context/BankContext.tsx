@@ -82,31 +82,39 @@ export interface BankProviderProps {
   store?: ProfileStore;
   /** Optional exams override for usage indexing */
   exams?: readonly ExamWithQuestions[];
+  /** Optional initial bank data for synchronous / SSR rendering */
+  initialData?: Partial<BankData>;
 }
 
 export const BankProvider: React.FC<BankProviderProps> = ({
   children,
   store: propStore,
   exams: propExams,
+  initialData,
 }) => {
   const profileCtx = useOptionalProfile();
   const effectiveStore = propStore ?? profileCtx?.store;
 
   const [managerState, setManagerState] = useState<BankState>(() => ({
-    isLoaded: false,
+    isLoaded: Boolean(initialData),
     isLoading: false,
-    groups: [],
-    tags: [],
-    questions: [],
-    blueprints: [],
+    groups: initialData?.groups ? [...initialData.groups] : [],
+    tags: initialData?.tags ? [...initialData.tags] : [],
+    questions: initialData?.questions ? [...initialData.questions] : [],
+    blueprints: initialData?.blueprints ? [...initialData.blueprints] : [],
     usageExams: propExams ?? [],
   }));
 
   const manager = useMemo(() => {
-    return new BankManager(effectiveStore, propExams, (nextState) => {
-      setManagerState(nextState);
-    });
-  }, [effectiveStore]);
+    return new BankManager(
+      effectiveStore,
+      propExams,
+      (nextState) => {
+        setManagerState(nextState);
+      },
+      initialData
+    );
+  }, [effectiveStore, initialData]);
 
   // Keep store in sync if it changes
   useEffect(() => {
