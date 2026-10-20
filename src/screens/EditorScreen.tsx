@@ -1,15 +1,22 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import { BookOpen, Library } from 'lucide-react';
 import { useProfile } from '../context/ProfileContext';
 import { useBank } from '../context/BankContext';
 import { ExamHeaderEditor } from '../components/editor/ExamHeaderEditor';
 import { QuestionList } from '../components/editor/QuestionList';
 import { ImportQuestionsModal } from '../components/editor/ImportQuestionsModal';
-import { AddFromBankModal } from '../components/editor/AddFromBankModal';
-import { SendToBankModal } from '../components/editor/SendToBankModal';
+import { lazyWithRetry } from '../components/ui/lazyWithRetry';
 import { Exam, Question } from '../types/exam';
 import { EmptyState, BubbleGridIllustration } from '../components/ui/EmptyState';
 import { Button } from '../components/ui/Button';
+
+const AddFromBankModal = lazyWithRetry(() =>
+  import('../components/editor/AddFromBankModal').then((m) => ({ default: m.AddFromBankModal }))
+);
+
+const SendToBankModal = lazyWithRetry(() =>
+  import('../components/editor/SendToBankModal').then((m) => ({ default: m.SendToBankModal }))
+);
 
 export const EditorScreen: React.FC = () => {
   const { exam, exams, store, updateExam, importQuestions, loadSampleMathExam } = useProfile();
@@ -106,20 +113,28 @@ export const EditorScreen: React.FC = () => {
         onImport={importQuestions}
       />
 
-      <AddFromBankModal
-        isOpen={isAddFromBankModalOpen}
-        onClose={() => setIsAddFromBankModalOpen(false)}
-        currentQuestions={exam.questions}
-        onImport={importQuestions}
-      />
+      {isAddFromBankModalOpen && (
+        <Suspense fallback={null}>
+          <AddFromBankModal
+            isOpen={isAddFromBankModalOpen}
+            onClose={() => setIsAddFromBankModalOpen(false)}
+            currentQuestions={exam.questions}
+            onImport={importQuestions}
+          />
+        </Suspense>
+      )}
 
-      <SendToBankModal
-        isOpen={isSendToBankModalOpen}
-        onClose={() => setIsSendToBankModalOpen(false)}
-        examQuestions={exam.questions}
-        preselectedQuestionId={sendToBankPreselectedId}
-        onQuestionsUpdated={handleQuestionsUpdated}
-      />
+      {isSendToBankModalOpen && (
+        <Suspense fallback={null}>
+          <SendToBankModal
+            isOpen={isSendToBankModalOpen}
+            onClose={() => setIsSendToBankModalOpen(false)}
+            examQuestions={exam.questions}
+            preselectedQuestionId={sendToBankPreselectedId}
+            onQuestionsUpdated={handleQuestionsUpdated}
+          />
+        </Suspense>
+      )}
     </div>
   );
 };
