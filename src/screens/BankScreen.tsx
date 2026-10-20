@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
+  FileText,
   FolderTree,
+  Layers,
   Plus,
   Sparkles,
   Tags,
@@ -11,12 +13,14 @@ import { Route } from '../router/hashRouter';
 import { BubbleLoader } from '../components/ui/BubbleLoader';
 import { EmptyState, BubbleGridIllustration } from '../components/ui/EmptyState';
 import { Modal } from '../components/ui/Modal';
+import { Segmented } from '../components/ui/Segmented';
 import { GroupTree, GroupSelection } from '../components/bank/GroupTree';
 import { QuestionList } from '../components/bank/QuestionList';
 import { QuestionEditorModal } from '../components/bank/QuestionEditorModal';
 import { TagManagerModal } from '../components/bank/TagManagerModal';
 import { BulkActionsBar } from '../components/bank/BulkActionsBar';
 import { GroupPicker } from '../components/bank/GroupPicker';
+import { BlueprintList } from '../components/bank/BlueprintList';
 import { BankQuestion } from '../types/bank';
 import { generateBankId } from '../utils/bank/ids';
 
@@ -45,6 +49,7 @@ export const BankScreen: React.FC<BankScreenProps> = ({ onNavigate }) => {
   } = useBank();
 
   // Local state
+  const [activeTab, setActiveTab] = useState<'questions' | 'blueprints'>('questions');
   const [selectedGroup, setSelectedGroup] = useState<GroupSelection>({ kind: 'all' });
   const [selectedQuestionIds, setSelectedQuestionIds] = useState<Set<string>>(new Set());
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
@@ -230,40 +235,67 @@ export const BankScreen: React.FC<BankScreenProps> = ({ onNavigate }) => {
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2 flex-wrap">
-          <button
-            type="button"
-            onClick={() => setTagManagerOpen(true)}
-            className="px-3 py-2 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-medium transition flex items-center gap-1.5"
-            title="Gerenciar etiquetas do banco"
-          >
-            <Tags className="w-3.5 h-3.5 text-slate-500" />
-            <span>Etiquetas</span>
-          </button>
+          <Segmented
+            value={activeTab}
+            onChange={(val) => setActiveTab(val as 'questions' | 'blueprints')}
+            options={[
+              { value: 'questions', label: 'Questões', icon: <FileText className="w-3.5 h-3.5" /> },
+              { value: 'blueprints', label: 'Modelos de Prova', icon: <Layers className="w-3.5 h-3.5" /> },
+            ]}
+            size="sm"
+          />
 
-          {onNavigate && (
-            <button
-              type="button"
-              onClick={() => onNavigate({ type: 'bank_generate' })}
-              className="px-3.5 py-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 text-xs font-semibold transition flex items-center gap-1.5 shadow-2xs"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-              <span>Gerar Prova</span>
-            </button>
+          {activeTab === 'questions' ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setTagManagerOpen(true)}
+                className="px-3 py-2 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-medium transition flex items-center gap-1.5"
+                title="Gerenciar etiquetas do banco"
+              >
+                <Tags className="w-3.5 h-3.5 text-slate-500" />
+                <span>Etiquetas</span>
+              </button>
+
+              {onNavigate && (
+                <button
+                  type="button"
+                  onClick={() => onNavigate({ type: 'bank_generate' })}
+                  className="px-3.5 py-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 text-xs font-semibold transition flex items-center gap-1.5 shadow-2xs"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                  <span>Gerar Prova</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={handleOpenNewQuestion}
+                className="px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-on-accent text-xs font-semibold shadow-xs transition flex items-center gap-1.5"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Nova Questão</span>
+              </button>
+            </>
+          ) : (
+            onNavigate && (
+              <button
+                type="button"
+                onClick={() => onNavigate({ type: 'bank_generate' })}
+                className="px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-on-accent text-xs font-semibold shadow-xs transition flex items-center gap-1.5"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Novo Modelo</span>
+              </button>
+            )
           )}
-
-          <button
-            type="button"
-            onClick={handleOpenNewQuestion}
-            className="px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-on-accent text-xs font-semibold shadow-xs transition flex items-center gap-1.5"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Nova Questão</span>
-          </button>
         </div>
       </header>
 
       {/* Main Content Area */}
-      {questions.length === 0 ? (
+      {activeTab === 'blueprints' ? (
+        <BlueprintList onNavigate={onNavigate} />
+      ) : questions.length === 0 ? (
         <div className="flex-1 flex items-center justify-center py-12">
           <EmptyState
             illustration={<BubbleGridIllustration />}
@@ -360,17 +392,19 @@ export const BankScreen: React.FC<BankScreenProps> = ({ onNavigate }) => {
       )}
 
       {/* Bulk Actions Bar */}
-      <BulkActionsBar
-        selectedQuestionIds={selectedQuestionIds}
-        questions={questions}
-        groups={groups}
-        tags={tags}
-        onClearSelection={handleClearSelection}
-        onMoveQuestions={handleBulkMove}
-        onApplyTags={handleBulkApplyTags}
-        onArchiveToggle={handleBulkArchive}
-        onDeleteQuestions={handleBulkDelete}
-      />
+      {activeTab === 'questions' && (
+        <BulkActionsBar
+          selectedQuestionIds={selectedQuestionIds}
+          questions={questions}
+          groups={groups}
+          tags={tags}
+          onClearSelection={handleClearSelection}
+          onMoveQuestions={handleBulkMove}
+          onApplyTags={handleBulkApplyTags}
+          onArchiveToggle={handleBulkArchive}
+          onDeleteQuestions={handleBulkDelete}
+        />
+      )}
 
       {/* Question Editor Modal */}
       <QuestionEditorModal

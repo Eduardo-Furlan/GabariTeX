@@ -44,16 +44,24 @@ export function collectReferences(
     for (const b of target.blocks) {
       collectSourceGroupIds(b.source, groupIds);
       for (const q of b.quotas) {
-        for (const tid of q.filter.tagIds) tagIds.add(tid);
-        for (const tid of q.filter.notTagIds) tagIds.add(tid);
+        if (q.filter?.tagIds) {
+          for (const tid of q.filter.tagIds) tagIds.add(tid);
+        }
+        if (q.filter?.notTagIds) {
+          for (const tid of q.filter.notTagIds) tagIds.add(tid);
+        }
       }
     }
   } else if ('quotas' in target) {
     // RuleBlock
     collectSourceGroupIds(target.source, groupIds);
     for (const q of target.quotas) {
-      for (const tid of q.filter.tagIds) tagIds.add(tid);
-      for (const tid of q.filter.notTagIds) tagIds.add(tid);
+      if (q.filter?.tagIds) {
+        for (const tid of q.filter.tagIds) tagIds.add(tid);
+      }
+      if (q.filter?.notTagIds) {
+        for (const tid of q.filter.notTagIds) tagIds.add(tid);
+      }
     }
   } else {
     // SourceExpr
