@@ -1,4 +1,4 @@
-import { zipSync, unzipSync, strToU8, strFromU8, Zippable } from 'fflate';
+import { zipSync, strToU8, strFromU8, Zippable } from 'fflate';
 import { Exam, Classroom, GradingRecord } from '../types/exam';
 import {
   ProfileData,
@@ -9,54 +9,18 @@ import {
 } from '../types/profile';
 import { BankData } from '../types/bank';
 import { sha256Hex, generateExamPassword } from './crypto';
-import { collectQuestionImageRefs } from './bank/figures';
+import { QuestionWithLegacyFigures } from './bank/figures';
+import {
+  ZipLimits,
+  DEFAULT_ZIP_LIMITS,
+  safeUnzip,
+  verifyManifestFiles,
+  externalizeQuestionImages,
+  restoreQuestionImages,
+} from './zipAssets';
 
-function base64ToBytes(base64: string): Uint8Array {
-  if (typeof Buffer !== 'undefined') {
-    return new Uint8Array(Buffer.from(base64, 'base64'));
-  }
-  const bin = atob(base64);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) {
-    bytes[i] = bin.charCodeAt(i);
-  }
-  return bytes;
-}
-
-function bytesToBase64(bytes: Uint8Array): string {
-  if (typeof Buffer !== 'undefined') {
-    return Buffer.from(bytes).toString('base64');
-  }
-  let binary = '';
-  const len = bytes.byteLength;
-  for (let i = 0; i < len; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
-}
-
-function parseDataUrl(dataUrl: string): { mime: string; ext: string; bytes: Uint8Array } | null {
-  const match = dataUrl.match(/^data:([^;]+);base64,(.*)$/);
-  if (!match) return null;
-  const mime = match[1];
-  const base64 = match[2];
-  const bytes = base64ToBytes(base64);
-  let ext = 'png';
-  if (mime === 'image/jpeg' || mime === 'image/jpg') ext = 'jpg';
-  else if (mime === 'image/webp') ext = 'webp';
-  else if (mime === 'image/gif') ext = 'gif';
-  else if (mime === 'image/svg+xml') ext = 'svg';
-  return { mime, ext, bytes };
-}
-
-function assetToDataUrl(bytes: Uint8Array, ext: string): string {
-  let mime = 'image/png';
-  if (ext === 'jpg' || ext === 'jpeg') mime = 'image/jpeg';
-  else if (ext === 'webp') mime = 'image/webp';
-  else if (ext === 'gif') mime = 'image/gif';
-  else if (ext === 'svg') mime = 'image/svg+xml';
-  return `data:${mime};base64,${bytesToBase64(bytes)}`;
-}
+export type { ZipLimits };
+export { DEFAULT_ZIP_LIMITS };
 
 export interface ProfileZipPayload {
   manifest: ProfileManifest;
@@ -102,6 +66,7 @@ export async function buildProfileZip(
   // Clona para transformar imagens e senhas sem afetar o estado em memória
   const clonedExams: Exam[] = JSON.parse(JSON.stringify(selectedExams));
   const assetsMap = new Map<string, Uint8Array>();
+  const questionsToExternalize: QuestionWithLegacyFigures[] = [];
 
   for (const exam of clonedExams) {
     if (!includePasswords) {
@@ -110,21 +75,8 @@ export async function buildProfileZip(
     if (!exam.updatedAt) {
       exam.updatedAt = new Date().toISOString();
     }
-
     if (exam.questions) {
-      for (const q of exam.questions) {
-        if (q.imageUrl && q.imageUrl.startsWith('data:')) {
-          const parsed = parseDataUrl(q.imageUrl);
-          if (parsed) {
-            const hash = (await sha256Hex(parsed.bytes)).slice(0, 16);
-            const assetRelPath = `assets/${hash}.${parsed.ext}`;
-            if (!assetsMap.has(assetRelPath)) {
-              assetsMap.set(assetRelPath, parsed.bytes);
-            }
-            q.imageUrl = `asset:${hash}.${parsed.ext}`;
-          }
-        }
-      }
+      questionsToExternalize.push(...exam.questions);
     }
   }
 
@@ -132,23 +84,11 @@ export async function buildProfileZip(
   if (includeBank && data.bank) {
     clonedBank = JSON.parse(JSON.stringify(data.bank));
     if (clonedBank && clonedBank.questions) {
-      for (const q of clonedBank.questions) {
-        for (const ref of collectQuestionImageRefs(q)) {
-          if (ref.url.startsWith('data:')) {
-            const parsed = parseDataUrl(ref.url);
-            if (parsed) {
-              const hash = (await sha256Hex(parsed.bytes)).slice(0, 16);
-              const assetRelPath = `assets/${hash}.${parsed.ext}`;
-              if (!assetsMap.has(assetRelPath)) {
-                assetsMap.set(assetRelPath, parsed.bytes);
-              }
-              ref.setUrl(`asset:${hash}.${parsed.ext}`);
-            }
-          }
-        }
-      }
+      questionsToExternalize.push(...clonedBank.questions);
     }
   }
+
+  await externalizeQuestionImages(questionsToExternalize, assetsMap);
 
   const profilePayload = {
     exams: clonedExams,
@@ -209,18 +149,6 @@ export async function buildProfileZip(
   return zipSync(zipEntries);
 }
 
-export interface ZipLimits {
-  maxEntries: number;
-  maxEntryBytes: number;
-  maxTotalBytes: number;
-}
-
-export const DEFAULT_ZIP_LIMITS: ZipLimits = {
-  maxEntries: 5000,
-  maxEntryBytes: 50 * 1024 * 1024,
-  maxTotalBytes: 500 * 1024 * 1024,
-};
-
 /**
  * Lê e valida um contêiner ZIP de perfil, validando integridade SHA-256 e reconstruindo imagens.
  */
@@ -228,37 +156,7 @@ export async function parseProfileZip(
   zipBytes: Uint8Array,
   limits: ZipLimits = DEFAULT_ZIP_LIMITS
 ): Promise<ProfileZipPayload> {
-  let unzipped: Record<string, Uint8Array>;
-  let entryCount = 0;
-  let totalBytes = 0;
-  let limitError: Error | null = null;
-
-  try {
-    unzipped = unzipSync(zipBytes, {
-      filter(file) {
-        entryCount++;
-        totalBytes += file.originalSize;
-        if (
-          entryCount > limits.maxEntries ||
-          file.originalSize > limits.maxEntryBytes ||
-          totalBytes > limits.maxTotalBytes
-        ) {
-          limitError = new Error('Arquivo de perfil grande demais ou com arquivos demais.');
-          return false;
-        }
-        return true;
-      },
-    });
-  } catch (err) {
-    if (limitError) {
-      throw limitError;
-    }
-    throw new Error('Arquivo corrompido ou formato ZIP inválido.');
-  }
-
-  if (limitError) {
-    throw limitError;
-  }
+  const unzipped = safeUnzip(zipBytes, limits);
 
   const manifestBytes = unzipped['manifest.json'];
   if (!manifestBytes) {
@@ -286,20 +184,7 @@ export async function parseProfileZip(
   }
 
   // Validação estrita de integridade de hashes
-  if (!manifest.files || typeof manifest.files !== 'object') {
-    throw new Error('manifest.json incompleto: lista de arquivos ausente.');
-  }
-
-  for (const [relPath, expectedHash] of Object.entries(manifest.files)) {
-    const fileBytes = unzipped[relPath];
-    if (!fileBytes) {
-      throw new Error(`Arquivo corrompido ou incompleto: arquivo ausente no ZIP: ${relPath}`);
-    }
-    const computedHash = await sha256Hex(fileBytes);
-    if (computedHash.toLowerCase() !== expectedHash.toLowerCase()) {
-      throw new Error(`Arquivo corrompido ou incompleto: divergência no hash de ${relPath}`);
-    }
-  }
+  await verifyManifestFiles(manifest.files, unzipped);
 
   // Parse do profile.json
   const profileBytes = unzipped['profile.json'];
@@ -329,6 +214,8 @@ export async function parseProfileZip(
   const passwordsGenerated: string[] = [];
 
   // Reconstrói imagens e valida senhas das provas
+  const questionsToRestore: QuestionWithLegacyFigures[] = [];
+
   for (const exam of exams) {
     if (!exam.password || exam.password.trim() === '') {
       exam.password = generateExamPassword();
@@ -339,35 +226,15 @@ export async function parseProfileZip(
     }
 
     if (exam.questions) {
-      for (const q of exam.questions) {
-        if (q.imageUrl && q.imageUrl.startsWith('asset:')) {
-          const assetName = q.imageUrl.slice('asset:'.length);
-          const assetRelPath = `assets/${assetName}`;
-          const assetBytes = unzipped[assetRelPath];
-          if (assetBytes) {
-            const ext = assetName.split('.').pop() || 'png';
-            q.imageUrl = assetToDataUrl(assetBytes, ext);
-          }
-        }
-      }
+      questionsToRestore.push(...exam.questions);
     }
   }
 
   if (profileData.bank && profileData.bank.questions) {
-    for (const bq of profileData.bank.questions) {
-      for (const ref of collectQuestionImageRefs(bq)) {
-        if (ref.url.startsWith('asset:')) {
-          const assetName = ref.url.slice('asset:'.length);
-          const assetRelPath = `assets/${assetName}`;
-          const assetBytes = unzipped[assetRelPath];
-          if (assetBytes) {
-            const ext = assetName.split('.').pop() || 'png';
-            ref.setUrl(assetToDataUrl(assetBytes, ext));
-          }
-        }
-      }
-    }
+    questionsToRestore.push(...profileData.bank.questions);
   }
+
+  restoreQuestionImages(questionsToRestore, unzipped);
 
   return {
     manifest,
