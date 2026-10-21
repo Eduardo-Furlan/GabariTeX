@@ -256,6 +256,92 @@
 - **Checklist**: clean (`npm run docs:screenshots` generated `CHECKLIST.md`, 5 documented placeholders in manifest)
 - **Gate P10**: GREEN
 
+## Phase 11: Hardening and Release Prep
+- **Date**: 2026-10-21
+- **Commits**:
+  - `8f2f1eb`: `test(bank): performance gate for 2000 questions and 5000 solver`
+  - `db9713d`: `chore(release): v1.2.0`
+- **tsc**: clean (`npx tsc --noEmit` exit 0)
+- **Tests**: 77 files / 481 tests passed (100% green, +27 files / +181 tests vs baseline)
+- **Builds**:
+  - web clean (`npm run build` exit 0)
+  - desktop clean (`VITE_TARGET=desktop npx vite build` exit 0)
+- **Rust Unit Tests**: clean (`cargo test --manifest-path src-tauri/Cargo.toml` exit 0, 20 tests passed)
+- **Docs Check**: clean (`npm run docs:check` exit 0, 31 manifest entries verified, 0 warnings on new docs)
+- **Docs Build**: clean (`npm run docs:build` exit 0, VitePress static build succeeded)
+- **Version Consistency**: clean (`npm run check:version` exit 0, v1.2.0 across all 6 target files)
+- **Audit**: clean (`node scripts/audit-dark-classes.mjs` exit 0, 0 offenders; `tests/rule09-neutrals.test.ts` passed)
+- **Bundle Metrics** (`.agents/plans/ui-redesign/measure-bundle.mjs dist` on web build):
+  - First-load JS (gzip): 307.6 kB (+6.9 kB vs 300.7 kB baseline, strictly within +10 kB budget)
+  - First-load CSS (gzip): 21.2 kB (+1.0 kB vs 20.2 kB baseline)
+  - Total JS (gzip): 467.7 kB
+  - Total CSS (gzip): 21.2 kB
+  - UI Webfonts (woff2 raw): 107.3 kB (0 delta)
+- **Performance Gate Measurements**:
+  - 2,000 questions filter/search: 0.20 ms (budget < 50 ms)
+  - 5,000 questions solver benchmark: 26.44 ms (budget < 100 ms)
+  - 50 lines query parser: 2.72 ms (budget < 10 ms)
+- **Gate P11**: GREEN
+
+---
+
+## Pull Request Description
+
+### Summary
+
+This release introduces the **Banco de Questões** (Question Bank) and **Sorteio Automatizado de Provas** (Automated Exam Generation) in GabariTeX `v1.2.0`.
+
+#### Key Features:
+1. **Taxonomia em Árvore & Etiquetas Livres**:
+   - Árvore hierárquica de grupos taxonômicos (até 12 níveis de profundidade) com contadores dinâmicos agregados.
+   - Reorganização via arrastar-e-soltar e atalhos de teclado (F2 para renomear inline, Delete para exclusão segura com migração de itens).
+   - Sistema de etiquetas transversais coloridas com gerenciamento centralizado (criação, edição de cores, exclusão com desvinculação limpa e fusão de marcadores).
+
+2. **Gestão de Questões do Acervo**:
+   - Questões de múltipla escolha (2 a 5 alternativas) com definição de gabarito e dissertativas com pauta dimensionável de linhas.
+   - Renderização nativa de equações matemáticas em LaTeX via KaTeX no enunciado, alternativas e resolução comentada.
+   - Anexo de figuras com legenda integrada e abstração de isolamento de imagens (forward-compatible com v1.3.0).
+   - Arquivamento de itens históricos e atribuição de pontuação padrão.
+
+3. **Integração com o Editor de Provas**:
+   - Botão **Adicionar do Banco** no editor com modal de busca, filtros taxonômicos e marcação "Já na Prova" (respeitando o teto de 40 questões por avaliação).
+   - Botão **Salvar no Banco** na prova com detecção automática de duplicadas (enunciado normalizado + alternativas + hash de imagem).
+
+4. **Gerador de Provas & Modelos (Blueprints)**:
+   - Construtor visual interativo com blocos de regras e operadores lógicos de origem (`OU` / `OR`, `E` / `AND`, `XOU` / `XOR`, `EXCETO` / `EXCEPT`).
+   - Linhas de cotas por etiquetas, tipos e pontos com cálculo em tempo real de questões disponíveis e detecção de escassez e conflitos concorrentes.
+   - Editor em modo texto (DSL formal com suporte bilíngue PT/EN, autocompletar inteligente e diagnósticos de sintaxe com posição de cursor).
+   - Sorteio determinístico reproduzível via semente (*seed*), pré-visualização interativa com travas (*lock*) e substituições (*swap*), e opção de evitar repetição de questões de provas anteriores.
+
+5. **Compartilhamento e Backups**:
+   - Exportação e importação de subárvores isoladas em pacotes compactados `.gabaritex-bank.zip`.
+   - Inclusão automática e deduplicada do acervo no backup integral de perfil (.zip) e nos snapshots diários do desktop.
+
+### Downgrade Note
+
+O banco de dados IndexedDB na versão web foi atualizado para a versão 2 (`DB_VERSION = 2`) para adicionar as novas *object stores* (`bank_groups`, `bank_tags`, `bank_questions`, `bank_blueprints`). Navegadores que executarem a versão 1.2.0 não poderão ter seus dados locais lidos diretamente por versões legadas 1.1.x sem limpeza prévia dos dados do navegador ou restauração via arquivo de backup `.zip`.
+
+### Test Counts & Quality Verification
+
+- **Vitest**: 77 arquivos de teste / 481 testes passando (100% green, +27 arquivos / +181 testes vs v1.1.1).
+- **Rust / Tauri**: 20 testes unitários passando.
+- **Orçamento de Bundle**: First-load JS gzip em 307.6 kB (+6.9 kB vs baseline 300.7 kB; estritamente dentro do limite orçado de +10 kB / 310.7 kB).
+- **Dark Mode Audit**: 0 pendências encontradas em toda a base de código.
+- **Performance Gate**:
+  - Filtro e busca sobre 2.000 questões: 0.20 ms (orçamento: < 50 ms)
+  - Solver sobre 5.000 questões: 26.44 ms (orçamento: < 100 ms)
+  - Parser de 50 linhas de regras: 2.72 ms (orçamento: < 10 ms)
+- **Documentação**: Manual completo em `docs/banco-de-questoes.md`, atualizações no `README.md` e guias existentes, e manifesto de screenshots validado.
+
+### How to Verify
+
+1. `npm test` para executar a suíte completa de testes unitários.
+2. `npm run check:version` para validar consistência de versão v1.2.0.
+3. `npm run build` e `node .agents/plans/ui-redesign/measure-bundle.mjs dist` para conferir métricas do bundle.
+4. `npm run docs:check` e `npm run docs:build` para validar integridade da documentação.
+5. `cargo test --manifest-path src-tauri/Cargo.toml` para executar testes de backend Rust.
+
+
 
 
 
