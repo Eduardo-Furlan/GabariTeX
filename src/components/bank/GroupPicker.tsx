@@ -18,6 +18,20 @@ export interface GroupPickerProps {
   onCreateGroup?: (input: { name: string; parentId: string | null }) => Promise<BankGroup | null>;
 }
 
+export async function handleInlineGroupCreate(
+  onCreateGroup: (input: { name: string; parentId: string | null }) => Promise<BankGroup | null>,
+  name: string,
+  parentId: string | null,
+  onChange: (groupId: string | null) => void
+): Promise<boolean> {
+  const res = await onCreateGroup({ name, parentId });
+  if (res) {
+    onChange(res.id);
+    return true;
+  }
+  return false;
+}
+
 export const GroupPicker: React.FC<GroupPickerProps> = ({
   groups,
   value,
@@ -114,12 +128,7 @@ export const GroupPicker: React.FC<GroupPickerProps> = ({
         mode="create"
         groups={groups}
         onSave={async (name, parentId) => {
-          const res = await onCreateGroup({ name, parentId });
-          if (res) {
-            onChange(res.id);
-            return true;
-          }
-          return false;
+          return handleInlineGroupCreate(onCreateGroup, name, parentId, onChange);
         }}
       />
     </>
