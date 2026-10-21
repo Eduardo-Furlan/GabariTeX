@@ -81,4 +81,32 @@ describe('GroupTree and Group Components (Plano 15 §6.2, Fase 4)', () => {
     expect(html).toContain('Todas as Questões');
     expect(html).toContain('Sem Grupo');
   });
+
+  it('renderiza nó de grupo com ações ocultas (hidden) em repouso e atributo title no nome longo', () => {
+    const longName = 'História Contemporânea e Relações Internacionais';
+    const longNameGroup: BankGroup = {
+      id: 'g-longo',
+      parentId: null,
+      name: longName,
+      order: 0,
+      createdAt: '2026-01-01',
+      updatedAt: '2026-01-01',
+    };
+
+    const html = renderToString(
+      <BankProvider initialData={{ groups: [longNameGroup], questions: [] }}>
+        <GroupTree
+          selected={{ kind: 'all' }}
+          onSelect={() => {}}
+        />
+      </BankProvider>
+    );
+
+    // O nome possui o atributo title para suportar visualização completa via tooltip
+    expect(html).toContain(`title="${longName}"`);
+    expect(html).toContain(longName);
+
+    // O container de ações rápidas possui hidden por padrão (não reserva espaço em repouso)
+    expect(html).toContain('hidden group-hover:flex group-focus-within:flex');
+  });
 });

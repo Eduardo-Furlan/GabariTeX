@@ -225,12 +225,19 @@ export const GroupTree: React.FC<GroupTreeProps> = ({
               <Folder className="w-3.5 h-3.5 shrink-0 text-slate-400 group-hover:text-slate-600" />
             )}
 
-            <span className="truncate">{node.name}</span>
+            <span className="truncate" title={node.name}>
+              {node.name}
+            </span>
           </div>
 
           <div className="flex items-center gap-1 shrink-0">
-            {/* Quick Actions (visible on hover or focus) */}
-            <div className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 flex items-center gap-0.5 transition">
+            {/* Quick Actions (hidden at rest, visible on hover/focus, or on selected row on touch) */}
+            <div
+              className={cn(
+                'hidden group-hover:flex group-focus-within:flex items-center gap-0.5 transition',
+                isSelected && '[@media(hover:none)]:flex'
+              )}
+            >
               <button
                 type="button"
                 onClick={(e) => handleOpenCreate(node.id, e)}
@@ -355,7 +362,7 @@ export const GroupTree: React.FC<GroupTreeProps> = ({
         >
           <div className="flex items-center gap-2 min-w-0">
             <Layers className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
-            <span className="truncate">Todas as Questões</span>
+            <span className="truncate" title="Todas as Questões">Todas as Questões</span>
           </div>
           <span
             className={cn(
@@ -393,7 +400,7 @@ export const GroupTree: React.FC<GroupTreeProps> = ({
         >
           <div className="flex items-center gap-2 min-w-0">
             <HelpCircle className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-            <span className="truncate">Sem Grupo</span>
+            <span className="truncate" title="Sem Grupo">Sem Grupo</span>
           </div>
           <span
             className={cn(
