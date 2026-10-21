@@ -91,8 +91,6 @@ Alterne para o editor de texto quando preferir redigir ou colar regras rapidamen
 
 Confira as questões sorteadas pelo algoritmo antes de finalizar a prova.
 
-<Screenshot id="banco-05-previa-sorteio" />
-
 1. Clique no botão **Pré-visualizar Sorteio** para acionar o algoritmo combinatório determinístico.
 2. Na lista de questões pré-visualizadas, utilize os recursos de ajuste fino:
    - *Travar questão:* fixe um item aprovado com o ícone de cadeado para que ele não mude ao rodar novos sorteios.
@@ -157,7 +155,7 @@ FROM (Geometry OR Trigonometry) EXCEPT Geometry/Spatial
 ### Precedência e resolução de erros
 
 - O operador `EXCETO` possui maior precedência que `OU`, `E` e `XOU`. Quando quiser combinar operadores, utilize parênteses: `(GrupoA OU GrupoB) EXCETO GrupoC`.
-- Nomes de grupos com espaços, barras adicionais ou caracteres especiais devem ser colocados entre aspas duplas: `DE "Física Geral / Mecânica"`.
+- Nomes de grupos com espaços, barras adicionais ou caracteres especiais devem ser colocados entre aspas duplas: `DE "Física Geral/Mecânica"`.
 - Caso a quantidade solicitada em uma linha de cota supere o total de questões disponíveis no acervo, o editor exibirá um diagnóstico com indicação de déficit e a geração da prova permanecerá pausada até que a cota seja ajustada ou novas questões sejam cadastradas.
 
 ## Dicas

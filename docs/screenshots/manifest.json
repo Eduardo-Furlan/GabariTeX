@@ -673,27 +673,5 @@
     "callouts": [],
     "alt": "Editor de regras em modo texto com realce de sintaxe e autocompletar inteligente",
     "caption": "Editor em modo texto da linguagem formal de regras com validação de sintaxe em tempo real."
-  },
-  {
-    "id": "banco-05-previa-sorteio",
-    "page": "banco-de-questoes",
-    "after": "Confira as questões sorteadas pelo algoritmo antes de finalizar a prova.",
-    "target": "desktop",
-    "window": "1280x800",
-    "screen": "Pré-visualização do Sorteio",
-    "state": "Listagem compacta de questões sorteadas com botões de travar, trocar e semente reprodutível",
-    "setup": "Clique em Pré-visualizar Sorteio no gerador de prova",
-    "mustShow": [
-      "Sortear de Novo",
-      "Criar Prova",
-      "Semente"
-    ],
-    "mustNotShow": [
-      "OS clutter"
-    ],
-    "crop": "Full app window at 1280x800",
-    "callouts": [],
-    "alt": "Painel de pré-visualização das questões sorteadas com travas individuais e geração de prova",
-    "caption": "Pré-visualização das questões sorteadas com travas por item, substituição e semente determinística."
   }
 ]
