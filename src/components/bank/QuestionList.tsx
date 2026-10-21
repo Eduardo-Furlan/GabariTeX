@@ -7,6 +7,7 @@ import {
   Square,
   Tags,
   Folder,
+  Plus,
 } from 'lucide-react';
 import { BankGroup, BankQuestion, BankTag, QuestionType } from '../../types/bank';
 import { GroupSelection } from './GroupTree';
@@ -455,16 +456,44 @@ export const QuestionList: React.FC<QuestionListProps> = ({
         className="flex-1 overflow-y-auto max-h-[calc(100vh-320px)] rounded-xl pr-1"
       >
         {filteredQuestions.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-12 text-center border-2 border-dashed border-slate-200 rounded-2xl bg-white">
-            <Filter className="w-8 h-8 text-slate-400 mb-2" />
-            <h3 className="font-semibold text-slate-800 text-sm">
-              Nenhuma questão encontrada
-            </h3>
-            <p className="text-xs text-slate-500 mt-1 max-w-sm">
-              Nenhuma questão corresponde aos filtros ou grupo selecionado. Tente alterar os termos
-              de busca ou desativar filtros.
-            </p>
-          </div>
+          groupScopeQuestions.length === 0 ? (
+            <div className="flex flex-col items-center justify-center p-12 text-center border-2 border-dashed border-slate-200 rounded-2xl bg-white">
+              <Folder className="w-8 h-8 text-slate-400 mb-2" />
+              <h3 className="font-semibold text-slate-800 text-sm">
+                {selectedGroup.kind === 'group'
+                  ? 'Nenhuma questão neste grupo'
+                  : selectedGroup.kind === 'orphan'
+                  ? 'Nenhuma questão sem grupo'
+                  : 'Nenhuma questão no banco'}
+              </h3>
+              <p className="text-xs text-slate-500 mt-1 max-w-sm">
+                {selectedGroup.kind === 'group'
+                  ? 'Adicione questões a este grupo para começar a estruturar seu acervo.'
+                  : 'Cadastre questões para começar a preencher este acervo.'}
+              </p>
+              {onNewQuestion && (
+                <button
+                  type="button"
+                  onClick={onNewQuestion}
+                  className="mt-4 px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-on-accent text-xs font-semibold shadow-xs transition flex items-center gap-1.5"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Nova Questão</span>
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center p-12 text-center border-2 border-dashed border-slate-200 rounded-2xl bg-white">
+              <Filter className="w-8 h-8 text-slate-400 mb-2" />
+              <h3 className="font-semibold text-slate-800 text-sm">
+                Nenhuma questão encontrada
+              </h3>
+              <p className="text-xs text-slate-500 mt-1 max-w-sm">
+                Nenhuma questão corresponde aos filtros ou grupo selecionado. Tente alterar os termos
+                de busca ou desativar filtros.
+              </p>
+            </div>
+          )
         ) : (
           <div style={{ height: `${totalHeight}px`, position: 'relative' }}>
             <div

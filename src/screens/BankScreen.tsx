@@ -22,9 +22,11 @@ import { TagManagerModal } from '../components/bank/TagManagerModal';
 import { BankImportModal } from '../components/bank/BankImportModal';
 import { BulkActionsBar } from '../components/bank/BulkActionsBar';
 import { GroupPicker } from '../components/bank/GroupPicker';
+import { GroupCreateRenameDialog } from '../components/bank/GroupCreateRenameDialog';
 import { BlueprintList } from '../components/bank/BlueprintList';
 import { BankQuestion } from '../types/bank';
 import { generateBankId } from '../utils/bank/ids';
+import { getBankScreenMode } from '../utils/bank/screenMode';
 
 export interface BankScreenProps {
   onNavigate?: (route: Route) => void;
@@ -39,6 +41,7 @@ export const BankScreen: React.FC<BankScreenProps> = ({ onNavigate }) => {
     tags,
     questions,
     usageCounts,
+    createGroup,
     saveQuestion,
     saveQuestions,
     deleteQuestions,
@@ -67,6 +70,13 @@ export const BankScreen: React.FC<BankScreenProps> = ({ onNavigate }) => {
 
   const [deletingQuestion, setDeletingQuestion] = useState<BankQuestion | null>(null);
   const [bankImportOpen, setBankImportOpen] = useState(false);
+  const [createGroupDialogOpen, setCreateGroupDialogOpen] = useState(false);
+  const [createGroupParentId, setCreateGroupParentId] = useState<string | null>(null);
+
+  const handleOpenCreateGroup = useCallback((parentId: string | null = null) => {
+    setCreateGroupParentId(parentId);
+    setCreateGroupDialogOpen(true);
+  }, []);
 
   useEffect(() => {
     ensureLoaded();
@@ -308,21 +318,31 @@ export const BankScreen: React.FC<BankScreenProps> = ({ onNavigate }) => {
       {/* Main Content Area */}
       {activeTab === 'blueprints' ? (
         <BlueprintList onNavigate={onNavigate} />
-      ) : questions.length === 0 ? (
+      ) : getBankScreenMode(groups, questions) === 'empty' ? (
         <div className="flex-1 flex items-center justify-center py-12">
           <EmptyState
             illustration={<BubbleGridIllustration />}
             title="Seu banco de questões está vazio"
-            description="Cadastre questões organizadas por grupos e etiquetas. Você poderá utilizá-las diretamente em suas provas ou gerar avaliações aleatórias com facilidade."
+            description="Cadastre questões organizadas por grupos e etiquetas. Criar grupos é opcional, mas recomendado para estruturar seu acervo curricular por tópicos e disciplinas."
             actions={
-              <button
-                type="button"
-                onClick={handleOpenNewQuestion}
-                className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-on-accent text-sm font-semibold shadow-xs transition flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Criar Primeira Questão</span>
-              </button>
+              <div className="flex flex-col sm:flex-row items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => handleOpenCreateGroup(null)}
+                  className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-on-accent text-sm font-semibold shadow-xs transition flex items-center justify-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Criar Primeiro Grupo</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleOpenNewQuestion}
+                  className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-sm font-semibold transition flex items-center justify-center gap-2"
+                >
+                  <Plus className="w-4 h-4 text-slate-500" />
+                  <span>Criar Primeira Questão</span>
+                </button>
+              </div>
             }
           />
         </div>
@@ -348,6 +368,7 @@ export const BankScreen: React.FC<BankScreenProps> = ({ onNavigate }) => {
             <GroupTree
               selected={selectedGroup}
               onSelect={setSelectedGroup}
+              onRequestCreateGroup={handleOpenCreateGroup}
             />
           </div>
 
@@ -376,6 +397,7 @@ export const BankScreen: React.FC<BankScreenProps> = ({ onNavigate }) => {
                     setSelectedGroup(sel);
                     setMobileDrawerOpen(false);
                   }}
+                  onRequestCreateGroup={handleOpenCreateGroup}
                   className="border-0 p-0 shadow-none"
                 />
               </div>
@@ -520,6 +542,22 @@ export const BankScreen: React.FC<BankScreenProps> = ({ onNavigate }) => {
       <BankImportModal
         isOpen={bankImportOpen}
         onClose={() => setBankImportOpen(false)}
+      />
+
+      <GroupCreateRenameDialog
+        open={createGroupDialogOpen}
+        onOpenChange={setCreateGroupDialogOpen}
+        mode="create"
+        defaultParentId={createGroupParentId}
+        groups={groups}
+        onSave={async (name, parentId) => {
+          const res = await createGroup({ name, parentId });
+          if (res) {
+            setSelectedGroup({ kind: 'group', groupId: res.id });
+            return true;
+          }
+          return false;
+        }}
       />
     </div>
   );

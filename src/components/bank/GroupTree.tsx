@@ -37,6 +37,7 @@ export interface GroupTreeProps {
   selected: GroupSelection;
   onSelect: (selection: GroupSelection) => void;
   className?: string;
+  onRequestCreateGroup?: (parentId?: string | null) => void;
 }
 
 export function areGroupSelectionsEqual(a: GroupSelection, b: GroupSelection): boolean {
@@ -51,6 +52,7 @@ export const GroupTree: React.FC<GroupTreeProps> = ({
   selected,
   onSelect,
   className,
+  onRequestCreateGroup,
 }) => {
   const {
     groups,
@@ -100,6 +102,13 @@ export const GroupTree: React.FC<GroupTreeProps> = ({
   // Handlers for dialogs
   const handleOpenCreate = (parentId: string | null = null, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
+    if (onRequestCreateGroup) {
+      onRequestCreateGroup(parentId);
+      if (parentId) {
+        setExpandedIds((prev) => new Set([...prev, parentId]));
+      }
+      return;
+    }
     setCreateParentId(parentId);
     setCreateDialogOpen(true);
     if (parentId) {
@@ -400,17 +409,19 @@ export const GroupTree: React.FC<GroupTreeProps> = ({
       </div>
 
       {/* Dialogs */}
-      <GroupCreateRenameDialog
-        open={createDialogOpen}
-        onOpenChange={setCreateDialogOpen}
-        mode="create"
-        defaultParentId={createParentId}
-        groups={groups}
-        onSave={async (name, parentId) => {
-          const res = await createGroup({ name, parentId });
-          return Boolean(res);
-        }}
-      />
+      {!onRequestCreateGroup && (
+        <GroupCreateRenameDialog
+          open={createDialogOpen}
+          onOpenChange={setCreateDialogOpen}
+          mode="create"
+          defaultParentId={createParentId}
+          groups={groups}
+          onSave={async (name, parentId) => {
+            const res = await createGroup({ name, parentId });
+            return Boolean(res);
+          }}
+        />
+      )}
 
       <GroupCreateRenameDialog
         open={Boolean(renameTarget)}
