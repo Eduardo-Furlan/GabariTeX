@@ -16,6 +16,7 @@ export interface QuestionEditorModalProps {
   defaultGroupId?: string | null;
   groups: BankGroup[];
   tags: BankTag[];
+  onCreateGroup?: (input: { name: string; parentId: string | null }) => Promise<BankGroup | null>;
   onCreateTag?: (name: string, color: TagColor) => Promise<BankTag | null>;
   onSave: (question: BankQuestion) => Promise<boolean>;
 }
@@ -29,6 +30,7 @@ export const QuestionEditorModal: React.FC<QuestionEditorModalProps> = ({
   defaultGroupId = null,
   groups,
   tags,
+  onCreateGroup,
   onCreateTag,
   onSave,
 }) => {
@@ -239,6 +241,7 @@ export const QuestionEditorModal: React.FC<QuestionEditorModalProps> = ({
               value={groupId}
               onChange={setGroupId}
               rootLabel="Sem Grupo (Raiz)"
+              onCreateGroup={onCreateGroup}
             />
           </div>
 

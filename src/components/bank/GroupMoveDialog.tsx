@@ -12,6 +12,7 @@ export interface GroupMoveDialogProps {
   group: BankGroup | null;
   groups: readonly BankGroup[];
   onMove: (groupId: string, targetParentId: string | null) => Promise<boolean>;
+  onCreateGroup?: (input: { name: string; parentId: string | null }) => Promise<BankGroup | null>;
 }
 
 export const GroupMoveDialog: React.FC<GroupMoveDialogProps> = ({
@@ -20,6 +21,7 @@ export const GroupMoveDialog: React.FC<GroupMoveDialogProps> = ({
   group,
   groups,
   onMove,
+  onCreateGroup,
 }) => {
   const [targetParentId, setTargetParentId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -128,6 +130,7 @@ export const GroupMoveDialog: React.FC<GroupMoveDialogProps> = ({
             excludeGroupIds={excludeSet}
             allowRoot={true}
             rootLabel="Raiz (Nível Superior)"
+            onCreateGroup={onCreateGroup}
           />
           {validationError && (
             <p className="mt-1.5 text-xs text-rose-600 dark:text-rose-400 font-medium">

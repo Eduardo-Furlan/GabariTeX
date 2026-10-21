@@ -440,6 +440,7 @@ export const GroupTree: React.FC<GroupTreeProps> = ({
         onOpenChange={(open) => !open && setMoveTarget(null)}
         group={moveTarget}
         groups={groups}
+        onCreateGroup={createGroup}
         onMove={async (id, targetParentId) => {
           return moveGroup(id, targetParentId);
         }}
@@ -451,6 +452,7 @@ export const GroupTree: React.FC<GroupTreeProps> = ({
         group={deleteTarget}
         groups={groups}
         questions={questions}
+        onCreateGroup={createGroup}
         onConfirm={async (id, strategy) => {
           return deleteGroup(id, strategy);
         }}

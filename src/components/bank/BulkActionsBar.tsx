@@ -27,6 +27,7 @@ export interface BulkActionsBarProps {
   ) => Promise<boolean>;
   onArchiveToggle: (questionIds: string[], archive: boolean) => Promise<boolean>;
   onDeleteQuestions: (questionIds: string[]) => Promise<boolean>;
+  onCreateGroup?: (input: { name: string; parentId: string | null }) => Promise<BankGroup | null>;
   className?: string;
 }
 
@@ -40,6 +41,7 @@ export const BulkActionsBar: React.FC<BulkActionsBarProps> = ({
   onApplyTags,
   onArchiveToggle,
   onDeleteQuestions,
+  onCreateGroup,
   className,
 }) => {
   const count = selectedQuestionIds.size;
@@ -246,6 +248,7 @@ export const BulkActionsBar: React.FC<BulkActionsBarProps> = ({
             value={targetGroupId}
             onChange={setTargetGroupId}
             rootLabel="Sem Grupo (Raiz)"
+            onCreateGroup={onCreateGroup}
           />
         </div>
       </Modal>

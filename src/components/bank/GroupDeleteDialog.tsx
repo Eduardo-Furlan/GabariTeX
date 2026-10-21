@@ -14,6 +14,7 @@ export interface GroupDeleteDialogProps {
   groups: readonly BankGroup[];
   questions: readonly BankQuestion[];
   onConfirm: (groupId: string, strategy: DeleteGroupStrategy) => Promise<boolean>;
+  onCreateGroup?: (input: { name: string; parentId: string | null }) => Promise<BankGroup | null>;
 }
 
 export const GroupDeleteDialog: React.FC<GroupDeleteDialogProps> = ({
@@ -23,6 +24,7 @@ export const GroupDeleteDialog: React.FC<GroupDeleteDialogProps> = ({
   groups,
   questions,
   onConfirm,
+  onCreateGroup,
 }) => {
   const [strategyKind, setStrategyKind] = useState<'move' | 'delete'>('move');
   const [targetGroupId, setTargetGroupId] = useState<string | null>(null);
@@ -184,6 +186,7 @@ export const GroupDeleteDialog: React.FC<GroupDeleteDialogProps> = ({
                         excludeGroupIds={excludeSet}
                         allowRoot={true}
                         rootLabel="Sem Grupo (Nível Superior)"
+                        onCreateGroup={onCreateGroup}
                       />
                     </div>
                   )}

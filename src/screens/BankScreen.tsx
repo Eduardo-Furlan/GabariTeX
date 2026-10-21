@@ -438,6 +438,7 @@ export const BankScreen: React.FC<BankScreenProps> = ({ onNavigate }) => {
           onApplyTags={handleBulkApplyTags}
           onArchiveToggle={handleBulkArchive}
           onDeleteQuestions={handleBulkDelete}
+          onCreateGroup={createGroup}
         />
       )}
 
@@ -449,6 +450,7 @@ export const BankScreen: React.FC<BankScreenProps> = ({ onNavigate }) => {
         defaultGroupId={defaultGroupIdForNew}
         groups={groups}
         tags={tags}
+        onCreateGroup={createGroup}
         onCreateTag={createTag}
         onSave={async (q) => {
           const res = await saveQuestion(q);
@@ -502,6 +504,7 @@ export const BankScreen: React.FC<BankScreenProps> = ({ onNavigate }) => {
             value={targetGroupId}
             onChange={setTargetGroupId}
             rootLabel="Sem Grupo (Raiz)"
+            onCreateGroup={createGroup}
           />
         </div>
       </Modal>

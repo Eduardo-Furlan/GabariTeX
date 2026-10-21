@@ -40,6 +40,7 @@ export const SendToBankModal: React.FC<SendToBankModalProps> = ({
     groups,
     tags,
     questions: bankQuestions,
+    createGroup,
     saveQuestions,
     createTag,
   } = useBank();
@@ -209,6 +210,7 @@ export const SendToBankModal: React.FC<SendToBankModalProps> = ({
               value={targetGroupId}
               onChange={setTargetGroupId}
               rootLabel="Sem Grupo (Raiz)"
+              onCreateGroup={createGroup}
             />
           </div>
 
