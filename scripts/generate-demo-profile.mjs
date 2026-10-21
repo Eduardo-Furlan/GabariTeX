@@ -273,7 +273,225 @@ const records = studentsData.map((std, idx) => {
   };
 });
 
-// 5. Configurar Profile Payload
+// 5. Configurar Banco de Questões Demonstrativo
+const demoBankGroups = [
+  {
+    id: 'grp-mat',
+    parentId: null,
+    name: 'Matemática',
+    order: 0,
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
+  },
+  {
+    id: 'grp-alg',
+    parentId: 'grp-mat',
+    name: 'Álgebra',
+    order: 0,
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
+  },
+  {
+    id: 'grp-geo',
+    parentId: 'grp-mat',
+    name: 'Geometria',
+    order: 1,
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
+  },
+  {
+    id: 'grp-calc',
+    parentId: 'grp-mat',
+    name: 'Cálculo',
+    order: 2,
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
+  },
+];
+
+const demoBankTags = [
+  {
+    id: 'tag-facil',
+    name: 'Fácil',
+    color: 'green',
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
+  },
+  {
+    id: 'tag-media',
+    name: 'Média',
+    color: 'amber',
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
+  },
+  {
+    id: 'tag-dificil',
+    name: 'Difícil',
+    color: 'red',
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
+  },
+  {
+    id: 'tag-enem',
+    name: 'ENEM',
+    color: 'blue',
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
+  },
+];
+
+const demoBankQuestions = [
+  {
+    id: 'demo-bq-1',
+    groupId: 'grp-alg',
+    tagIds: ['tag-facil'],
+    type: 'objective',
+    points: 1.0,
+    prompt: 'Qual dos seguintes números é um número primo?',
+    options: [
+      { id: 'bq1_a', label: 'A', text: '17', isCorrect: true },
+      { id: 'bq1_b', label: 'B', text: '21', isCorrect: false },
+      { id: 'bq1_c', label: 'C', text: '27', isCorrect: false },
+      { id: 'bq1_d', label: 'D', text: '35', isCorrect: false },
+    ],
+    notes: 'Questão introdutória de teoria dos números.',
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
+  },
+  {
+    id: 'demo-bq-2',
+    groupId: 'grp-alg',
+    tagIds: ['tag-media', 'tag-enem'],
+    type: 'objective',
+    points: 1.5,
+    prompt: 'Considere a equação quadrática $f(x) = x^2 - 4x + 3$. Quais são as raízes reais dessa função?',
+    options: [
+      { id: 'bq2_a', label: 'A', text: '$x = -1$ e $x = -3$', isCorrect: false },
+      { id: 'bq2_b', label: 'B', text: '$x = 1$ e $x = 3$', isCorrect: true },
+      { id: 'bq2_c', label: 'C', text: '$x = 2$ e $x = 4$', isCorrect: false },
+      { id: 'bq2_d', label: 'D', text: '$x = 0$ e $x = 3$', isCorrect: false },
+    ],
+    notes: 'Aplica fatoração simples por soma e produto.',
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
+  },
+  {
+    id: 'demo-bq-3',
+    groupId: 'grp-alg',
+    tagIds: ['tag-dificil'],
+    type: 'subjective',
+    points: 2.5,
+    prompt: 'Demonstre passo a passo o cálculo das coordenadas do vértice $(x_v, y_v)$ da função quadrática $f(x) = -x^2 + 6x - 5$.',
+    linesForAnswer: 8,
+    solution: 'x_v = -b/(2a) = -6/(-2) = 3; y_v = -(36 - 20)/(-4) = 4. Vértice: (3, 4).',
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
+  },
+  {
+    id: 'demo-bq-4',
+    groupId: 'grp-geo',
+    tagIds: ['tag-facil'],
+    type: 'objective',
+    points: 1.5,
+    prompt: 'Em um triângulo retângulo, a hipotenusa mede $10\\text{ cm}$ e um dos catetos mede $6\\text{ cm}$. O valor do outro cateto é:',
+    options: [
+      { id: 'bq4_a', label: 'A', text: '$4\\text{ cm}$', isCorrect: false },
+      { id: 'bq4_b', label: 'B', text: '$5\\text{ cm}$', isCorrect: false },
+      { id: 'bq4_c', label: 'C', text: '$7\\text{ cm}$', isCorrect: false },
+      { id: 'bq4_d', label: 'D', text: '$8\\text{ cm}$', isCorrect: true },
+      { id: 'bq4_e', label: 'E', text: '$9\\text{ cm}$', isCorrect: false },
+    ],
+    notes: 'Terno pitagórico elementar 3-4-5 multiplicado por 2.',
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
+  },
+  {
+    id: 'demo-bq-5',
+    groupId: 'grp-geo',
+    tagIds: ['tag-media'],
+    type: 'objective',
+    points: 1.5,
+    prompt: 'A figura abaixo ilustra o gráfico de uma trajetória parabólica em um sistema cartesiano de coordenadas.',
+    imageUrl: `asset:${imgShortHash}.png`,
+    imageCaption: 'Figura 1: Esboço da curva parabólica no plano cartesiano',
+    options: [
+      { id: 'bq5_a', label: 'A', text: 'O coeficiente principal é positivo', isCorrect: false },
+      { id: 'bq5_b', label: 'B', text: 'A função não possui raízes reais', isCorrect: false },
+      { id: 'bq5_c', label: 'C', text: 'O vértice da parábola representa um ponto de máximo local', isCorrect: true },
+      { id: 'bq5_d', label: 'D', text: 'O eixo de simetria coincide com o eixo vertical', isCorrect: false },
+    ],
+    notes: 'Análise qualitativa de concavidade e vértice.',
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
+  },
+  {
+    id: 'demo-bq-6',
+    groupId: 'grp-calc',
+    tagIds: ['tag-media'],
+    type: 'objective',
+    points: 2.0,
+    prompt: 'Calcule a integral definida $\\int_{0}^{2} (3x^2 + 1)\\,dx$ e selecione o resultado correto:',
+    options: [
+      { id: 'bq6_a', label: 'A', text: '$10$', isCorrect: true },
+      { id: 'bq6_b', label: 'B', text: '$12$', isCorrect: false },
+      { id: 'bq6_c', label: 'C', text: '$8$', isCorrect: false },
+      { id: 'bq6_d', label: 'D', text: '$14$', isCorrect: false },
+    ],
+    notes: 'Primitiva: x^3 + x avaliada de 0 a 2: (8 + 2) - 0 = 10.',
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
+  },
+];
+
+const demoBankBlueprints = [
+  {
+    id: 'demo-bp-1',
+    name: 'Modelo Geral Bimestral',
+    description: 'Sorteia questões equilibradas entre Álgebra e Geometria com diferentes dificuldades.',
+    blocks: [
+      {
+        id: 'blk-1',
+        source: { kind: 'group', groupId: 'grp-alg', descendants: true },
+        quotas: [
+          {
+            id: 'q-1',
+            count: 1,
+            filter: { tagIds: ['tag-facil'], notTagIds: [] },
+            points: 1.0,
+          },
+          {
+            id: 'q-2',
+            count: 1,
+            filter: { tagIds: ['tag-media'], notTagIds: [] },
+            points: 1.5,
+          },
+        ],
+      },
+      {
+        id: 'blk-2',
+        source: { kind: 'group', groupId: 'grp-geo', descendants: true },
+        quotas: [
+          {
+            id: 'q-3',
+            count: 1,
+            filter: { tagIds: ['tag-facil'], notTagIds: [] },
+            points: 1.5,
+          },
+          {
+            id: 'q-4',
+            count: 1,
+            filter: { tagIds: ['tag-media'], notTagIds: [] },
+            points: 1.5,
+          },
+        ],
+      },
+    ],
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
+  },
+];
+
+// 6. Configurar Profile Payload
 const profilePayload = {
   exams: [exam],
   classes: [classroom],
@@ -281,6 +499,12 @@ const profilePayload = {
   settings: {
     activeExamId: exam.id,
     activeClassId: classroom.id,
+  },
+  bank: {
+    groups: demoBankGroups,
+    tags: demoBankTags,
+    questions: demoBankQuestions,
+    blueprints: demoBankBlueprints,
   },
 };
 
@@ -303,11 +527,16 @@ const manifest = {
     classes: 1,
     records: records.length,
     assets: 1,
+    bankQuestions: demoBankQuestions.length,
+    bankGroups: demoBankGroups.length,
+    bankTags: demoBankTags.length,
+    bankBlueprints: demoBankBlueprints.length,
   },
   includes: {
     records: true,
     classes: true,
     passwords: true,
+    bank: true,
   },
   files: fileHashes,
 };

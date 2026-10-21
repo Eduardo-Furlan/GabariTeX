@@ -581,5 +581,119 @@
     "callouts": [],
     "alt": "Resumo dos dados encontrados no arquivo ZIP e escolha do modo de mesclagem ou substituição",
     "caption": "Resumo do arquivo importado com opção de mesclar ou substituir o perfil."
+  },
+  {
+    "id": "banco-01-visao-geral",
+    "page": "banco-de-questoes",
+    "after": "Organize seus conteúdos curriculares em uma árvore hierárquica por disciplinas, módulos e tópicos.",
+    "target": "desktop",
+    "window": "1280x800",
+    "screen": "Banco de Questões",
+    "state": "Visualização do acervo com árvore de tópicos, filtros por etiquetas e listagem de questões",
+    "setup": "Acesse a tela do Banco de Questões com o perfil de demonstração Escola Exemplo carregado",
+    "mustShow": [
+      "Banco de Questões",
+      "Novo Grupo",
+      "Nova Questão",
+      "Gerar Prova"
+    ],
+    "mustNotShow": [
+      "OS clutter"
+    ],
+    "crop": "Full app window at 1280x800",
+    "callouts": [],
+    "alt": "Visão geral da tela do Banco de Questões com árvore taxonômica e cards de questões",
+    "caption": "Visão geral do Banco de Questões com taxonomia em árvore, etiquetas e listagem do acervo."
+  },
+  {
+    "id": "banco-02-editor-questao",
+    "page": "banco-de-questoes",
+    "after": "Cadastre itens com enunciados detalhados, gabarito e alternativas de múltipla escolha ou formato dissertativo.",
+    "target": "desktop",
+    "window": "1280x800",
+    "screen": "Editor de Questão do Banco",
+    "state": "Modal de edição de questão com campos de enunciado LaTeX, alternativas, grupo e etiquetas",
+    "setup": "Clique em Nova Questão ou abra a edição de uma questão existente no banco",
+    "mustShow": [
+      "Nova Questão",
+      "Enunciado da Questão",
+      "Grupo",
+      "Etiquetas"
+    ],
+    "mustNotShow": [
+      "OS clutter"
+    ],
+    "crop": "QuestionEditorModal dialog box",
+    "callouts": [],
+    "alt": "Formulário de cadastro e edição de questão do banco com equações em LaTeX e alternativas",
+    "caption": "Editor de questões do acervo com fórmulas matemáticas, alternativas e taxonomia."
+  },
+  {
+    "id": "banco-03-gerador-visual",
+    "page": "banco-de-questoes",
+    "after": "Crie modelos de avaliação (*blueprints*) compostos por blocos de origem e cotas quantitativas de conteúdo.",
+    "target": "desktop",
+    "window": "1280x800",
+    "screen": "Gerador de Prova - Modo Visual",
+    "state": "Construtor de modelos com blocos de regras, cotas por dificuldade e disponibilidade ao vivo",
+    "setup": "Clique em Gerar Prova na aba Modelos e configure blocos de regras",
+    "mustShow": [
+      "Gerar Prova",
+      "Visual",
+      "Origem",
+      "Pré-visualizar Sorteio"
+    ],
+    "mustNotShow": [
+      "OS clutter"
+    ],
+    "crop": "Full app window at 1280x800",
+    "callouts": [],
+    "alt": "Construtor visual de regras de sorteio com blocos de origem, linhas de cotas e disponibilidade",
+    "caption": "Construtor visual de modelos de prova com cálculo em tempo real de questões disponíveis."
+  },
+  {
+    "id": "banco-04-gerador-texto",
+    "page": "banco-de-questoes",
+    "after": "Alterne para o editor de texto quando preferir redigir ou colar regras rapidamente com sintaxe formal.",
+    "target": "desktop",
+    "window": "1280x800",
+    "screen": "Gerador de Prova - Modo Texto",
+    "state": "Editor de código monospace com DSL de regras em português e lista de diagnósticos",
+    "setup": "Clique na aba Texto no topo da tela do gerador",
+    "mustShow": [
+      "Gerar Prova",
+      "Texto",
+      "DE",
+      "INCLUIR"
+    ],
+    "mustNotShow": [
+      "OS clutter"
+    ],
+    "crop": "Full app window at 1280x800",
+    "callouts": [],
+    "alt": "Editor de regras em modo texto com realce de sintaxe e autocompletar inteligente",
+    "caption": "Editor em modo texto da linguagem formal de regras com validação de sintaxe em tempo real."
+  },
+  {
+    "id": "banco-05-previa-sorteio",
+    "page": "banco-de-questoes",
+    "after": "Confira as questões sorteadas pelo algoritmo antes de finalizar a prova.",
+    "target": "desktop",
+    "window": "1280x800",
+    "screen": "Pré-visualização do Sorteio",
+    "state": "Listagem compacta de questões sorteadas com botões de travar, trocar e semente reprodutível",
+    "setup": "Clique em Pré-visualizar Sorteio no gerador de prova",
+    "mustShow": [
+      "Sortear de Novo",
+      "Criar Prova",
+      "Semente"
+    ],
+    "mustNotShow": [
+      "OS clutter"
+    ],
+    "crop": "Full app window at 1280x800",
+    "callouts": [],
+    "alt": "Painel de pré-visualização das questões sorteadas com travas individuais e geração de prova",
+    "caption": "Pré-visualização das questões sorteadas com travas por item, substituição e semente determinística."
   }
 ]
