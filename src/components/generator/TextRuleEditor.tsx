@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo, useId } from 'react';
 import {
   Copy,
   Check,
@@ -9,12 +9,26 @@ import {
 import { Blueprint, BankGroup, BankTag } from '../../types/bank';
 import { parse } from '../../utils/bank/query/parser';
 import { print } from '../../utils/bank/query/printer';
-import { getSuggestions, SuggestionItem } from '../../utils/bank/query/suggest';
+import {
+  getCompletions,
+  applyCompletion,
+  CompletionResult,
+  SuggestionItem,
+} from '../../utils/bank/query/suggest';
 import { Diagnostic } from '../../utils/bank/query/diagnostics';
 import { pathOf } from '../../utils/bank/tree';
 import { Button } from '../ui/Button';
 import { Select } from '../ui/Select';
 import { toast } from '../ui/toastStore';
+
+const useIsoLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
+
+const KIND_LABEL: Record<SuggestionItem['kind'], string> = {
+  keyword: 'palavra-chave',
+  group: 'grupo',
+  tag: 'etiqueta',
+  type: 'tipo',
+};
 
 export interface TextRuleEditorProps {
   blueprint: Blueprint;
@@ -33,8 +47,11 @@ export const TextRuleEditor: React.FC<TextRuleEditorProps> = ({
   const [text, setText] = useState(() => print(blueprint.blocks, groups, tags, { lang: 'pt' }));
   const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([]);
   const [hasCopied, setHasCopied] = useState(false);
-  const [suggestions, setSuggestions] = useState<SuggestionItem[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [completion, setCompletion] = useState<CompletionResult | null>(null);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const pendingCaretRef = useRef<number | null>(null);
+  const listboxId = useId();
+  const isOpen = completion !== null && completion.items.length > 0;
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -68,30 +85,115 @@ export const TextRuleEditor: React.FC<TextRuleEditorProps> = ({
     }
     const printed = print(blueprint.blocks, groups, tags, { lang });
     setText(printed);
+    setCompletion(null);
     runParse(printed);
   }, [blueprint, groups, tags, lang, runParse]);
+
+  const scheduleParse = useCallback(
+    (val: string) => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      debounceTimerRef.current = setTimeout(() => {
+        runParse(val);
+      }, 250);
+    },
+    [runParse]
+  );
+
+  // Recompute suggestions for the word at the caret.
+  const refreshCompletion = useCallback(
+    (value: string, caret: number, force = false) => {
+      const result = getCompletions(value, caret, groups, tags, lang, { force, limit: 12 });
+      if (result.items.length === 0) {
+        setCompletion(null);
+        return;
+      }
+      setCompletion(result);
+      setActiveIdx(0);
+    },
+    [groups, tags, lang]
+  );
+
+  // After accepting a suggestion, put the caret right after the inserted text
+  // (and re-open suggestions when the insertion opened a string argument).
+  useIsoLayoutEffect(() => {
+    const caret = pendingCaretRef.current;
+    if (caret === null) return;
+    pendingCaretRef.current = null;
+    const el = textareaRef.current;
+    if (!el) return;
+    el.setSelectionRange(caret, caret);
+    refreshCompletion(text, caret);
+  }, [text, refreshCompletion]);
+
+  // Keep the highlighted option visible when navigating with the arrow keys.
+  useEffect(() => {
+    if (!isOpen) return;
+    document.getElementById(`${listboxId}-opt-${activeIdx}`)?.scrollIntoView?.({ block: 'nearest' });
+  }, [isOpen, activeIdx, listboxId]);
+
+  const acceptCompletion = (item: SuggestionItem) => {
+    if (!completion) return;
+    const { text: next, caret } = applyCompletion(text, completion.from, completion.to, item);
+    pendingCaretRef.current = caret;
+    setText(next);
+    setCompletion(null);
+    scheduleParse(next);
+    textareaRef.current?.focus();
+  };
 
   // Handle text change with debounce
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
     setText(val);
+    refreshCompletion(val, e.target.selectionStart ?? val.length);
+    scheduleParse(val);
+  };
 
-    // Update suggestions at cursor
-    const cursorOffset = e.target.selectionStart ?? val.length;
-    const items = getSuggestions(val, cursorOffset, groups, tags, lang);
-    setSuggestions(items.slice(0, 8));
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.nativeEvent.isComposing) return;
 
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
+    // Ctrl/Cmd+Space: open suggestions on demand, even with nothing typed yet.
+    if ((e.ctrlKey || e.metaKey) && e.code === 'Space') {
+      e.preventDefault();
+      refreshCompletion(text, e.currentTarget.selectionStart ?? text.length, true);
+      return;
     }
-    debounceTimerRef.current = setTimeout(() => {
-      runParse(val);
-    }, 250);
+
+    if (!isOpen || !completion) return;
+    const count = completion.items.length;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveIdx((i) => (i + 1) % count);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveIdx((i) => (i - 1 + count) % count);
+    } else if (e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      // Tab completes (instead of moving focus) only while suggestions are open.
+      e.preventDefault();
+      acceptCompletion(completion.items[Math.min(activeIdx, count - 1)]);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      setCompletion(null);
+    }
+  };
+
+  const handleKeyUp = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Caret moved without typing: recompute suggestions for the new position.
+    if (['ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown'].includes(e.key)) {
+      refreshCompletion(text, e.currentTarget.selectionStart ?? text.length);
+    } else if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && !isOpen) {
+      refreshCompletion(text, e.currentTarget.selectionStart ?? text.length);
+    }
   };
 
   // Language toggle
   const handleToggleLang = (newLang: 'pt' | 'en') => {
     setLang(newLang);
+    setCompletion(null);
     const reprinted = print(blueprint.blocks, groups, tags, { lang: newLang });
     setText(reprinted);
     runParse(reprinted);
@@ -125,6 +227,7 @@ export const TextRuleEditor: React.FC<TextRuleEditorProps> = ({
     const after = text.slice(end);
     const nextText = `${before}${snippet}${after}`;
     setText(nextText);
+    setCompletion(null);
 
     setTimeout(() => {
       if (textareaRef.current) {
@@ -255,11 +358,13 @@ export const TextRuleEditor: React.FC<TextRuleEditorProps> = ({
           ref={textareaRef}
           value={text}
           onChange={handleTextChange}
-          onFocus={() => setShowSuggestions(true)}
-          onBlur={() => {
-            // small delay so suggestion clicks register
-            setTimeout(() => setShowSuggestions(false), 200);
-          }}
+          onKeyDown={handleKeyDown}
+          onKeyUp={handleKeyUp}
+          onClick={() => setCompletion(null)}
+          onBlur={() => setCompletion(null)}
+          aria-autocomplete="list"
+          aria-controls={isOpen ? listboxId : undefined}
+          aria-activedescendant={isOpen ? `${listboxId}-opt-${activeIdx}` : undefined}
           rows={12}
           spellCheck={false}
           className="w-full p-4 font-mono text-xs sm:text-sm bg-white border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 leading-relaxed resize-y"
@@ -269,32 +374,46 @@ export const TextRuleEditor: React.FC<TextRuleEditorProps> = ({
               : 'FROM "Math" INCLUDE\n  3 questions type("objective")\n  2 questions type("subjective")'
           }
         />
-      </div>
 
-      {/* Autocomplete Bar */}
-      {showSuggestions && suggestions.length > 0 && (
-        <div className="p-2 bg-white border border-slate-200 rounded-xl shadow-xs flex items-center gap-1.5 flex-wrap">
-          <span className="text-2xs font-semibold uppercase tracking-wider text-slate-500 px-1">
-            Sugestões:
-          </span>
-          {suggestions.map((item, idx) => (
-            <button
-              key={idx}
-              type="button"
-              onMouseDown={(e) => {
-                e.preventDefault();
-                handleInsertSnippet(item.insertText);
-              }}
-              className="px-2 py-1 rounded-md text-xs font-mono bg-slate-50 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 border border-slate-200 dark:border-indigo-500/30 transition flex items-center gap-1"
-            >
-              <span>{item.label}</span>
-              {item.kind && (
-                <span className="text-2xs text-slate-500 font-sans">({item.kind})</span>
-              )}
-            </button>
-          ))}
-        </div>
-      )}
+        {/* Autocomplete dropdown: Tab completes, arrows navigate, Esc closes */}
+        {isOpen && completion && (
+          <div
+            id={listboxId}
+            role="listbox"
+            aria-label="Sugestões de autocompletar"
+            className="absolute left-0 right-0 top-full mt-1 z-20 max-h-60 overflow-auto rounded-xl border border-slate-200 bg-white shadow-lg py-1"
+          >
+            {completion.items.map((item, idx) => (
+              <div
+                key={`${item.kind}:${item.insertText}`}
+                id={`${listboxId}-opt-${idx}`}
+                role="option"
+                aria-selected={idx === activeIdx}
+                onMouseDown={(e) => {
+                  // keep focus in the textarea
+                  e.preventDefault();
+                  acceptCompletion(item);
+                }}
+                onMouseEnter={() => setActiveIdx(idx)}
+                className={`px-3 py-1.5 flex items-center gap-2 cursor-pointer text-xs ${
+                  idx === activeIdx ? 'bg-indigo-50 dark:bg-indigo-950/30' : ''
+                }`}
+              >
+                <span className="font-mono text-indigo-700 dark:text-indigo-300 shrink-0">{item.label}</span>
+                {item.detail && (
+                  <span className="text-2xs text-slate-500 font-sans truncate">{item.detail}</span>
+                )}
+                <span className="ml-auto pl-2 text-2xs text-slate-500 font-sans shrink-0">
+                  {KIND_LABEL[item.kind]}
+                </span>
+              </div>
+            ))}
+            <div className="mt-1 px-3 pt-1.5 pb-0.5 border-t border-slate-200 text-2xs text-slate-500">
+              Tab para completar · ↑↓ para navegar · Esc para fechar
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Diagnostics / Syntax Status */}
       <div className="space-y-2">

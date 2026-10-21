@@ -35,7 +35,7 @@ export interface Token {
   column: number;
 }
 
-const KEYWORD_MAP: Record<string, TokenType> = {
+export const KEYWORD_MAP: Record<string, TokenType> = {
   de: 'FROM',
   from: 'FROM',
   ou: 'OR',
@@ -66,7 +66,7 @@ const KEYWORD_MAP: Record<string, TokenType> = {
   question: 'QUESTIONS',
 };
 
-function foldAccents(str: string): string {
+export function foldAccents(str: string): string {
   return str
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')

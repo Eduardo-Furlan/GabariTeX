@@ -6,15 +6,20 @@ import {
   BankTag,
 } from '../../../types/bank';
 import { pathOf } from '../tree';
+import { KEYWORD_MAP, foldAccents } from './lexer';
 
 export interface PrintOptions {
   lang?: 'pt' | 'en';
 }
 
-function needsQuotes(path: string): boolean {
+export function needsQuotes(path: string): boolean {
   // If path contains space or characters outside word characters and slash, or is a keyword
   if (/\s/.test(path)) return true;
   if (/["'(),.]/.test(path)) return true;
+  // A bare segment that lexes as a keyword (e.g. a group named "Todas" or "E") must be quoted.
+  if (path.split('/').some((seg) => Object.prototype.hasOwnProperty.call(KEYWORD_MAP, foldAccents(seg)))) {
+    return true;
+  }
   return false;
 }
 
