@@ -385,20 +385,42 @@ O banco de dados IndexedDB na versão web foi atualizado para a versão 2 (`DB_V
 - **Commit**:
   - `c66bb53 fix(bank-ui): stop action buttons from reserving space in group tree rows`
 
+### H4. Web import fails with "erro inesperado" on a leftover IndexedDB
+- **Root Cause**: `IndexedDbProfileStore` created object stores only inside `onupgradeneeded`. Intermediate or stale developer databases created at `DB_VERSION = 2` without current stores (`bank_meta`, `bank_questions`) threw `NotFoundError` during transactions.
+- **Implementation**:
+  - Implemented `openAndRepair()` in `IndexedDbProfileStore.ts` with `REQUIRED_STORES` contract. Missing stores are detected after opening; if incomplete, database upgrades to `version + 1` creating only the missing stores while preserving existing user data.
+  - Handled `VersionError` when the local database version is higher than expected.
+  - Cleared failed `dbPromise` cache on error to allow clean retries.
+  - Added descriptive `console.error` diagnostics to catch blocks in `IndexedDbProfileStore` and logged underlying import errors to the console in `App.tsx`.
+  - Added unit test suite `tests/bank-idb-schema-repair.test.ts` covering stale v2 database repair, data preservation, higher-version database opening, and fresh database creation.
+- **Commit**:
+  - `7d1eefc fix(bank-store): repair incomplete indexeddb schema on open`
+
+### H4b. Blocked upgrade must be visible, not a silent hang
+- **Root Cause**: When another browser tab or window held an open connection without closing on `versionchange`, IndexedDB upgrades and database deletions would hang indefinitely without notifying the user.
+- **Implementation**:
+  - Added `openTimeoutMs` (8000ms timeout) to `openWithVersion` in `IndexedDbProfileStore.ts` that rejects with a descriptive pt-BR error when upgrade is blocked.
+  - Wired `request.onblocked` to surface a persistent pt-BR `toast.error` ("O banco de dados local precisa ser atualizado. Feche as outras abas ou janelas do GabariTeX e recarregue esta página.") with title "Atualização Bloqueada".
+  - Added test case in `tests/bank-idb-schema-repair.test.ts` using `fake-indexeddb` simulating an unclosed blocker connection, asserting the persistent toast is fired, timeout rejects, and closing the blocker allows subsequent upgrade.
+- **Commit**:
+  - `5523519 fix(bank-store): report blocked indexeddb upgrades instead of hanging`
+
 ### Acceptance Verification
 1. **Empty profile creation**: Bank renders "Criar Primeiro Grupo" and "Criar Primeira Questão". Creating a group opens the dialog and switches screen mode to normal with the group selected.
 2. **Inline group creation**: `GroupPicker` renders "Novo Grupo" button when `onCreateGroup` is provided; creating a group selects it immediately.
 3. **Empty questions in bank**: Deleting questions preserves group tree and displays contextual group empty state.
 4. **Group name truncation**: Name uses available width at rest; actions reveal on hover/focus-within without squeezing at rest; tooltip is present.
 5. **Storage failure surfacing**: Failed write stops import immediately, displays localized error toast, and keeps modal open for user retry. Example profile imports 6 questions, 4 groups, 4 tags, 1 blueprint.
-6. **Quality gates**:
+6. **Schema auto-repair & blocked detection**: Stale databases auto-repair on open; blocked connections trigger persistent warning toast and timeout error.
+7. **Quality gates**:
    - `tsc`: Clean (0 errors).
-   - `vitest`: 79 test files, 502 tests passed.
+   - `vitest`: 80 test files, 508 tests passed.
    - `cargo test`: 20 unit tests passed.
    - `npm run build`: Web build clean.
    - `VITE_TARGET=desktop npx vite build`: Desktop build clean.
    - `npm run docs:check`: Passed.
    - `npm run check:version`: 1.2.0 passed.
+
 
 
 
