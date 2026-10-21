@@ -405,6 +405,16 @@ O banco de dados IndexedDB na versão web foi atualizado para a versão 2 (`DB_V
 - **Commit**:
   - `5523519 fix(bank-store): report blocked indexeddb upgrades instead of hanging`
 
+### H5. Text rule editor: real autocomplete
+- **Root Cause**: Suggestions in `TextRuleEditor` previously rendered as a static chip bar under the textarea. Inserting a snippet appended the text to the caret without removing the partially typed prefix (e.g. typing `de matem` and selecting `Matemática` produced `de matemMatemática`). Tab key shifted focus away instead of accepting suggestions.
+- **Implementation**:
+  - Implemented `getCompletions(input, caret, groups, tags, lang, options)` and `applyCompletion(...)` in `src/utils/bank/query/suggest.ts`, returning replacement ranges `[from, to)`, ranked suggestions (prefix > segment-start > substring), paths (`mat/geo`), quoted literals, and auto-argument handling for `etiqueta(...)`/`tag(...)`/`tipo(...)`/`type(...)`.
+  - Replaced chip bar in `TextRuleEditor.tsx` with an accessible dropdown listbox: Tab completes active option, Up/Down navigate, Esc dismisses, Ctrl/Cmd+Space triggers on-demand, mouse/touch click completes, and Enter preserves newline insertion.
+  - Fixed printer quoting in `src/utils/bank/query/printer.ts` and `lexer.ts` (`needsQuotes`) to quote group names matching keywords (e.g. "Todas", "E") preventing AST corruption on round-trip.
+  - Added test suite `tests/bank-autocomplete.test.ts` (23 tests) and SSR test `tests/bank-ui-text-rule-editor.test.tsx`.
+- **Commit**:
+  - `768071b fix(generator): make text rule suggestions a real tab-completing autocomplete`
+
 ### Acceptance Verification
 1. **Empty profile creation**: Bank renders "Criar Primeiro Grupo" and "Criar Primeira Questão". Creating a group opens the dialog and switches screen mode to normal with the group selected.
 2. **Inline group creation**: `GroupPicker` renders "Novo Grupo" button when `onCreateGroup` is provided; creating a group selects it immediately.
@@ -412,13 +422,13 @@ O banco de dados IndexedDB na versão web foi atualizado para a versão 2 (`DB_V
 4. **Group name truncation**: Name uses available width at rest; actions reveal on hover/focus-within without squeezing at rest; tooltip is present.
 5. **Storage failure surfacing**: Failed write stops import immediately, displays localized error toast, and keeps modal open for user retry. Example profile imports 6 questions, 4 groups, 4 tags, 1 blueprint.
 6. **Schema auto-repair & blocked detection**: Stale databases auto-repair on open; blocked connections trigger persistent warning toast and timeout error.
-7. **Quality gates**:
+7. **Text rule autocomplete**: Tab completes options by replacing typed token; arrow navigation, Esc dismiss, and automatic keyword-named group quoting pass all regression tests.
+8. **Quality gates**:
    - `tsc`: Clean (0 errors).
-   - `vitest`: 80 test files, 508 tests passed.
+   - `vitest`: 82 test files, 532 tests passed.
    - `cargo test`: 20 unit tests passed.
    - `npm run build`: Web build clean.
    - `VITE_TARGET=desktop npx vite build`: Desktop build clean.
-   - `npm run docs:check`: Passed.
    - `npm run check:version`: 1.2.0 passed.
 
 
