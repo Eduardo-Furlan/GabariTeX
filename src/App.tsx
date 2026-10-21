@@ -192,6 +192,11 @@ const AppContent: React.FC = () => {
     const res = await applyProfileImport(store, data, settings, mode);
 
     if (!res.ok) {
+      console.error(
+        `[Profile Import] Falha ao importar perfil na etapa "${res.step}" (${res.reason}):`,
+        res.error
+      );
+
       const reasonLabel = {
         quota: 'cota de armazenamento excedida',
         disk_full: 'disco cheio',

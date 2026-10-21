@@ -15,6 +15,23 @@ const STORE_SETTINGS = 'settings';
 const STORE_BANK_META = 'bank_meta';
 const STORE_BANK_QUESTIONS = 'bank_questions';
 
+const REQUIRED_STORES: ReadonlyArray<{ name: string; keyPath: string }> = [
+  { name: STORE_EXAMS, keyPath: 'id' },
+  { name: STORE_RECORDS, keyPath: 'id' },
+  { name: STORE_CLASSES, keyPath: 'id' },
+  { name: STORE_SETTINGS, keyPath: 'key' },
+  { name: STORE_BANK_META, keyPath: 'key' },
+  { name: STORE_BANK_QUESTIONS, keyPath: 'id' },
+];
+
+function ensureStores(db: IDBDatabase): void {
+  for (const s of REQUIRED_STORES) {
+    if (!db.objectStoreNames.contains(s.name)) {
+      db.createObjectStore(s.name, { keyPath: s.keyPath });
+    }
+  }
+}
+
 const SETTINGS_KEY = 'profile_settings';
 const BANK_META_KEY = 'meta';
 
@@ -41,29 +58,26 @@ export class IndexedDbProfileStore implements ProfileStore {
       return this.dbPromise;
     }
 
-    this.dbPromise = new Promise<IDBDatabase>((resolve, reject) => {
-      const request = indexedDB.open(DB_NAME, DB_VERSION);
+    this.dbPromise = this.openAndRepair().catch((err) => {
+      // Não deixa uma abertura falha "presa" em cache.
+      this.dbPromise = null;
+      throw err;
+    });
+
+    return this.dbPromise;
+  }
+
+  /**
+   * Abre o banco numa versão específica (ou na versão atual, se omitida),
+   * garantindo que todas as object stores exigidas existam quando houver upgrade.
+   */
+  private openWithVersion(version?: number): Promise<IDBDatabase> {
+    return new Promise<IDBDatabase>((resolve, reject) => {
+      const request =
+        version === undefined ? indexedDB.open(DB_NAME) : indexedDB.open(DB_NAME, version);
 
       request.onupgradeneeded = (e) => {
-        const db = (e.target as IDBOpenDBRequest).result;
-        if (!db.objectStoreNames.contains(STORE_EXAMS)) {
-          db.createObjectStore(STORE_EXAMS, { keyPath: 'id' });
-        }
-        if (!db.objectStoreNames.contains(STORE_RECORDS)) {
-          db.createObjectStore(STORE_RECORDS, { keyPath: 'id' });
-        }
-        if (!db.objectStoreNames.contains(STORE_CLASSES)) {
-          db.createObjectStore(STORE_CLASSES, { keyPath: 'id' });
-        }
-        if (!db.objectStoreNames.contains(STORE_SETTINGS)) {
-          db.createObjectStore(STORE_SETTINGS, { keyPath: 'key' });
-        }
-        if (!db.objectStoreNames.contains(STORE_BANK_META)) {
-          db.createObjectStore(STORE_BANK_META, { keyPath: 'key' });
-        }
-        if (!db.objectStoreNames.contains(STORE_BANK_QUESTIONS)) {
-          db.createObjectStore(STORE_BANK_QUESTIONS, { keyPath: 'id' });
-        }
+        ensureStores((e.target as IDBOpenDBRequest).result);
       };
 
       request.onblocked = () => {
@@ -83,8 +97,38 @@ export class IndexedDbProfileStore implements ProfileStore {
         reject(request.error || new Error('Erro ao abrir IndexedDB'));
       };
     });
+  }
 
-    return this.dbPromise;
+  /**
+   * Abre o banco e AUTO-REPARA o esquema: se um banco local foi criado por uma
+   * build anterior (mesma versão ou até versão maior, porém sem alguma store
+   * exigida), sobe a versão e cria as stores que faltam, preservando os dados.
+   */
+  private async openAndRepair(): Promise<IDBDatabase> {
+    let db: IDBDatabase;
+    try {
+      db = await this.openWithVersion(DB_VERSION);
+    } catch (err) {
+      if ((err as { name?: string } | null)?.name === 'VersionError') {
+        // O banco local já está numa versão maior que a esperada.
+        db = await this.openWithVersion(undefined);
+      } else {
+        throw err;
+      }
+    }
+
+    const missing = REQUIRED_STORES.filter((s) => !db.objectStoreNames.contains(s.name));
+    if (missing.length === 0) {
+      return db;
+    }
+
+    console.warn(
+      '[IndexedDB] Esquema local incompleto, reparando stores ausentes:',
+      missing.map((s) => s.name).join(', ')
+    );
+    const nextVersion = db.version + 1;
+    db.close();
+    return this.openWithVersion(nextVersion);
   }
 
   async listExams(): Promise<ExamMeta[]> {
@@ -404,6 +448,7 @@ export class IndexedDbProfileStore implements ProfileStore {
       });
       return { ok: true };
     } catch (err: unknown) {
+      console.error('[IndexedDbProfileStore] Erro ao substituir perfil (replaceProfile):', err);
       const errorObj = err as { name?: string };
       const isQuota = errorObj && errorObj.name === 'QuotaExceededError';
       return {
@@ -433,7 +478,8 @@ export class IndexedDbProfileStore implements ProfileStore {
         };
         req.onerror = () => reject(req.error);
       });
-    } catch {
+    } catch (err: unknown) {
+      console.error('[IndexedDbProfileStore] Erro ao carregar meta do banco (getBankMeta):', err);
       return this.getFallback().getBankMeta();
     }
   }
@@ -454,6 +500,7 @@ export class IndexedDbProfileStore implements ProfileStore {
       });
       return { ok: true };
     } catch (err: unknown) {
+      console.error('[IndexedDbProfileStore] Erro ao gravar meta do banco (putBankMeta):', err);
       const errorObj = err as { name?: string };
       const isQuota = errorObj && errorObj.name === 'QuotaExceededError';
       return { ok: false, error: err, reason: isQuota ? 'quota' : 'unknown' };
@@ -473,7 +520,8 @@ export class IndexedDbProfileStore implements ProfileStore {
         req.onsuccess = () => resolve(req.result || []);
         req.onerror = () => reject(req.error);
       });
-    } catch {
+    } catch (err: unknown) {
+      console.error('[IndexedDbProfileStore] Erro ao listar questões do banco (listBankQuestions):', err);
       return this.getFallback().listBankQuestions();
     }
   }
@@ -496,6 +544,7 @@ export class IndexedDbProfileStore implements ProfileStore {
       });
       return { ok: true };
     } catch (err: unknown) {
+      console.error('[IndexedDbProfileStore] Erro ao gravar questões do banco (putBankQuestions):', err);
       const errorObj = err as { name?: string };
       const isQuota = errorObj && errorObj.name === 'QuotaExceededError';
       return { ok: false, error: err, reason: isQuota ? 'quota' : 'unknown' };
@@ -517,7 +566,8 @@ export class IndexedDbProfileStore implements ProfileStore {
         tx.oncomplete = () => resolve();
         tx.onerror = () => reject(tx.error);
       });
-    } catch {
+    } catch (err: unknown) {
+      console.error('[IndexedDbProfileStore] Erro ao excluir questões do banco (deleteBankQuestions):', err);
       return this.getFallback().deleteBankQuestions(ids);
     }
   }
@@ -552,6 +602,7 @@ export class IndexedDbProfileStore implements ProfileStore {
       });
       return { ok: true };
     } catch (err: unknown) {
+      console.error('[IndexedDbProfileStore] Erro ao substituir banco de questões (replaceBank):', err);
       const errorObj = err as { name?: string };
       const isQuota = errorObj && errorObj.name === 'QuotaExceededError';
       return { ok: false, error: err, reason: isQuota ? 'quota' : 'unknown' };
