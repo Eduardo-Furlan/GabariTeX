@@ -45,6 +45,14 @@ Para fórmulas no meio do texto, envolva o código em cifrões simples: `$f(x) =
 Se você já tiver outras provas cadastradas no sistema, clique no botão **Importar de Outra Prova** no topo da lista para copiar enunciados prontos diretamente para a avaliação atual.
 :::
 
+::: tip Adicionar questões do Banco de Questões
+Para reaproveitar itens do seu acervo taxonômico organizado, clique em **Adicionar do Banco** no topo da lista de questões. Você pode filtrar por grupo ou etiqueta e importar múltiplas questões de uma só vez respeitando o limite da prova.
+:::
+
+::: tip Enviar questões da prova para o Banco
+Se você redigiu uma questão durante a montagem da avaliação e deseja guardá-la no acervo permanente, use a opção **Salvar no Banco** no topo da lista ou no menu de ações da questão. O sistema avisa caso identifique enunciados duplicados.
+:::
+
 ::: tip Questões anuladas
 Caso uma questão precise ser cancelada após a aplicação da prova, altere o seletor **Situação:** para conceder os pontos a todos os estudantes ou desconsiderar a questão sem necessidade de reimprimir os cadernos.
 :::

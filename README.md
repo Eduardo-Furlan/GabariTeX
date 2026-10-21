@@ -27,11 +27,12 @@ O **GabariTeX** é uma solução completa para elaboração, impressão e corre�
 
 O sistema integra:
 1. **Elaboração Rica com LaTeX**: Renderização nativa de equações matemáticas, fórmulas químicas e matrizes com KaTeX em tempo real.
-2. **Embaralhamento Combinatório Anti-Cola**: Randomização determinística de questões e alternativas para $N$ versões da mesma prova.
-3. **Diagramação A4 Rigorosa**: Geração de cadernos de questões em 1 ou 2 colunas com paginação discreta e cartões-resposta de leitura óptica padronizados.
-4. **Segurança Criptográfica no Papel**: Gabarito oficial cifrado com **AES-256-GCM** dentro do QR Code impresso na folha, derivado da senha mestra do professor via PBKDF2 (SHA-256 com 100.000 iterações).
-5. **Correção Óptica Automatizada (OMR)**: Leitura em tempo real e em lote acelerada por **OpenCV e Rust**, permitindo utilizar a webcam ou a **câmera do smartphone via Wi-Fi local sem instalar aplicativos**.
-6. **Gestão de Notas e Comprovantes**: Diário de notas com estatísticas por questão, exportação em CSV/Excel e gerador de comprovantes impressos individualizados para os alunos.
+2. **Banco de Questões & Sorteio Automatizado**: Gestão taxonômica de questões, etiquetas livres, modelos de prova (*blueprints*) e gerador combinatório reproduzível por semente.
+3. **Embaralhamento Combinatório Anti-Cola**: Randomização determinística de questões e alternativas para $N$ versões da mesma prova.
+4. **Diagramação A4 Rigorosa**: Geração de cadernos de questões em 1 ou 2 colunas com paginação discreta e cartões-resposta de leitura óptica padronizados.
+5. **Segurança Criptográfica no Papel**: Gabarito oficial cifrado com **AES-256-GCM** dentro do QR Code impresso na folha, derivado da senha mestra do professor via PBKDF2 (SHA-256 com 100.000 iterações).
+6. **Correção Óptica Automatizada (OMR)**: Leitura em tempo real e em lote acelerada por **OpenCV e Rust**, permitindo utilizar a webcam ou a **câmera do smartphone via Wi-Fi local sem instalar aplicativos**.
+7. **Gestão de Notas e Comprovantes**: Diário de notas com estatísticas por questão, exportação em CSV/Excel e gerador de comprovantes impressos individualizados para os alunos.
 
 ---
 
@@ -68,29 +69,36 @@ flowchart LR
 - Upload e embutimento de figuras e diagramas em Base64, preservando independência total de servidores externos.
 - Importação rápida de questões entre provas da mesma biblioteca ou arquivo de perfil.
 
-### 2. Randomizador Anti-Cola Determinístico
+### 2. Banco de Questões e Sorteio Automatizado
+- **Organização Taxonômica e Etiquetas**: Estrutura hierárquica em árvore de grupos (até 12 níveis) com contagem dinâmica e etiquetas transversais coloridas.
+- **Modelos de Prova (Blueprints)**: Matrizes de sorteio com blocos de origem (`OU` / `OR`, `E` / `AND`, `XOU` / `XOR`, `EXCETO` / `EXCEPT`), cotas por dificuldade ou conteúdo e cálculo ao vivo de disponibilidade e conflitos.
+- **Editor Visual e DSL de Regras em Texto**: Construtor visual interativo e editor textual com analisador formal em português e inglês, autocompletar e diagnósticos em tempo real.
+- **Sorteio Reproduzível**: Geração pseudo-aleatória por semente (*seed*), pré-visualização interativa com travas (*lock*) e substituições (*swap*), e opção de evitar repetição de itens de provas anteriores.
+- **Portabilidade e Compartilhamento**: Exportação e importação de subárvores isoladas em pacotes `.gabaritex-bank.zip` e backup unificado de perfil.
+
+### 3. Randomizador Anti-Cola Determinístico
 - Embaralhamento pseudo-aleatório através do algoritmo **Mulberry32**, garantindo reprodutibilidade das versões via semente (*seed*).
 - Geração instantânea de chaves de resposta mapeadas automaticamente para cada versão (Versões A, B, C, D...).
 - Eliminação total da cola em salas de aula sem necessidade de redigir diferentes provas manualmente.
 
-### 3. Diagramação A4 Estrita e Cartão-Resposta Padronizado
+### 4. Diagramação A4 Estrita e Cartão-Resposta Padronizado
 - **Caderno de Questões com Paginação Discreta**: Cada folha de prova respeita a geometria física A4 (`210mm × 297mm`). O sistema mede dinamicamente o volume de cada questão, impedindo que enunciados ou fórmulas sejam partidos entre páginas.
 - **Modo Duas Colunas**: Suporte a layout em duas colunas com divisória central contínua.
 - **Rodapé Sempre na Base**: Linha horizontal de encerramento e identificação de folha (`Folha 1 de N`) fixadas rigorosamente no final da página A4.
 - **Marcadores Fiduciais OMR**: 4 padrões de alinhamento de alto contraste nos vértices da folha para homografia e correção geométrica de perspectiva.
 
-### 4. Criptografia AES-256-GCM no Papel
+### 5. Criptografia AES-256-GCM no Papel
 - O gabarito oficial não reside em bancos de dados em nuvem. Ele viaja cifrado dentro do próprio QR Code impresso no cabeçalho do cartão-resposta.
 - Se um estudante escanear o QR Code da prova com a câmera do celular, verá apenas uma cadeia ininteligível de bytes (`MCORR:v1:...`).
 - Na hora da correção, basta digitar a senha mestra da avaliação no GabariTeX Desktop para que a decodificação ocorra instantaneamente em memória.
 
-### 5. Corretor Óptico Automatizado (GabariTeX Desktop)
+### 6. Corretor Óptico Automatizado (GabariTeX Desktop)
 - Processamento óptico nativo acelerado por **Rust + OpenCV**, permitindo leitura sub-milimétrica mesmo com variações de ângulo, perspectiva ou iluminação.
 - **Câmera do Celular como Scanner Sem Fio**: Conecte qualquer smartphone conectado à mesma rede Wi-Fi escaneando um QR Code gerado pelo GabariTeX Desktop. Fotografe os gabaritos no celular e veja a correção ser computada no computador em tempo real, sem instalar nenhum aplicativo móvel.
 - **Correção em Lote**: Fotografe dezenas de folhas sequencialmente com validação e salvamento automático.
 - Espelho de prova interativo com visualização das bolinhas preenchidas, marcações duplas, em branco e detecção de rasuras.
 
-### 6. Turmas, Livro de Notas e Comprovantes de Desempenho
+### 7. Turmas, Livro de Notas e Comprovantes de Desempenho
 - Gestão completa de turmas e matrículas de alunos.
 - Associação automática da folha corrigida ao aluno cadastrado pela leitura de matrícula ou assinatura.
 - Exportação dos resultados em formato tabular CSV (compatível com Excel, Google Planilhas e sistemas acadêmicos).
@@ -109,7 +117,7 @@ flowchart LR
 | **Visão Computacional** | OpenCV (C++ / Rust Bindings) | Detecção de contornos, homografia de perspectiva e amostragem óptica OMR. |
 | **Câmera Remota** | Axum (HTTP / WebSocket) | Servidor local sem fio para pareamento de câmera móvel. |
 | **Persistência Offline** | IndexedDB & SQLite (Tauri Plugin FS) | Armazenamento local com backup exportável em formato `.zip`. |
-| **Qualidade & Testes** | Vitest (251 testes unitários) | Cobertura rigorosa de criptografia, randomização, OMR e geometria de impressão. |
+| **Qualidade & Testes** | Vitest (478 testes unitários) | Cobertura rigorosa de criptografia, randomização, OMR, banco de questões e geometria de impressão. |
 
 ---
 
