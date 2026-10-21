@@ -365,3 +365,213 @@ describe('Banco de Questões no Perfil ZIP (Plano 5.2)', () => {
     expect(mergedData.bank?.questions.length).toBe(2);
   });
 });
+
+describe('Compartilhamento de Subárvore de Grupos (.gabaritex-bank.zip) (Plano 5.3)', () => {
+  const sampleImage =
+    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+
+  const groupParent: BankGroup = {
+    id: 'grp-parent',
+    parentId: null,
+    name: 'Matemática',
+    order: 0,
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
+  };
+
+  const groupSub: BankGroup = {
+    id: 'grp-sub',
+    parentId: 'grp-parent',
+    name: 'Geometria',
+    order: 0,
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
+  };
+
+  const groupDeep: BankGroup = {
+    id: 'grp-deep',
+    parentId: 'grp-sub',
+    name: 'Euclidiana',
+    order: 0,
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
+  };
+
+  const groupOther: BankGroup = {
+    id: 'grp-other',
+    parentId: null,
+    name: 'Física',
+    order: 1,
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
+  };
+
+  const tagGeo: BankTag = {
+    id: 'tag-geo',
+    name: 'Geometria Plana',
+    color: 'blue',
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
+  };
+
+  const tagUnused: BankTag = {
+    id: 'tag-unused',
+    name: 'Mecânica Clássica',
+    color: 'red',
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
+  };
+
+  const q1: BankQuestion = {
+    id: 'q-geo-1',
+    groupId: 'grp-deep',
+    tagIds: ['tag-geo'],
+    type: 'objective',
+    prompt: 'Teorema de Pitágoras no triângulo retângulo',
+    points: 2,
+    imageUrl: sampleImage,
+    options: [{ id: 'opt1', label: 'A', text: 'a² = b² + c²', isCorrect: true }],
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
+  };
+
+  const qOther: BankQuestion = {
+    id: 'q-fis-1',
+    groupId: 'grp-other',
+    tagIds: ['tag-unused'],
+    type: 'objective',
+    prompt: 'Primeira Lei de Newton',
+    points: 2,
+    options: [],
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
+  };
+
+  const fullBank: BankData = {
+    groups: [groupParent, groupSub, groupDeep, groupOther],
+    tags: [tagGeo, tagUnused],
+    questions: [q1, qOther],
+    blueprints: [
+      {
+        id: 'bp-1',
+        name: 'Modelo Geral',
+        blocks: [],
+        createdAt: '2026-10-01T00:00:00.000Z',
+        updatedAt: '2026-10-01T00:00:00.000Z',
+      },
+    ],
+  };
+
+  it('exporta subárvore colapsando ancestrais, isolando questões e imagens, e omitindo tags não utilizadas', async () => {
+    const { buildBankShareZip, parseBankShareZip } = await import(
+      '../src/utils/bank/shareZip'
+    );
+
+    // Exportar subárvore começando em 'grp-sub' (Geometria)
+    const zipBytes = await buildBankShareZip(fullBank, 'grp-sub');
+    const parsed = await parseBankShareZip(zipBytes);
+
+    expect(parsed.manifest.app).toBe('gabaritex');
+    expect(parsed.manifest.kind).toBe('question-bank');
+    expect(parsed.manifest.schema).toBe(1);
+    expect(parsed.manifest.counts.groups).toBe(2); // grp-sub e grp-deep
+    expect(parsed.manifest.counts.tags).toBe(1); // apenas tag-geo
+    expect(parsed.manifest.counts.questions).toBe(1); // apenas q1
+    expect(parsed.manifest.counts.assets).toBe(1); // imagem de q1 externalizada
+
+    // O grupo raiz escolhido ('grp-sub') teve seus ancestrais colapsados: parentId virou null
+    const root = parsed.groups.find((g) => g.id === 'grp-sub');
+    expect(root).toBeDefined();
+    expect(root?.parentId).toBeNull();
+
+    // O grupo descendente manteve parentId apontando para grp-sub
+    const deep = parsed.groups.find((g) => g.id === 'grp-deep');
+    expect(deep).toBeDefined();
+    expect(deep?.parentId).toBe('grp-sub');
+
+    // Imagem da questão foi restaurada a partir de assets/
+    expect(parsed.questions[0].imageUrl).toBe(sampleImage);
+
+    // Blueprints não são compartilhados
+    expect((parsed as any).blueprints).toBeUndefined();
+  });
+
+  it('rejeita pacote corrompido ou com kind inválido', async () => {
+    const { parseBankShareZip } = await import('../src/utils/bank/shareZip');
+    const invalidKindBytes = await buildProfileZip({ exams: [], classes: [], records: [] });
+
+    await expect(parseBankShareZip(invalidKindBytes)).rejects.toThrow(
+      "Tipo de contêiner inválido: esperado 'question-bank'"
+    );
+  });
+
+  it('mergeSubtreeIntoBank monta subárvore sob grupo de destino, unifica tags e atualiza por id', async () => {
+    const { buildBankShareZip, parseBankShareZip, mergeSubtreeIntoBank } = await import(
+      '../src/utils/bank/shareZip'
+    );
+
+    const zipBytes = await buildBankShareZip(fullBank, 'grp-sub');
+    const parsed = await parseBankShareZip(zipBytes);
+
+    const colleagueBank: BankData = {
+      groups: [
+        {
+          id: 'colleague-root',
+          parentId: null,
+          name: 'Ciências Exatas',
+          order: 0,
+          createdAt: '2026-10-01T00:00:00.000Z',
+          updatedAt: '2026-10-01T00:00:00.000Z',
+        },
+      ],
+      tags: [
+        {
+          id: 'colleague-tag-geo',
+          name: 'geometria plana', // mesmo nome case-insensitive
+          color: 'teal',
+          createdAt: '2026-10-01T00:00:00.000Z',
+          updatedAt: '2026-10-01T00:00:00.000Z',
+        },
+      ],
+      questions: [],
+      blueprints: [],
+    };
+
+    // Colega importa o grupo Geometria para debaixo de "Ciências Exatas"
+    const result = mergeSubtreeIntoBank(colleagueBank, parsed, 'colleague-root');
+
+    expect(result.summary.groupsAdded).toBe(2);
+    expect(result.summary.questionsAdded).toBe(1);
+    expect(result.summary.tagsMerged).toBe(1); // unificou para colleague-tag-geo
+
+    // Raiz importada montada sob 'colleague-root'
+    const importedRoot = result.updatedBank.groups.find((g) => g.id === 'grp-sub');
+    expect(importedRoot).toBeDefined();
+    expect(importedRoot?.parentId).toBe('colleague-root');
+
+    // Questão teve sua tag remapeada
+    const importedQ = result.updatedBank.questions.find((q) => q.id === 'q-geo-1');
+    expect(importedQ?.tagIds).toEqual(['colleague-tag-geo']);
+  });
+
+  it('mergeSubtreeIntoBank repetido é idempotente e não move nem duplica raiz existente', async () => {
+    const { buildBankShareZip, parseBankShareZip, mergeSubtreeIntoBank } = await import(
+      '../src/utils/bank/shareZip'
+    );
+
+    const zipBytes = await buildBankShareZip(fullBank, 'grp-sub');
+    const parsed = await parseBankShareZip(zipBytes);
+
+    // Primeiro import
+    const first = mergeSubtreeIntoBank(fullBank, parsed, null);
+    // Segundo import com o mesmo arquivo
+    const second = mergeSubtreeIntoBank(first.updatedBank, parsed, 'grp-other');
+
+    // Como grp-sub já existia, segundo import não deve movê-lo para 'grp-other'
+    const root = second.updatedBank.groups.find((g) => g.id === 'grp-sub');
+    expect(root?.parentId).toBe('grp-parent'); // manteve a posição original
+
+    expect(second.summary.groupsAdded).toBe(0);
+    expect(second.summary.questionsAdded).toBe(0);
+  });
+});

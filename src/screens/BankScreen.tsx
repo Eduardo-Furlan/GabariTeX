@@ -6,6 +6,7 @@ import {
   Plus,
   Sparkles,
   Tags,
+  Upload,
   X,
 } from 'lucide-react';
 import { useBank } from '../context/BankContext';
@@ -18,6 +19,7 @@ import { GroupTree, GroupSelection } from '../components/bank/GroupTree';
 import { QuestionList } from '../components/bank/QuestionList';
 import { QuestionEditorModal } from '../components/bank/QuestionEditorModal';
 import { TagManagerModal } from '../components/bank/TagManagerModal';
+import { BankImportModal } from '../components/bank/BankImportModal';
 import { BulkActionsBar } from '../components/bank/BulkActionsBar';
 import { GroupPicker } from '../components/bank/GroupPicker';
 import { BlueprintList } from '../components/bank/BlueprintList';
@@ -64,6 +66,7 @@ export const BankScreen: React.FC<BankScreenProps> = ({ onNavigate }) => {
   const [targetGroupId, setTargetGroupId] = useState<string | null>(null);
 
   const [deletingQuestion, setDeletingQuestion] = useState<BankQuestion | null>(null);
+  const [bankImportOpen, setBankImportOpen] = useState(false);
 
   useEffect(() => {
     ensureLoaded();
@@ -247,6 +250,16 @@ export const BankScreen: React.FC<BankScreenProps> = ({ onNavigate }) => {
 
           {activeTab === 'questions' ? (
             <>
+              <button
+                type="button"
+                onClick={() => setBankImportOpen(true)}
+                className="px-3 py-2 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-medium transition flex items-center gap-1.5"
+                title="Importar acervo compartilhado (.gabaritex-bank.zip)"
+              >
+                <Upload className="w-3.5 h-3.5 text-slate-500" />
+                <span>Importar</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => setTagManagerOpen(true)}
@@ -503,6 +516,11 @@ export const BankScreen: React.FC<BankScreenProps> = ({ onNavigate }) => {
           </p>
         </div>
       </Modal>
+
+      <BankImportModal
+        isOpen={bankImportOpen}
+        onClose={() => setBankImportOpen(false)}
+      />
     </div>
   );
 };

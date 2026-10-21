@@ -15,7 +15,6 @@ import { PrintScreen } from './screens/PrintScreen';
 import { ScannerScreen } from './screens/ScannerScreen';
 import { GradebookScreen } from './screens/GradebookScreen';
 import { ScreenSkeleton } from './components/ui/ScreenSkeleton';
-import { ProfileExportImportModal } from './components/profile/ProfileExportImportModal';
 import { GradingModal } from './components/scanner/GradingModal';
 import { UpdatePrompt } from './components/pwa/UpdatePrompt';
 import { ToastHost } from './components/ui/Toast';
@@ -35,6 +34,7 @@ const VALID_STEPS: StepId[] = ['criar', 'versoes', 'imprimir', 'corrigir', 'nota
 
 const BankScreen = lazyWithRetry(() => import('./screens/BankScreen'));
 const GeneratorScreen = lazyWithRetry(() => import('./screens/GeneratorScreen'));
+const ProfileExportImportModal = lazyWithRetry(() => import('./components/profile/ProfileExportImportModal'));
 
 const AppContent: React.FC = () => {
   const {
@@ -301,15 +301,17 @@ const AppContent: React.FC = () => {
 
       {/* Modal de Exportação / Importação de Perfil ZIP */}
       {exportProfileData && (
-        <ProfileExportImportModal
-          isOpen={isExportImportOpen}
-          onClose={() => setIsExportImportOpen(false)}
-          currentData={exportProfileData}
-          currentSettings={profileSettings}
-          activeExamId={exam.id || activeExamId}
-          initialMode={exportImportMode}
-          onProfileImported={handleProfileImported}
-        />
+        <Suspense fallback={null}>
+          <ProfileExportImportModal
+            isOpen={isExportImportOpen}
+            onClose={() => setIsExportImportOpen(false)}
+            currentData={exportProfileData}
+            currentSettings={profileSettings}
+            activeExamId={exam.id || activeExamId}
+            initialMode={exportImportMode}
+            onProfileImported={handleProfileImported}
+          />
+        </Suspense>
       )}
 
       {/* Diálogo de troca de prova ativa caso folha de outra prova seja escaneada */}

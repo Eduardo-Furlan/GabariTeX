@@ -579,3 +579,5 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
     </Modal>
   );
 };
+
+export default ProfileExportImportModal;
