@@ -39,7 +39,7 @@ interface ProfileExportImportModalProps {
     data: ProfileData,
     settings: ProfileSettings,
     mode?: 'merge' | 'replace'
-  ) => void;
+  ) => void | boolean | Promise<void | boolean>;
 }
 
 export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> = ({
@@ -164,6 +164,7 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
   const handleExecuteImport = async () => {
     if (!importPreview) return;
 
+    let res: boolean | void = false;
     if (importMode === 'replace') {
       const confirmReplace = await confirmDialog({
         title: 'Substituir Tudo',
@@ -175,7 +176,7 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
       });
       if (!confirmReplace) return;
 
-      onProfileImported(importPreview.parsedData, importPreview.parsedSettings, 'replace');
+      res = await onProfileImported(importPreview.parsedData, importPreview.parsedSettings, 'replace');
     } else {
       const { mergedData, mergedSettings } = mergeProfiles(
         currentData,
@@ -183,10 +184,12 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
         currentSettings,
         importPreview.parsedSettings
       );
-      onProfileImported(mergedData, mergedSettings, 'merge');
+      res = await onProfileImported(mergedData, mergedSettings, 'merge');
     }
 
-    onClose();
+    if (res !== false) {
+      onClose();
+    }
   };
 
   return (

@@ -28,6 +28,8 @@ import { useRetained } from './hooks/useRetained';
 import { triggerDesktopSnapshot } from './platform/snapshots';
 import { Exam } from './types/exam';
 import { ProfileData, ProfileSettings } from './types/profile';
+import { toast } from './components/ui/toastStore';
+import { applyProfileImport } from './utils/profileImportApply';
 import './styles/print.css';
 
 const VALID_STEPS: StepId[] = ['criar', 'versoes', 'imprimir', 'corrigir', 'notas'];
@@ -176,7 +178,7 @@ const AppContent: React.FC = () => {
     data: ProfileData,
     settings: ProfileSettings,
     mode: 'merge' | 'replace' = 'merge'
-  ) => {
+  ): Promise<boolean> => {
     if (typeof __DESKTOP__ !== 'undefined' && __DESKTOP__ && exportProfileData) {
       try {
         await triggerDesktopSnapshot(exportProfileData, 'pre-import');
@@ -187,24 +189,53 @@ const AppContent: React.FC = () => {
 
     cancelAllAutosaves();
 
-    if (mode === 'replace') {
-      await store.replaceProfile(data, settings);
-    } else {
-      for (const ex of data.exams) {
-        await store.putExam(ex);
-      }
-      await store.putClasses(data.classes);
-      await store.putRecords(data.records);
-      if (data.bank) {
-        await store.replaceBank(data.bank);
-      }
-      if (settings) {
-        await store.putSettings(settings);
+    const res = await applyProfileImport(store, data, settings, mode);
+
+    if (!res.ok) {
+      const reasonLabel = {
+        quota: 'cota de armazenamento excedida',
+        disk_full: 'disco cheio',
+        permission: 'permissão negada',
+        unknown: 'erro inesperado',
+      }[res.reason as 'quota' | 'disk_full' | 'permission' | 'unknown'] ?? (res.reason || 'erro desconhecido');
+
+      const stepLabel = {
+        replaceProfile: 'substituição do perfil',
+        putExam: 'gravação de prova',
+        putClasses: 'gravação de turmas',
+        putRecords: 'gravação de notas',
+        replaceBank: 'gravação do banco de questões',
+        putSettings: 'gravação de configurações',
+      }[res.step] ?? res.step;
+
+      toast.error(`Falha ao importar perfil na etapa de ${stepLabel} (${reasonLabel}).`);
+      return false;
+    }
+
+    const { counts } = res;
+    const parts = [
+      `${counts.exams} prova(s)`,
+      `${counts.classes} turma(s)`,
+      `${counts.records} nota(s)`,
+    ];
+    if (counts.bank) {
+      const bankParts: string[] = [];
+      if (counts.bank.questions > 0) bankParts.push(`${counts.bank.questions} questão(ões)`);
+      if (counts.bank.groups > 0) bankParts.push(`${counts.bank.groups} grupo(s)`);
+      if (counts.bank.tags > 0) bankParts.push(`${counts.bank.tags} etiqueta(s)`);
+      if (counts.bank.blueprints > 0) bankParts.push(`${counts.bank.blueprints} modelo(s)`);
+      if (bankParts.length > 0) {
+        parts.push(`banco com ${bankParts.join(', ')}`);
+      } else {
+        parts.push('banco de questões');
       }
     }
 
+    toast.success(`Perfil importado com sucesso: ${parts.join(', ')}.`);
+
     await reloadProfile();
     setIsExportImportOpen(false);
+    return true;
   };
 
   const hasInitialLoadedRef = useRef(false);
