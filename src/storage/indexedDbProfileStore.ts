@@ -4,6 +4,7 @@ import { BankMeta, BankQuestion, BankData } from '../types/bank';
 import { SaveResult } from '../utils/storage';
 import { ProfileStore } from './profileStore';
 import { MemoryProfileStore } from './memoryProfileStore';
+import { toast } from '../components/ui/toastStore';
 
 const DB_NAME = 'gabaritex_profile_db';
 const DB_VERSION = 2;
@@ -67,14 +68,33 @@ export class IndexedDbProfileStore implements ProfileStore {
     return this.dbPromise;
   }
 
+  private openTimeoutMs: number = 8000;
+
+  /** @internal Apenas para testes unitários de bloqueio/timeout */
+  __setOpenTimeoutForTests(ms: number): void {
+    this.openTimeoutMs = ms;
+  }
+
   /**
    * Abre o banco numa versão específica (ou na versão atual, se omitida),
    * garantindo que todas as object stores exigidas existam quando houver upgrade.
    */
-  private openWithVersion(version?: number): Promise<IDBDatabase> {
+  private openWithVersion(version?: number, timeoutMs = this.openTimeoutMs): Promise<IDBDatabase> {
     return new Promise<IDBDatabase>((resolve, reject) => {
+      let isSettled = false;
       const request =
         version === undefined ? indexedDB.open(DB_NAME) : indexedDB.open(DB_NAME, version);
+
+      const timer = setTimeout(() => {
+        if (!isSettled) {
+          isSettled = true;
+          reject(
+            new Error(
+              'Abertura do IndexedDB expirou (bloqueada por outra conexão aberta). Feche as outras abas ou janelas do GabariTeX e recarregue esta página.'
+            )
+          );
+        }
+      }, timeoutMs);
 
       request.onupgradeneeded = (e) => {
         ensureStores((e.target as IDBOpenDBRequest).result);
@@ -82,9 +102,21 @@ export class IndexedDbProfileStore implements ProfileStore {
 
       request.onblocked = () => {
         console.warn('[IndexedDB] Abertura do banco bloqueada por outra conexão aberta.');
+        toast.error(
+          'O banco de dados local precisa ser atualizado. Feche as outras abas ou janelas do GabariTeX e recarregue esta página.',
+          { duration: 0, title: 'Atualização Bloqueada' }
+        );
       };
 
       request.onsuccess = () => {
+        if (isSettled) {
+          try {
+            request.result.close();
+          } catch {}
+          return;
+        }
+        isSettled = true;
+        clearTimeout(timer);
         const db = request.result;
         db.onversionchange = () => {
           db.close();
@@ -94,6 +126,9 @@ export class IndexedDbProfileStore implements ProfileStore {
       };
 
       request.onerror = () => {
+        if (isSettled) return;
+        isSettled = true;
+        clearTimeout(timer);
         reject(request.error || new Error('Erro ao abrir IndexedDB'));
       };
     });

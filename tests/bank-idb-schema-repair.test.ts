@@ -2,6 +2,7 @@ import 'fake-indexeddb/auto';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { IndexedDbProfileStore } from '../src/storage/indexedDbProfileStore';
 import { BankData } from '../src/types/bank';
+import { getToastsSnapshot } from '../src/components/ui/toastStore';
 
 const DB = 'gabaritex_profile_db';
 
@@ -104,5 +105,53 @@ describe('IndexedDbProfileStore schema repair', () => {
   it('creates everything on a fresh database', async () => {
     const store = new IndexedDbProfileStore();
     expect((await store.replaceBank(bank)).ok).toBe(true);
+  });
+
+  it('dispara aviso de bloqueio e rejeita com timeout quando outra conexão sem versionchange bloqueia upgrade', async () => {
+    // 1. Cria banco na versão 1 (sem lojas do banco de questões)
+    await seedDb(1, BASE, {
+      exams: [{ id: 'e1', header: { examTitle: 'Prova V1' }, questions: [] }],
+    });
+
+    // 2. Abre uma conexão v1 mantida aberta sem fechar em onversionchange
+    const blocker = await new Promise<IDBDatabase>((resolve, reject) => {
+      const req = indexedDB.open(DB, 1);
+      req.onsuccess = () => {
+        const db = req.result;
+        // Não associa db.onversionchange ou previne fechamento
+        resolve(db);
+      };
+      req.onerror = () => reject(req.error);
+    });
+
+    try {
+      const store = new IndexedDbProfileStore();
+      // Configura timeout curto de teste (200ms)
+      store.__setOpenTimeoutForTests(200);
+
+      // 3. Tenta abrir o store diretamente
+      // Deve rejeitar com o erro de timeout
+      await expect((store as any).openDb()).rejects.toThrow(
+        /Abertura do IndexedDB expirou \(bloqueada por outra conexão aberta\)/
+      );
+
+      // 4. Verifica se o aviso persistente em pt-BR foi disparado
+      const toasts = getToastsSnapshot();
+      expect(
+        toasts.some((t) =>
+          t.message.includes(
+            'O banco de dados local precisa ser atualizado. Feche as outras abas ou janelas'
+          )
+        )
+      ).toBe(true);
+    } finally {
+      // 5. Fecha a conexão bloqueadora
+      blocker.close();
+    }
+
+    // 6. Próxima tentativa de abertura com o bloqueador fechado deve suceder
+    const retryStore = new IndexedDbProfileStore();
+    expect((await retryStore.replaceBank(bank)).ok).toBe(true);
+    expect(await retryStore.listBankQuestions()).toHaveLength(1);
   });
 });
