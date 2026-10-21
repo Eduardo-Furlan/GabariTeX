@@ -341,6 +341,65 @@ O banco de dados IndexedDB na versão web foi atualizado para a versão 2 (`DB_V
 4. `npm run docs:check` e `npm run docs:build` para validar integridade da documentação.
 5. `cargo test --manifest-path src-tauri/Cargo.toml` para executar testes de backend Rust.
 
+---
+
+## Pre-release Hotfixes (H1 - H3)
+
+### Scope & Constraints
+- **Version**: `1.2.0` (no bump; release not yet tagged).
+- **Quality Gates**: All green (tsc, Vitest 502/502 tests, Rust 20/20 tests, Web build, Desktop build, docs:check, check:version).
+
+### H1. Groups cannot be created before the first question
+- **Root Cause**: `BankScreen.tsx` previously rendered the global empty state whenever `questions.length === 0`, hiding the `GroupTree` even if groups existed, and offering only "Criar Primeira Questão". `GroupPicker` also lacked inline creation affordance.
+- **Implementation**:
+  - Created pure function `getBankScreenMode(groups, questions)` in `src/utils/bank/screenMode.ts`.
+  - Empty bank (`groups === 0 && questions === 0`) renders two CTAs: "Criar Primeiro Grupo" (primary) and "Criar Primeira Questão", with descriptive copy.
+  - Groups-only bank renders normal layout (tree + list).
+  - Contextual empty state in `QuestionList.tsx` when a group has 0 questions ("Nenhuma questão neste grupo" with "Nova Questão" preselecting the active group).
+  - Added inline group creation button ("Novo Grupo") to `GroupPicker.tsx` via `onCreateGroup` and extracted `handleInlineGroupCreate`.
+  - Wired `onCreateGroup` in `QuestionEditorModal`, `SendToBankModal`, `GroupMoveDialog`, `GroupDeleteDialog`, `BulkActionsBar`, and `BankScreen`.
+  - Added comprehensive pure, SSR, and interaction tests in `tests/bank-ui-screen-mode.test.tsx`.
+- **Commits**:
+  - `bbf2746 fix(bank-ui): show group tree and group CTA when bank has no questions`
+  - `ee238c7 feat(bank-ui): create a group inline from the group picker`
+  - `86acd3a test(bank-ui): cover empty-bank and groups-only screen modes`
+
+### H2. Profile import must never fail silently
+- **Root Cause**: `handleProfileImported` in `App.tsx` ignored storage operation results (`SaveResult`). If a write failed (quota, disk full), the error went silent and the modal closed as if successful.
+- **Implementation**:
+  - Extracted storage orchestration to `applyProfileImport` in `src/utils/profileImportApply.ts`, verifying every `SaveResult` step-by-step (`replaceProfile`, `putExam`, `putClasses`, `putRecords`, `replaceBank`, `putSettings`) and halting immediately on failure.
+  - Updated `App.tsx` to handle failure with a pt-BR `toast.error` detailing the step and cause, and on success show a descriptive summary `toast.success`.
+  - Updated `ProfileExportImportModal.tsx` to `await` the import handler and only close on success.
+  - Added permanent regression test `tests/bank-import-example-profile.test.ts` verifying real demo profile import into empty and populated databases using `IndexedDbProfileStore` on `fake-indexeddb`, plus stub isolation tests.
+- **Commits**:
+  - `6a25b81 refactor(bank-zip): extract profile import apply into a testable function`
+  - `05a398f fix(bank-zip): surface storage failures during profile import`
+  - `253554f test(bank-zip): regression test importing the example profile`
+
+### H3. Group names are truncated even when there is room
+- **Root Cause**: In `GroupTree.tsx::renderNode`, the quick-actions container was always present in the flex layout with `opacity-0`, occupying ~100px and squeezing names.
+- **Implementation**:
+  - Changed quick-actions container to `hidden` at rest and `group-hover:flex group-focus-within:flex`, plus `[@media(hover:none)]:flex` when selected on touch devices.
+  - Added native `title={node.name}` tooltip to group names for complete visibility on hover.
+  - Added SSR regression test in `tests/bank-ui-group-tree.test.tsx`.
+- **Commit**:
+  - `c66bb53 fix(bank-ui): stop action buttons from reserving space in group tree rows`
+
+### Acceptance Verification
+1. **Empty profile creation**: Bank renders "Criar Primeiro Grupo" and "Criar Primeira Questão". Creating a group opens the dialog and switches screen mode to normal with the group selected.
+2. **Inline group creation**: `GroupPicker` renders "Novo Grupo" button when `onCreateGroup` is provided; creating a group selects it immediately.
+3. **Empty questions in bank**: Deleting questions preserves group tree and displays contextual group empty state.
+4. **Group name truncation**: Name uses available width at rest; actions reveal on hover/focus-within without squeezing at rest; tooltip is present.
+5. **Storage failure surfacing**: Failed write stops import immediately, displays localized error toast, and keeps modal open for user retry. Example profile imports 6 questions, 4 groups, 4 tags, 1 blueprint.
+6. **Quality gates**:
+   - `tsc`: Clean (0 errors).
+   - `vitest`: 79 test files, 502 tests passed.
+   - `cargo test`: 20 unit tests passed.
+   - `npm run build`: Web build clean.
+   - `VITE_TARGET=desktop npx vite build`: Desktop build clean.
+   - `npm run docs:check`: Passed.
+   - `npm run check:version`: 1.2.0 passed.
+
 
 
 
