@@ -12,6 +12,7 @@ Para começar agora mesmo, escolha um dos caminhos:
 
 - [Instalar o aplicativo](./instalacao.md): instale a versão para Windows ou Linux no seu computador.
 - [Criar uma avaliação](./criar-prova.md): monte o cabeçalho, digite enunciados e adicione fórmulas matemáticas.
+- [Banco de questões](./banco-de-questoes.md): organize seu acervo com taxonomia e gere provas por sorteio combinatório.
 - [Corrigir folhas de respostas](./corrigir.md): use o aplicativo desktop para processar fotos e calcular as notas.
 
 ::: tip Qual versão devo usar?
@@ -29,7 +30,7 @@ A elaboração de provas, diagramação com fórmulas, embaralhamento de versõe
 1. Abra o aplicativo no computador ou acesse a versão web para visualizar a tela inicial com as opções de acesso rápido.
    <Screenshot id="index-01-visao-geral" />
 
-2. Na barra superior, identifique as três áreas principais de trabalho: **Provas** (onde você gerencia suas avaliações), **Turmas** (onde você organiza a lista de estudantes) e **Corretor** (onde as folhas são lidas).
+2. Na barra superior, identifique as áreas principais de trabalho: **Provas** (onde você gerencia suas avaliações), **Banco de Questões** (onde você organiza seu acervo por tópicos e modelos de sorteio), **Turmas** (onde você organiza a lista de estudantes) e **Corretor** (onde as folhas são lidas).
 
 3. Para experimentar o editor imediatamente sem digitar nada, clique no botão **Modelo Matemática** para carregar uma avaliação completa com fórmulas.
 

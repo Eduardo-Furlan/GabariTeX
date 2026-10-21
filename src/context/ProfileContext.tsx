@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Exam, ExamVersion, GradingRecord, Classroom, Question } from '../types/exam';
 import { ProfileData, ProfileSettings, ExamMeta } from '../types/profile';
+import { BankData } from '../types/bank';
 import { initialSampleExam, emptyExam } from '../utils/sampleExam';
 import { generateExamVersions } from '../utils/randomizer';
 import { generateExamPassword } from '../utils/crypto';
@@ -25,6 +26,7 @@ import {
   checkAndRunDailySnapshot,
 } from '../platform/snapshots';
 import { toast } from '../components/ui/toastStore';
+import { BankProvider } from './BankContext';
 
 export interface ExamSwitchPromptState {
   targetExamId: string;
@@ -106,6 +108,7 @@ export interface ProfileContextType {
     options?: { newStudentToClass?: { classId: string; name: string; registration?: string } }
   ) => void;
   reloadProfile: () => Promise<void>;
+  profileReloadKey: number;
   flushAll: () => Promise<void>;
   cancelAllAutosaves: () => void;
   recordCountByExam: Record<string, number>;
@@ -117,6 +120,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const store = useMemo(() => getProfileStore(), []);
 
   const [isLoadingProfile, setIsLoadingProfile] = useState<boolean>(true);
+  const [profileReloadKey, setProfileReloadKey] = useState<number>(0);
   const [exams, setExams] = useState<ExamMeta[]>([]);
   const [exam, setExam] = useState<Exam>(emptyExam);
   const [versions, setVersions] = useState<ExamVersion[]>([]);
@@ -302,10 +306,28 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
         const examMap = new Map(validExams.map((e) => [e.id, e]));
         if (exam.id) examMap.set(exam.id, exam);
 
+        const [bankMeta, bankQuestions] = await Promise.all([
+          store.getBankMeta(),
+          store.listBankQuestions(),
+        ]);
+        const bank: BankData | undefined =
+          bankMeta.groups.length > 0 ||
+          bankMeta.tags.length > 0 ||
+          bankMeta.blueprints.length > 0 ||
+          bankQuestions.length > 0
+            ? {
+                groups: bankMeta.groups,
+                tags: bankMeta.tags,
+                blueprints: bankMeta.blueprints,
+                questions: bankQuestions,
+              }
+            : undefined;
+
         const currentProfileData: ProfileData = {
           exams: Array.from(examMap.values()),
           classes,
           records,
+          ...(bank ? { bank } : {}),
         };
 
         await checkAndRunDailySnapshot(currentProfileData);
@@ -398,6 +420,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
       console.error('Erro ao carregar perfil:', err);
     } finally {
       setIsLoadingProfile(false);
+      setProfileReloadKey((k) => k + 1);
     }
   }, [store]);
 
@@ -694,8 +717,24 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
           try {
             const fullExams = await Promise.all(exams.map((m) => store.getExam(m.id)));
             const validExams = fullExams.filter((e): e is Exam => Boolean(e));
+            const [bankMeta, bankQuestions] = await Promise.all([
+              store.getBankMeta(),
+              store.listBankQuestions(),
+            ]);
+            const bank: BankData | undefined =
+              bankMeta.groups.length > 0 ||
+              bankMeta.tags.length > 0 ||
+              bankMeta.blueprints.length > 0 ||
+              bankQuestions.length > 0
+                ? {
+                    groups: bankMeta.groups,
+                    tags: bankMeta.tags,
+                    blueprints: bankMeta.blueprints,
+                    questions: bankQuestions,
+                  }
+                : undefined;
             await triggerDesktopSnapshot(
-              { exams: validExams, classes, records },
+              { exams: validExams, classes, records, ...(bank ? { bank } : {}) },
               'pre-delete'
             );
           } catch (err) {
@@ -1165,6 +1204,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
       handleDisassociateRecordsFromClass,
       handleGradeSaved,
       reloadProfile: initProfile,
+      profileReloadKey,
       flushAll,
       cancelAllAutosaves,
       recordCountByExam,
@@ -1172,6 +1212,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
     [
       store,
       isLoadingProfile,
+      profileReloadKey,
       exams,
       exam,
       versions,
@@ -1222,7 +1263,11 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
     ]
   );
 
-  return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>;
+  return (
+    <ProfileContext.Provider value={value}>
+      <BankProvider>{children}</BankProvider>
+    </ProfileContext.Provider>
+  );
 };
 
 export function useProfile(): ProfileContextType {

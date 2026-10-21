@@ -215,11 +215,12 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
           }
         }}
       >
-        <div className="space-y-6">
-          {/* Painel Unificado: Sessão de Correção */}
-          <Surface className="p-4 sm:p-5 space-y-4">
-            {/* Header: Título + Senha */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+        {isDesktopUI ? (
+          <div className="space-y-6">
+            {/* Painel Unificado: Sessão de Correção */}
+            <Surface className="p-4 sm:p-5 space-y-4">
+              {/* Header: Título + Senha */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
                   <Camera className="w-5 h-5" />
@@ -469,49 +470,114 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onNavigate }) => {
           </div>
 
           {/* Modal da Câmera Remota */}
-          {isDesktopUI && (
-            <RemoteCameraPanel
-              isOpen={remotePanelOpen}
-              onClose={() => setRemotePanelOpen(false)}
-              session={remoteSession}
-              isStarting={isStartingRemote}
-              receivedCount={remoteReceivedCount}
-              availableInterfaces={availableInterfaces}
-              onStart={handleStartRemote}
-              onStop={handleStopRemote}
-              onChangeInterface={handleChangeRemoteInterface}
-            />
-          )}
-
-          {/* Card Discreto de Download do App para Usuários Web */}
-          {!isDesktopUI && (
-            <Surface className="p-4 sm:p-5 mt-6 border-slate-200 bg-slate-50/60 space-y-2">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
-                    <Monitor className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="text-body font-display font-bold text-slate-900">
-                      GabariTeX Desktop (Recomendado para correção com OpenCV)
-                    </h4>
-                    <p className="text-meta text-slate-500">
-                      Correção óptica sub-milimétrica com calibração de perspectiva e pareamento sem fio da câmera do smartphone.
-                    </p>
-                  </div>
-                </div>
-                <a
-                  href="https://github.com/Eduardo-Furlan/GabariTeX/releases/latest"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-white text-slate-700 text-meta font-semibold transition shrink-0"
-                >
-                  <span>Baixar GabariTeX Desktop (GitHub Releases)</span>
-                </a>
-              </div>
-            </Surface>
-          )}
+          <RemoteCameraPanel
+            isOpen={remotePanelOpen}
+            onClose={() => setRemotePanelOpen(false)}
+            session={remoteSession}
+            isStarting={isStartingRemote}
+            receivedCount={remoteReceivedCount}
+            availableInterfaces={availableInterfaces}
+            onStart={handleStartRemote}
+            onStop={handleStopRemote}
+            onChangeInterface={handleChangeRemoteInterface}
+          />
         </div>
+      ) : (
+        <div className="max-w-3xl mx-auto my-6 sm:my-10 space-y-8">
+          {/* Cartão Principal de Apresentação e Download */}
+          <Surface className="p-6 sm:p-10 text-center relative overflow-hidden">
+            <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 flex items-center justify-center text-indigo-600 dark:text-indigo-300 mx-auto mb-4 shadow-2xs">
+              <Monitor className="w-8 h-8" />
+            </div>
+
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 text-indigo-700 dark:text-indigo-300 text-xs font-bold uppercase tracking-wider mb-3">
+              <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-300" />
+              Disponível para Download no GitHub
+            </div>
+
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+              Corretor Óptico (OMR) no GabariTeX Desktop
+            </h2>
+
+            <p className="text-sm text-slate-600 mt-3 leading-relaxed max-w-xl mx-auto">
+              Para alcançar leitura óptica de alta precisão com processamento em tempo real, detecção por marcadores fiduciais e calibração de perspectiva via <strong>OpenCV nativo</strong>, o corretor automatizado é executado pelo aplicativo desktop oficial.
+            </p>
+
+            {/* Botões de Ação: Baixar Release e Continuar na Web */}
+            <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <a
+                href="https://github.com/Eduardo-Furlan/GabariTeX/releases/latest"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-on-accent text-sm font-bold shadow-md hover:shadow-lg transition-all"
+              >
+                <Monitor className="w-4 h-4" />
+                <span>Baixar GabariTeX Desktop (GitHub Releases)</span>
+              </a>
+
+              <Button
+                variant="secondary"
+                onClick={() => onNavigate({ type: 'exams' })}
+                className="w-full sm:w-auto px-5 py-3 rounded-xl text-sm font-semibold"
+              >
+                <FileText className="w-4 h-4 text-slate-500" />
+                <span>Continuar na Versão Web</span>
+              </Button>
+            </div>
+
+            <p className="text-[11px] text-slate-600 mt-3">
+              Binários disponíveis para <strong>Linux (.deb, .AppImage, .rpm)</strong> e <strong>Windows (.exe, .msi)</strong>.
+            </p>
+          </Surface>
+
+          {/* Grid de Benefícios do Aplicativo Desktop */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Surface className="p-5 shadow-2xs">
+              <div className="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 flex items-center justify-center text-indigo-600 dark:text-indigo-300 mb-3">
+                <Camera className="w-4 h-4" />
+              </div>
+              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
+                Processamento OpenCV
+              </h3>
+              <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                Correção óptica sub-milimétrica com correção de inclinação e perspectiva mesmo em fotos tiradas com iluminação imperfeita.
+              </p>
+            </Surface>
+
+            <Surface className="p-5 shadow-2xs">
+              <div className="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-300 mb-3">
+                <Smartphone className="w-4 h-4" />
+              </div>
+              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
+                Câmera Sem Fio
+              </h3>
+              <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                Conecte seu smartphone via Wi-Fi local escaneando um QR Code. Tire fotos das provas no celular e receba a nota instantaneamente no computador.
+              </p>
+            </Surface>
+
+            <Surface className="p-5 shadow-2xs">
+              <div className="w-9 h-9 rounded-lg bg-sky-50 dark:bg-sky-500/10 border border-sky-200 dark:border-sky-500/30 flex items-center justify-center text-sky-600 dark:text-sky-300 mb-3">
+                <ShieldCheck className="w-4 h-4" />
+              </div>
+              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
+                Segurança AES-256
+              </h3>
+              <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                O gabarito oficial viaja criptografado dentro do próprio cartão-resposta. Nenhum banco de dados remoto ou conexão à internet é exigida.
+              </p>
+            </Surface>
+          </div>
+
+          {/* Aviso de Compatibilidade Total Web <-> Desktop */}
+          <Surface tone="inset" className="p-4 sm:p-5 text-xs text-slate-600 leading-relaxed flex items-start gap-3">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-300 shrink-0 mt-0.5" />
+            <div>
+              <strong className="text-slate-800">100% de Compatibilidade entre Web e Desktop:</strong> Você pode elaborar avaliações, formatar equações em LaTeX, embaralhar versões e imprimir cadernos e folhas A4 diretamente pelo navegador. Todos os dados e turmas podem ser exportados como arquivo de perfil (.zip) e abertos sem perdas no aplicativo desktop.
+            </div>
+          </Surface>
+        </div>
+      )}
       </ErrorBoundary>
     </div>
   );

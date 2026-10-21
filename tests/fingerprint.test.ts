@@ -145,5 +145,19 @@ describe('Impressão Digital da Estrutura da Prova (computeExamFingerprint)', ()
       expect(payload.examFingerprint).toBe(expectedFp);
     }
   });
+
+  it('deve ignorar sourceQuestionId na impressão digital da prova', () => {
+    const baseFp = computeExamFingerprint(initialSampleExam);
+
+    const withSourceIds: Exam = {
+      ...initialSampleExam,
+      questions: initialSampleExam.questions.map((q, idx) => ({
+        ...q,
+        sourceQuestionId: `bank-q-${idx + 1}`,
+      })),
+    };
+
+    expect(computeExamFingerprint(withSourceIds)).toBe(baseFp);
+  });
 });
 

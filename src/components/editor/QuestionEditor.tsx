@@ -8,6 +8,7 @@ import {
   ChevronUp,
   ChevronDown,
   Copy,
+  FolderUp,
 } from 'lucide-react';
 import { Surface } from '../ui/Surface';
 import { Bubble } from '../ui/Bubble';
@@ -21,9 +22,11 @@ interface QuestionEditorProps {
   canMoveUp?: boolean;
   canMoveDown?: boolean;
   canDuplicate?: boolean;
+  isFromBank?: boolean;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
   onDuplicate?: () => void;
+  onSendToBank?: () => void;
   onChange: (updatedQuestion: Question) => void;
   onDelete: () => void;
 }
@@ -36,9 +39,11 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
   canMoveUp = false,
   canMoveDown = false,
   canDuplicate = true,
+  isFromBank,
   onMoveUp,
   onMoveDown,
   onDuplicate,
+  onSendToBank,
   onChange,
   onDelete,
 }) => {
@@ -124,6 +129,14 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
           <span className="font-semibold text-slate-800 text-sm sm:text-base">
             {`Questão ${index + 1}`}
           </span>
+          {(isFromBank !== undefined ? isFromBank : Boolean(question.sourceQuestionId)) && (
+            <span
+              className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30"
+              title="Questão originária do Banco de Questões"
+            >
+              Do banco
+            </span>
+          )}
 
           <div className="flex items-center bg-slate-100 p-0.5 rounded-lg text-xs font-medium">
             <button
@@ -229,6 +242,16 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
                 onClick={onDuplicate}
               >
                 <Copy className="w-4 h-4" />
+              </IconButton>
+            )}
+            {onSendToBank && (
+              <IconButton
+                label="Salvar no Banco de Questões"
+                size="sm"
+                tone="ghost"
+                onClick={onSendToBank}
+              >
+                <FolderUp className="w-4 h-4" />
               </IconButton>
             )}
             <IconButton

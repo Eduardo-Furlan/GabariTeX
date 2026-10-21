@@ -148,6 +148,15 @@ export const ExamsScreen: React.FC<ExamsScreenProps> = ({
           </Button>
 
           <Button
+            variant="secondary"
+            size="sm"
+            icon={<Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />}
+            onClick={() => onNavigate({ type: 'bank_generate' })}
+          >
+            Gerar a Partir do Banco
+          </Button>
+
+          <Button
             variant="primary"
             size="sm"
             icon={<Plus className="w-4 h-4" />}

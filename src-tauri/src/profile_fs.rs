@@ -120,6 +120,7 @@ pub fn resolve_key_relative_path(key: &str) -> Result<PathBuf, FsCommandError> {
         "meta" => Ok(PathBuf::from("meta.json")),
         "settings" => Ok(PathBuf::from("settings.json")),
         "classes" => Ok(PathBuf::from("classes.json")),
+        "bank-meta" => Ok(PathBuf::from("bank-meta.json")),
         _ => {
             if let Some(id) = key.strip_prefix("exams/") {
                 if is_valid_id(id) {
@@ -128,6 +129,10 @@ pub fn resolve_key_relative_path(key: &str) -> Result<PathBuf, FsCommandError> {
             } else if let Some(id) = key.strip_prefix("records/") {
                 if is_valid_id(id) {
                     return Ok(PathBuf::from("records").join(format!("{id}.json")));
+                }
+            } else if let Some(id) = key.strip_prefix("bank/") {
+                if is_valid_id(id) {
+                    return Ok(PathBuf::from("bank").join(format!("{id}.json")));
                 }
             } else if let Some(rest) = key.strip_prefix("assets/") {
                 if let Some((id, ext)) = rest.split_once('.') {
@@ -148,6 +153,7 @@ pub fn open_profile_dir(profile_root: &Path) -> Result<StoreOpenInfo, FsCommandE
     fs::create_dir_all(profile_root.join("exams")).map_err(FsCommandError::from_io)?;
     fs::create_dir_all(profile_root.join("records")).map_err(FsCommandError::from_io)?;
     fs::create_dir_all(profile_root.join("assets")).map_err(FsCommandError::from_io)?;
+    fs::create_dir_all(profile_root.join("bank")).map_err(FsCommandError::from_io)?;
 
     let mut used_bytes = 0u64;
     let mut removed_tmp = 0usize;
@@ -157,6 +163,7 @@ pub fn open_profile_dir(profile_root: &Path) -> Result<StoreOpenInfo, FsCommandE
         profile_root.join("exams"),
         profile_root.join("records"),
         profile_root.join("assets"),
+        profile_root.join("bank"),
     ];
 
     for dir in &subdirs {
@@ -273,6 +280,7 @@ pub fn list_keys_with_prefix(
         "exams/" => "exams",
         "records/" => "records",
         "assets/" => "assets",
+        "bank/" => "bank",
         _ => {
             return Err(FsCommandError::invalid_key(format!(
                 "Prefixo inválido: {prefix}"
@@ -689,9 +697,12 @@ mod tests {
         assert!(resolve_key_relative_path("meta").is_ok());
         assert!(resolve_key_relative_path("settings").is_ok());
         assert!(resolve_key_relative_path("classes").is_ok());
+        assert!(resolve_key_relative_path("bank-meta").is_ok());
         assert!(resolve_key_relative_path("exams/prova-nova").is_ok());
         assert!(resolve_key_relative_path("exams/550e8400-e29b-41d4-a716-446655440000").is_ok());
         assert!(resolve_key_relative_path("records/prova-mat-2026-1").is_ok());
+        assert!(resolve_key_relative_path("bank/550e8400-e29b-41d4-a716-446655440000").is_ok());
+        assert!(resolve_key_relative_path("bank/q-mat-1").is_ok());
         assert!(resolve_key_relative_path("assets/a1b2c3d4.png").is_ok());
         assert!(resolve_key_relative_path("assets/9f8e7d.jpeg").is_ok());
     }
@@ -700,15 +711,22 @@ mod tests {
     fn test_key_validation_rejects_invalid_keys() {
         assert!(resolve_key_relative_path("../meta").is_err());
         assert!(resolve_key_relative_path("exams/../meta").is_err());
+        assert!(resolve_key_relative_path("bank/../meta").is_err());
+        assert!(resolve_key_relative_path("bank/../x").is_err());
         assert!(resolve_key_relative_path("/etc/passwd").is_err());
         assert!(resolve_key_relative_path("C:\\Users\\test").is_err());
         assert!(resolve_key_relative_path("exams/CON").is_err());
         assert!(resolve_key_relative_path("exams/con").is_err());
+        assert!(resolve_key_relative_path("bank/CON").is_err());
+        assert!(resolve_key_relative_path("bank/con").is_err());
         assert!(resolve_key_relative_path("exams/lpt1").is_err());
         assert!(resolve_key_relative_path("exams/ProvaMaiuscula").is_err());
+        assert!(resolve_key_relative_path("bank/UPPER").is_err());
         assert!(resolve_key_relative_path("exams/").is_err());
+        assert!(resolve_key_relative_path("bank/").is_err());
         let long_id = "a".repeat(81);
         assert!(resolve_key_relative_path(&format!("exams/{long_id}")).is_err());
+        assert!(resolve_key_relative_path(&format!("bank/{long_id}")).is_err());
         assert!(resolve_key_relative_path("assets/abc.too_long_ext").is_err());
     }
 
@@ -806,5 +824,39 @@ mod tests {
         assert!(backup_dir.join(odd_file).exists());
         assert!(!backup_dir.join("gabaritex-2026-10-01-0930-auto.zip").exists());
         assert!(backup_dir.join("gabaritex-2026-10-02-0930-auto.zip").exists());
+    }
+
+    #[test]
+    fn test_bank_key_atomic_write_and_listing() {
+        let dir = tempdir().unwrap();
+        let root = dir.path();
+        open_profile_dir(root).unwrap();
+
+        // 1. Write bank-meta
+        write_key_atomic(root, "bank-meta", b"{\"schema\":1,\"groups\":[]}").unwrap();
+        let meta_bytes = read_key_bytes(root, "bank-meta", "main").unwrap();
+        assert_eq!(meta_bytes, b"{\"schema\":1,\"groups\":[]}");
+
+        // 2. Write bank question
+        write_key_atomic(root, "bank/q-test-1", b"{\"id\":\"q-test-1\",\"prompt\":\"Test\"}").unwrap();
+        let q1_bytes = read_key_bytes(root, "bank/q-test-1", "main").unwrap();
+        assert_eq!(q1_bytes, b"{\"id\":\"q-test-1\",\"prompt\":\"Test\"}");
+
+        // 3. Update question (checks .bak creation)
+        write_key_atomic(root, "bank/q-test-1", b"{\"id\":\"q-test-1\",\"prompt\":\"Updated\"}").unwrap();
+        let q1_main = read_key_bytes(root, "bank/q-test-1", "main").unwrap();
+        let q1_bak = read_key_bytes(root, "bank/q-test-1", "bak").unwrap();
+        assert_eq!(q1_main, b"{\"id\":\"q-test-1\",\"prompt\":\"Updated\"}");
+        assert_eq!(q1_bak, b"{\"id\":\"q-test-1\",\"prompt\":\"Test\"}");
+
+        // 4. Write second question and list with prefix
+        write_key_atomic(root, "bank/q-test-2", b"{\"id\":\"q-test-2\"}").unwrap();
+        let keys = list_keys_with_prefix(root, "bank/").unwrap();
+        assert_eq!(keys, vec!["bank/q-test-1".to_string(), "bank/q-test-2".to_string()]);
+
+        // 5. Delete question
+        delete_key_files(root, "bank/q-test-1").unwrap();
+        let keys_after = list_keys_with_prefix(root, "bank/").unwrap();
+        assert_eq!(keys_after, vec!["bank/q-test-2".to_string()]);
     }
 }

@@ -3,7 +3,7 @@ import { AnimatePresence } from 'motion/react';
 import * as m from 'motion/react-m';
 import { Question } from '../../types/exam';
 import { QuestionEditor } from './QuestionEditor';
-import { Plus, Layers, Calculator, BookOpen } from 'lucide-react';
+import { Plus, Layers, Calculator, BookOpen, Library, FolderUp } from 'lucide-react';
 import { MAX_QUESTIONS, remainingQuestions } from '../../utils/examLimits';
 import { springs } from '../../ui/motion/tokens';
 import { Button } from '../ui/Button';
@@ -16,13 +16,21 @@ import { cn } from '../ui/cn';
 interface QuestionListProps {
   questions: Question[];
   onChange: (updatedQuestions: Question[]) => void;
+  bankQuestionIds?: ReadonlySet<string>;
   onOpenImportModal?: () => void;
+  onOpenAddFromBankModal?: () => void;
+  onOpenSendToBankModal?: () => void;
+  onSendQuestionToBank?: (question: Question) => void;
 }
 
 export const QuestionList: React.FC<QuestionListProps> = ({
   questions,
   onChange,
+  bankQuestionIds,
   onOpenImportModal,
+  onOpenAddFromBankModal,
+  onOpenSendToBankModal,
+  onSendQuestionToBank,
 }) => {
   const [movedId, setMovedId] = useState<string | null>(null);
 
@@ -165,6 +173,22 @@ export const QuestionList: React.FC<QuestionListProps> = ({
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
+            {onOpenAddFromBankModal && (
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={isLimitReached}
+                onClick={onOpenAddFromBankModal}
+                icon={<Library className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />}
+                title={
+                  isLimitReached
+                    ? 'Limite de 40 questões atingido.'
+                    : 'Adicionar questões do Banco de Questões'
+                }
+              >
+                Adicionar do Banco
+              </Button>
+            )}
             {onOpenImportModal && (
               <Button
                 variant="secondary"
@@ -179,6 +203,17 @@ export const QuestionList: React.FC<QuestionListProps> = ({
                 }
               >
                 Importar de Outra Prova
+              </Button>
+            )}
+            {onOpenSendToBankModal && questions.length > 0 && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={onOpenSendToBankModal}
+                icon={<FolderUp className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />}
+                title="Salvar questões desta prova no Banco de Questões"
+              >
+                Salvar no Banco
               </Button>
             )}
             <Button
@@ -264,9 +299,13 @@ export const QuestionList: React.FC<QuestionListProps> = ({
                 canMoveUp={idx > 0}
                 canMoveDown={idx < questions.length - 1}
                 canDuplicate={!isLimitReached}
+                isFromBank={Boolean(
+                  q.sourceQuestionId && (!bankQuestionIds || bankQuestionIds.has(q.sourceQuestionId))
+                )}
                 onMoveUp={() => handleMoveQuestion(idx, 'up')}
                 onMoveDown={() => handleMoveQuestion(idx, 'down')}
                 onDuplicate={() => handleDuplicateQuestion(idx)}
+                onSendToBank={onSendQuestionToBank ? () => onSendQuestionToBank(q) : undefined}
                 onChange={(updated) => handleUpdateQuestion(idx, updated)}
                 onDelete={() => handleDeleteQuestion(idx)}
               />

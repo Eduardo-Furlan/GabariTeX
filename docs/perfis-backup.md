@@ -30,7 +30,7 @@ Na janela de exportação, selecione o escopo desejado e clique em **Exportar Ar
 
 <Screenshot id="perfis-backup-02-modal-exportar" />
 
-Você pode escolher exportar o perfil completo ou usar a opção personalizada para selecionar apenas avaliações específicas. É possível marcar ou desmarcar a inclusão de notas, turmas e senhas de leitura das provas. Guarde o arquivo gerado em uma pasta segura ou em um serviço de nuvem de sua preferência.
+Você pode escolher exportar o perfil completo ou usar a opção personalizada para selecionar apenas avaliações específicas. É possível marcar ou desmarcar a inclusão de notas, turmas, banco de questões e senhas de leitura das provas. Guarde o arquivo gerado em uma pasta segura ou em um serviço de nuvem de sua preferência.
 
 ### 3. Importar dados em outro computador
 
@@ -38,7 +38,7 @@ Após selecionar o arquivo, confira o resumo dos itens identificados e clique em
 
 <Screenshot id="perfis-backup-03-modal-importar" />
 
-O GabariTeX analisa o arquivo ZIP e apresenta um balanço com a quantidade de novas provas, turmas e notas encontradas. Você pode escolher entre dois modos de aplicação:
+O GabariTeX analisa o arquivo ZIP e apresenta um balanço com a quantidade de novas provas, turmas, notas e questões do banco de questões encontradas. Você pode escolher entre dois modos de aplicação:
 
 - *Mesclar com o perfil atual (Recomendado):* Preserva as provas e turmas existentes no computador e adiciona os novos dados sem apagar nada.
 - *Substituir tudo:* Remove integralmente o perfil atual e instala apenas o conteúdo trazido no arquivo de backup.
@@ -55,6 +55,7 @@ O sistema mantém automaticamente os 10 arquivos mais recentes, descartando vers
 
 - *Rotina ao final do bimestre:* Ao fechar as notas de cada ciclo ou semestre letivo, gere uma exportação completa e guarde o arquivo ZIP no Google Drive, OneDrive ou pendrive.
 - *Compartilhamento de prova com colegas:* Para enviar uma prova elaborada para outro professor sem expor seus alunos nem suas turmas, use a opção *Compartilhar Prova com Colega* na janela de exportação.
+- *Compartilhamento de grupos do banco:* Para compartilhar apenas um tópico ou matéria com colegas sem exportar seu perfil inteiro, use o botão de exportação da árvore no Banco de Questões para gerar um arquivo `.gabaritex-bank.zip`. O colega poderá usar a opção **Importar** na tela do banco para integrá-lo diretamente à árvore taxonômica dele.
 - *Cuidado com senhas:* O arquivo exportado contém as senhas de conferência dos gabaritos. Mantenha seus arquivos de backup em locais com acesso protegido por senha.
 
 ## Se algo não funcionar

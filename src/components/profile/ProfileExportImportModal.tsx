@@ -39,7 +39,7 @@ interface ProfileExportImportModalProps {
     data: ProfileData,
     settings: ProfileSettings,
     mode?: 'merge' | 'replace'
-  ) => void;
+  ) => void | boolean | Promise<void | boolean>;
 }
 
 export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> = ({
@@ -65,6 +65,7 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
   const [includeRecords, setIncludeRecords] = useState<boolean>(true);
   const [includeClasses, setIncludeClasses] = useState<boolean>(true);
   const [includePasswords, setIncludePasswords] = useState<boolean>(true);
+  const [includeBank, setIncludeBank] = useState<boolean>(true);
   const [selectedExamIds, setSelectedExamIds] = useState<string[]>(() =>
     currentData.exams.map((e) => e.id)
   );
@@ -91,6 +92,7 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
     setIncludeRecords(false);
     setIncludeClasses(false);
     setIncludePasswords(false);
+    setIncludeBank(false);
   };
 
   const handleExport = async () => {
@@ -101,6 +103,7 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
         includeRecords,
         includeClasses,
         includePasswords,
+        includeBank,
         examIds: exportScope === 'custom' ? selectedExamIds : undefined,
       };
 
@@ -161,16 +164,19 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
   const handleExecuteImport = async () => {
     if (!importPreview) return;
 
+    let res: boolean | void = false;
     if (importMode === 'replace') {
       const confirmReplace = await confirmDialog({
         title: 'Substituir Tudo',
-        message: 'ATENÇÃO: Você escolheu "Substituir tudo". Todos os dados existentes serão substituídos pelos do arquivo importado. Deseja continuar?',
+        message: importPreview.parsedData.bank
+          ? 'ATENÇÃO: Você escolheu "Substituir tudo". Todos os dados existentes (incluindo o banco de questões) serão substituídos pelos do arquivo importado. Deseja continuar?'
+          : 'ATENÇÃO: Você escolheu "Substituir tudo". Todas as provas, turmas e notas existentes serão substituídas pelos do arquivo importado (seu banco de questões atual será mantido intacto). Deseja continuar?',
         tone: 'danger',
         confirmLabel: 'Substituir tudo',
       });
       if (!confirmReplace) return;
 
-      onProfileImported(importPreview.parsedData, importPreview.parsedSettings, 'replace');
+      res = await onProfileImported(importPreview.parsedData, importPreview.parsedSettings, 'replace');
     } else {
       const { mergedData, mergedSettings } = mergeProfiles(
         currentData,
@@ -178,10 +184,12 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
         currentSettings,
         importPreview.parsedSettings
       );
-      onProfileImported(mergedData, mergedSettings, 'merge');
+      res = await onProfileImported(mergedData, mergedSettings, 'merge');
     }
 
-    onClose();
+    if (res !== false) {
+      onClose();
+    }
   };
 
   return (
@@ -334,6 +342,20 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
                 />
                 <span className="font-medium">Incluir senhas das provas (necessárias para corrigir no corretor)</span>
               </label>
+
+              {currentData.bank && (
+                <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={includeBank}
+                    onChange={(e) => setIncludeBank(e.target.checked)}
+                    className="rounded text-indigo-600"
+                  />
+                  <span className="font-medium">
+                    Incluir banco de questões ({currentData.bank.questions?.length ?? 0} questões, {currentData.bank.groups?.length ?? 0} grupos)
+                  </span>
+                </label>
+              )}
             </div>
 
             {exportSuccess && (
@@ -428,6 +450,35 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
                     </div>
                   </div>
 
+                  {importPreview.parsedData.bank && (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center pt-1 border-t border-indigo-100 dark:border-indigo-500/20">
+                      <div className="p-2 rounded-lg bg-white border border-slate-200">
+                        <span className="text-sm font-bold text-slate-800 block">
+                          {importPreview.parsedData.bank.questions?.length ?? 0}
+                        </span>
+                        <span className="text-meta text-slate-500 font-medium">Questões Banco</span>
+                      </div>
+                      <div className="p-2 rounded-lg bg-white border border-slate-200">
+                        <span className="text-sm font-bold text-slate-800 block">
+                          {importPreview.summary.bankGroups ?? 0}
+                        </span>
+                        <span className="text-meta text-slate-500 font-medium">Grupos</span>
+                      </div>
+                      <div className="p-2 rounded-lg bg-white border border-slate-200">
+                        <span className="text-sm font-bold text-slate-800 block">
+                          {importPreview.summary.bankTags ?? 0}
+                        </span>
+                        <span className="text-meta text-slate-500 font-medium">Etiquetas</span>
+                      </div>
+                      <div className="p-2 rounded-lg bg-white border border-slate-200">
+                        <span className="text-sm font-bold text-slate-800 block">
+                          {importPreview.summary.bankBlueprints ?? 0}
+                        </span>
+                        <span className="text-meta text-slate-500 font-medium">Modelos</span>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="text-xs text-slate-600 space-y-1 pt-1">
                     <p>
                       • <strong>{importPreview.summary.newExams}</strong> novas provas;{' '}
@@ -437,6 +488,16 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
                       • <strong>{importPreview.summary.newClasses}</strong> novas turmas e{' '}
                       <strong>{importPreview.summary.newRecords}</strong> novas notas adicionadas.
                     </p>
+                    {importPreview.parsedData.bank ? (
+                      <p>
+                        • <strong>{importPreview.summary.newBankQuestions ?? 0}</strong> novas questões no banco;{' '}
+                        <strong>{importPreview.summary.existingBankQuestions ?? 0}</strong> já existentes.
+                      </p>
+                    ) : (
+                      <p className="text-slate-500 italic">
+                        • <strong>Arquivo sem banco de questões:</strong> seu banco atual será mantido.
+                      </p>
+                    )}
                   </div>
 
                   {importPreview.passwordsGenerated.length > 0 && (
@@ -489,7 +550,9 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
                           Substituir tudo (Apaga o perfil atual)
                         </span>
                         <span className="text-meta text-slate-500">
-                          Substitui integralmente todas as provas, turmas e notas deste computador pelo conteúdo deste arquivo.
+                          {importPreview.parsedData.bank
+                            ? 'Substitui integralmente todas as provas, turmas, notas e o banco de questões deste computador pelo conteúdo deste arquivo.'
+                            : 'Substitui integralmente todas as provas, turmas e notas. O banco de questões existente não é alterado pois este arquivo não contém um banco.'}
                         </span>
                       </div>
                     </label>
@@ -519,3 +582,5 @@ export const ProfileExportImportModal: React.FC<ProfileExportImportModalProps> =
     </Modal>
   );
 };
+
+export default ProfileExportImportModal;

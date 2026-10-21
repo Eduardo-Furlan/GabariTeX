@@ -49,6 +49,7 @@ export default defineConfig({
         text: 'Elaboração e Impressão',
         items: [
           { text: 'Criação de Provas', link: '/criar-prova' },
+          { text: 'Banco de Questões', link: '/banco-de-questoes' },
           { text: 'Impressão de Cadernos e Gabaritos', link: '/imprimir' },
         ],
       },

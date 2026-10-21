@@ -263,5 +263,189 @@ describe('ProfileStore (Plano 08 §2.1 e §6)', () => {
     expect(await tauriStore.getClasses()).toEqual([]);
     expect((await tauriStore.getSettings()).activeExamId).toBe('exam-1');
   });
+
+  it('TauriProfileStore opera banco de questões e respeita replaceProfile condicional', async () => {
+    const { TauriProfileStore } = await import('../src/storage/tauriProfileStore');
+    const tauriStore = new TauriProfileStore();
+
+    const mockStorage: Record<string, Uint8Array> = {};
+
+    const fakeInvoke = async (cmd: string, args?: any, options?: any) => {
+      if (cmd === 'store_list') {
+        const prefix = args.prefix;
+        return Object.keys(mockStorage).filter((k) => k.startsWith(prefix));
+      }
+      if (cmd === 'store_get') {
+        const key = args.key;
+        if (!mockStorage[key]) throw new Error('Not found: ' + key);
+        return mockStorage[key].buffer;
+      }
+      if (cmd === 'store_put') {
+        const key = options?.headers?.['x-store-key'];
+        mockStorage[key] = args instanceof Uint8Array ? args : new TextEncoder().encode(JSON.stringify(args));
+        return;
+      }
+      if (cmd === 'store_delete') {
+        const key = args.key;
+        delete mockStorage[key];
+        return;
+      }
+      throw new Error('Unknown cmd: ' + cmd);
+    };
+
+    (tauriStore as any).getInvoke = async () => fakeInvoke;
+
+    // 1. Meta vazio inicial
+    const meta0 = await tauriStore.getBankMeta();
+    expect(meta0.schema).toBe(1);
+    expect(meta0.groups).toEqual([]);
+
+    // 2. Put meta
+    await tauriStore.putBankMeta({
+      schema: 1,
+      groups: [{ id: 'g1', parentId: null, name: 'G1', order: 0, createdAt: '2026-01-01', updatedAt: '2026-01-01' }],
+      tags: [],
+      blueprints: [],
+    });
+    const loadedMeta = await tauriStore.getBankMeta();
+    expect(loadedMeta.groups).toHaveLength(1);
+
+    // 3. Put and list questions
+    const q1 = {
+      id: 'bq-1',
+      groupId: 'g1',
+      type: 'objective' as const,
+      prompt: 'Q1',
+      points: 1,
+      tagIds: [],
+      createdAt: '2026-01-01',
+      updatedAt: '2026-01-01',
+    };
+    await tauriStore.putBankQuestions([q1]);
+    const questions = await tauriStore.listBankQuestions();
+    expect(questions).toHaveLength(1);
+    expect(questions[0].id).toBe('bq-1');
+
+    // 4. Delete questions
+    await tauriStore.deleteBankQuestions(['bq-1']);
+    expect(await tauriStore.listBankQuestions()).toHaveLength(0);
+
+    // 5. ReplaceProfile sem bank mantém o banco existente
+    await tauriStore.putBankQuestions([q1]);
+    await tauriStore.replaceProfile({
+      exams: [sampleExam1],
+      records: [],
+      classes: [],
+    });
+    const kept = await tauriStore.listBankQuestions();
+    expect(kept).toHaveLength(1);
+    expect(kept[0].id).toBe('bq-1');
+  });
+
+  describe('Bank operations in MemoryProfileStore (Plano 15 §5.1)', () => {
+    it('deve inicializar com meta vazio e permitir persistir/recuperar meta', async () => {
+      const meta0 = await store.getBankMeta();
+      expect(meta0.schema).toBe(1);
+      expect(meta0.groups).toEqual([]);
+      expect(meta0.tags).toEqual([]);
+      expect(meta0.blueprints).toEqual([]);
+
+      const newMeta = {
+        schema: 1 as const,
+        groups: [{ id: 'g1', parentId: null, name: 'G1', order: 0, createdAt: '2026-01-01', updatedAt: '2026-01-01' }],
+        tags: [{ id: 't1', name: 'facil', color: 'green' as const, createdAt: '2026-01-01', updatedAt: '2026-01-01' }],
+        blueprints: [],
+      };
+
+      const putRes = await store.putBankMeta(newMeta);
+      expect(putRes.ok).toBe(true);
+
+      const loaded = await store.getBankMeta();
+      expect(loaded).toEqual(newMeta);
+    });
+
+    it('deve salvar, listar e excluir questões do banco', async () => {
+      const q1 = {
+        id: 'bq-1',
+        groupId: null,
+        type: 'objective' as const,
+        prompt: 'Questão 1',
+        points: 1,
+        tagIds: ['t1'],
+        createdAt: '2026-01-01',
+        updatedAt: '2026-01-01',
+      };
+      const q2 = {
+        id: 'bq-2',
+        groupId: null,
+        type: 'subjective' as const,
+        prompt: 'Questão 2',
+        points: 2,
+        tagIds: [],
+        createdAt: '2026-01-01',
+        updatedAt: '2026-01-01',
+      };
+
+      await store.putBankQuestions([q1, q2]);
+      const list = await store.listBankQuestions();
+      expect(list).toHaveLength(2);
+      expect(list.find((q) => q.id === 'bq-1')?.prompt).toBe('Questão 1');
+
+      await store.deleteBankQuestions(['bq-1']);
+      const afterDel = await store.listBankQuestions();
+      expect(afterDel).toHaveLength(1);
+      expect(afterDel[0].id).toBe('bq-2');
+    });
+
+    it('replaceProfile deve manter o banco quando data.bank é indefinido e substituir quando definido', async () => {
+      const q1 = {
+        id: 'bq-1',
+        groupId: null,
+        type: 'objective' as const,
+        prompt: 'Questão Original',
+        points: 1,
+        tagIds: [],
+        createdAt: '2026-01-01',
+        updatedAt: '2026-01-01',
+      };
+      await store.putBankQuestions([q1]);
+
+      // 1. replaceProfile sem bank -> mantém q1
+      await store.replaceProfile({
+        exams: [sampleExam1],
+        records: [],
+        classes: [],
+      });
+      const kept = await store.listBankQuestions();
+      expect(kept).toHaveLength(1);
+      expect(kept[0].id).toBe('bq-1');
+
+      // 2. replaceProfile com bank -> substitui
+      const q2 = {
+        id: 'bq-2',
+        groupId: null,
+        type: 'objective' as const,
+        prompt: 'Questão Nova',
+        points: 1,
+        tagIds: [],
+        createdAt: '2026-02-01',
+        updatedAt: '2026-02-01',
+      };
+      await store.replaceProfile({
+        exams: [sampleExam1],
+        records: [],
+        classes: [],
+        bank: {
+          groups: [],
+          tags: [],
+          blueprints: [],
+          questions: [q2],
+        },
+      });
+      const replaced = await store.listBankQuestions();
+      expect(replaced).toHaveLength(1);
+      expect(replaced[0].id).toBe('bq-2');
+    });
+  });
 });
 

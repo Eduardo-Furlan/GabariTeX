@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import React from 'react';
 import { renderToString } from 'react-dom/server';
 import { ScannerScreen } from '../src/screens/ScannerScreen';
@@ -48,7 +48,23 @@ const dummyRecord: GradingRecord = {
 };
 
 describe('UI Scanner (Phase 7: Folha Óptica)', () => {
-  it('ScannerScreen renders Sessão de Correção panel and Segmented modes', () => {
+  it('ScannerScreen no ambiente web renderiza tela de aviso para download do app desktop', () => {
+    vi.stubGlobal('__DESKTOP__', false);
+    const html = renderToString(
+      <ProfileProvider>
+        <ScannerScreen onNavigate={() => {}} />
+      </ProfileProvider>
+    );
+
+    expect(html).toContain('Corretor Óptico (OMR) no GabariTeX Desktop');
+    expect(html).toContain('Baixar GabariTeX Desktop (GitHub Releases)');
+    expect(html).toContain('Continuar na Versão Web');
+    expect(html).toContain('100% de Compatibilidade entre Web e Desktop');
+    expect(html).not.toContain('Sessão de Correção');
+  });
+
+  it('ScannerScreen no ambiente desktop renderiza painel de Sessão de Correção e modos', () => {
+    vi.stubGlobal('__DESKTOP__', true);
     const html = renderToString(
       <ProfileProvider>
         <ScannerScreen onNavigate={() => {}} />

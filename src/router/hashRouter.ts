@@ -6,7 +6,9 @@ export type Route =
   | { type: 'exams' }
   | { type: 'classes' }
   | { type: 'scanner' }
-  | { type: 'exam_step'; examId: string; step: StepId };
+  | { type: 'exam_step'; examId: string; step: StepId }
+  | { type: 'bank' }
+  | { type: 'bank_generate'; blueprintId?: string };
 
 export const VALID_STEPS: StepId[] = ['criar', 'versoes', 'imprimir', 'corrigir', 'notas'];
 
@@ -39,6 +41,14 @@ export function parseHash(rawHash: string): Route {
 
   if (first === 'turmas') {
     return { type: 'classes' };
+  }
+
+  if (first === 'banco') {
+    if (segments[1]?.toLowerCase() === 'gerar') {
+      const blueprintId = segments[2] ? decodeURIComponent(segments[2]) : undefined;
+      return { type: 'bank_generate', blueprintId };
+    }
+    return { type: 'bank' };
   }
 
   if (first === 'corretor' || first === 'scanner' || first === 'corrigir') {
@@ -74,6 +84,14 @@ export function formatHash(route: Route, currentSearch?: string): string {
     case 'exam_step':
       path = `/prova/${encodeURIComponent(route.examId)}/${route.step}`;
       break;
+    case 'bank':
+      path = '/banco';
+      break;
+    case 'bank_generate':
+      path = route.blueprintId
+        ? `/banco/gerar/${encodeURIComponent(route.blueprintId)}`
+        : '/banco/gerar';
+      break;
   }
 
   const search =
@@ -91,6 +109,9 @@ export function areRoutesEqual(a: Route, b: Route): boolean {
   if (a.type !== b.type) return false;
   if (a.type === 'exam_step' && b.type === 'exam_step') {
     return a.examId === b.examId && a.step === b.step;
+  }
+  if (a.type === 'bank_generate' && b.type === 'bank_generate') {
+    return a.blueprintId === b.blueprintId;
   }
   return true;
 }

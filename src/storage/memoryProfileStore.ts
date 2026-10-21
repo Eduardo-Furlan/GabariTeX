@@ -1,5 +1,6 @@
 import { Exam, Classroom, GradingRecord } from '../types/exam';
 import { ProfileSettings, ExamMeta, ProfileData } from '../types/profile';
+import { BankMeta, BankQuestion, BankData } from '../types/bank';
 import { SaveResult } from '../utils/storage';
 import { ProfileStore } from './profileStore';
 
@@ -8,12 +9,15 @@ export class MemoryProfileStore implements ProfileStore {
   private records: Map<string, GradingRecord> = new Map();
   private classes: Map<string, Classroom> = new Map();
   private settings: ProfileSettings = {};
+  private bankMeta: BankMeta = { schema: 1, groups: [], tags: [], blueprints: [] };
+  private bankQuestions: Map<string, BankQuestion> = new Map();
 
   constructor(initialData?: {
     exams?: Exam[];
     records?: GradingRecord[];
     classes?: Classroom[];
     settings?: ProfileSettings;
+    bank?: BankData;
   }) {
     if (initialData?.exams) {
       for (const e of initialData.exams) {
@@ -32,6 +36,19 @@ export class MemoryProfileStore implements ProfileStore {
     }
     if (initialData?.settings) {
       this.settings = { ...initialData.settings };
+    }
+    if (initialData?.bank) {
+      this.bankMeta = {
+        schema: 1,
+        groups: JSON.parse(JSON.stringify(initialData.bank.groups || [])),
+        tags: JSON.parse(JSON.stringify(initialData.bank.tags || [])),
+        blueprints: JSON.parse(JSON.stringify(initialData.bank.blueprints || [])),
+      };
+      if (initialData.bank.questions) {
+        for (const q of initialData.bank.questions) {
+          this.bankQuestions.set(q.id, JSON.parse(JSON.stringify(q)));
+        }
+      }
     }
   }
 
@@ -142,10 +159,69 @@ export class MemoryProfileStore implements ProfileStore {
         this.classes.set(c.id, JSON.parse(JSON.stringify(c)));
       }
       this.settings = settings ? JSON.parse(JSON.stringify(settings)) : {};
+
+      // Only replace bank if data.bank !== undefined
+      if (data.bank !== undefined) {
+        await this.replaceBank(data.bank);
+      }
+
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: err, reason: 'unknown' };
+    }
+  }
+
+  async getBankMeta(): Promise<BankMeta> {
+    return JSON.parse(JSON.stringify(this.bankMeta));
+  }
+
+  async putBankMeta(meta: BankMeta): Promise<SaveResult> {
+    try {
+      this.bankMeta = JSON.parse(JSON.stringify(meta));
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: err, reason: 'unknown' };
+    }
+  }
+
+  async listBankQuestions(): Promise<BankQuestion[]> {
+    return Array.from(this.bankQuestions.values()).map((q) => JSON.parse(JSON.stringify(q)));
+  }
+
+  async putBankQuestions(qs: BankQuestion[]): Promise<SaveResult> {
+    try {
+      for (const q of qs) {
+        this.bankQuestions.set(q.id, JSON.parse(JSON.stringify(q)));
+      }
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: err, reason: 'unknown' };
+    }
+  }
+
+  async deleteBankQuestions(ids: string[]): Promise<void> {
+    for (const id of ids) {
+      this.bankQuestions.delete(id);
+    }
+  }
+
+  async replaceBank(bank: BankData): Promise<SaveResult> {
+    try {
+      this.bankMeta = {
+        schema: 1,
+        groups: JSON.parse(JSON.stringify(bank.groups || [])),
+        tags: JSON.parse(JSON.stringify(bank.tags || [])),
+        blueprints: JSON.parse(JSON.stringify(bank.blueprints || [])),
+      };
+      this.bankQuestions.clear();
+      if (bank.questions) {
+        for (const q of bank.questions) {
+          this.bankQuestions.set(q.id, JSON.parse(JSON.stringify(q)));
+        }
+      }
       return { ok: true };
     } catch (err) {
       return { ok: false, error: err, reason: 'unknown' };
     }
   }
 }
-
